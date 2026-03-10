@@ -6,6 +6,7 @@ import type { SavedConnectionConfig } from '../types';
 interface ConnectionPanelProps {
   providerName: string;
   providerKind: SavedConnectionConfig['provider'];
+  isConnected: boolean;
   config: SavedConnectionConfig;
   error: string | null;
   projectDiscoveryWarning: string | null;
@@ -23,6 +24,7 @@ interface ConnectionPanelProps {
 const ConnectionPanel = ({
   providerName,
   providerKind,
+  isConnected,
   config,
   error,
   projectDiscoveryWarning,
@@ -165,16 +167,22 @@ const ConnectionPanel = ({
       <ConnectionHelp provider={providerKind} />
     </div>
 
-    <div className="mt-5 flex items-center justify-end">
-      <button
-        type="button"
-        onClick={onRefresh}
-        disabled={isLoading}
-        className="rounded-full bg-sky-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-slate-400"
-      >
-        {isLoading ? 'Conectando...' : 'Conectar y sincronizar'}
-      </button>
-    </div>
+    {isConnected ? (
+      <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <span className="font-medium">Conectado correctamente.</span> El provider {providerName} esta sincronizado y listo para usarse.
+      </div>
+    ) : (
+      <div className="mt-5 flex items-center justify-end">
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={isLoading}
+          className="rounded-full bg-sky-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-slate-400"
+        >
+          {isLoading ? 'Conectando...' : 'Conectar y sincronizar'}
+        </button>
+      </div>
+    )}
 
     {error ? (
       <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">

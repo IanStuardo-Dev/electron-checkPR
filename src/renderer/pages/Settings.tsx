@@ -90,6 +90,7 @@ const Settings = () => {
                 <ConnectionPanel
                   providerName={activeProvider.name}
                   providerKind={activeProvider.kind}
+                  isConnected={isConnectionReady}
                   config={config}
                   error={error}
                   projectDiscoveryWarning={projectDiscoveryWarning}
