@@ -1,5 +1,5 @@
 import { Notification } from 'electron';
-import type { PullRequest } from '../azure/pr.service';
+import type { PullRequest } from '../../types/azure';
 
 export class NotificationService {
   static showPRNotification(pr: PullRequest) {

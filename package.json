@@ -4,7 +4,7 @@
   "description": "Azure PR Review Desktop App",
   "main": "dist/main.js",
   "scripts": {
-    "start": "concurrently \"webpack serve --mode development\" \"wait-on http://localhost:8080 && electron .\"",
+    "start": "concurrently \"webpack serve --mode development\" \"wait-on http://localhost:8080 && env -u ELECTRON_RUN_AS_NODE electron .\"",
     "build": "webpack --mode production && tsc",
     "watch": "tsc -w",
     "dev": "NODE_ENV=development npm run start",

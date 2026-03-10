@@ -1,0 +1,75 @@
+import React from 'react';
+import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
+import type { PrioritizedPullRequest } from '../types';
+import { getRiskBadgeClass } from '../metrics';
+
+interface PriorityListProps {
+  pullRequests: PrioritizedPullRequest[];
+  onOpenPullRequest: (url: string) => void;
+}
+
+const PriorityList = ({ pullRequests, onOpenPullRequest }: PriorityListProps) => (
+  <div className="rounded-3xl bg-white p-6 shadow-lg ring-1 ring-slate-200">
+    <div className="mb-5 flex items-center justify-between">
+      <div>
+        <h2 className="text-xl font-semibold text-slate-900">PRs priorizados</h2>
+        <p className="text-sm text-slate-500">Ordenados por riesgo operativo, contexto y antigüedad.</p>
+      </div>
+      <div className="text-sm text-slate-500">{pullRequests.length} elementos</div>
+    </div>
+
+    <div className="space-y-4">
+      {pullRequests.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center text-sm text-slate-500">
+          Completa la conexión del provider activo y sincroniza para ver Pull Requests reales.
+        </div>
+      ) : (
+        pullRequests.slice(0, 8).map((pr) => (
+          <article
+            key={pr.id}
+            className="rounded-2xl border border-slate-200 p-5 transition hover:border-sky-300 hover:bg-sky-50/40"
+          >
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white">
+                    {pr.repository}
+                  </span>
+                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${getRiskBadgeClass(pr.riskScore)}`}>
+                    Riesgo {pr.riskScore}
+                  </span>
+                  {pr.isDraft ? (
+                    <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-700">Draft</span>
+                  ) : null}
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">{pr.title}</h3>
+                  <p className="text-sm text-slate-500">
+                    #{pr.id} abierto por {pr.createdBy.displayName} hace {pr.ageHours}h
+                  </p>
+                </div>
+                <p className="text-sm text-slate-600">{pr.description}</p>
+                <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+                  <span>{pr.sourceBranch} → {pr.targetBranch}</span>
+                  <span>{pr.approvals} approvals</span>
+                  <span>{pr.pendingReviewers} reviewers pendientes</span>
+                  <span>merge: {pr.mergeStatus}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onOpenPullRequest(pr.url)}
+                className="inline-flex items-center gap-2 self-start rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600"
+              >
+                Abrir PR
+                <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+              </button>
+            </div>
+          </article>
+        ))
+      )}
+    </div>
+  </div>
+);
+
+export default PriorityList;

@@ -1,78 +1,54 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Link, useLocation } from 'react-router-dom';
-import { ChartPieIcon, ClipboardDocumentCheckIcon, ChevronLeftIcon, BellIcon } from '@heroicons/react/24/outline';
+import React from 'react';
+import { NavLink } from 'react-router-dom';
+import { ChartPieIcon, ClockIcon, Cog6ToothIcon, SparklesIcon } from '@heroicons/react/24/outline';
 
-interface MenuItem {
-  path: string;
-  name: string;
-  icon: React.ForwardRefExoticComponent<React.SVGProps<SVGSVGElement>>;
-}
+const navClassName = ({ isActive }: { isActive: boolean }) =>
+  `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
+    isActive
+      ? 'bg-sky-50 text-sky-700 ring-1 ring-sky-100'
+      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+  }`;
 
-// En la sección de menuItems, añade:
-const menuItems: MenuItem[] = [
-  { path: '/', name: 'Dashboard', icon: ChartPieIcon },
-  { path: '/history', name: 'PR History', icon: ClipboardDocumentCheckIcon },
-  { path: '/notifications', name: 'Notifications', icon: BellIcon }, // Añade esta línea
-];
-
-interface SidebarProps {
-  onWidthChange?: (width: number) => void;
-}
-
-const Sidebar: React.FC<SidebarProps> = ({ onWidthChange }) => {
-  const location = useLocation();
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
-  useEffect(() => {
-    onWidthChange?.(isCollapsed ? 80 : 240);
-  }, [isCollapsed, onWidthChange]);
-
+const Sidebar = () => {
   return (
-    <motion.div 
-      initial={{ width: 240 }}
-      animate={{ 
-        width: isCollapsed ? 80 : 240
-      }}
-      className="h-screen bg-slate-900 flex-shrink-0 fixed right-0"
-    >
-      <motion.button
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute -left-3 top-6 bg-slate-900 rounded-full p-1.5 shadow-lg hover:bg-slate-800"
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-      >
-        <ChevronLeftIcon 
-          className={`w-4 h-4 text-white transition-transform ${isCollapsed ? 'rotate-180' : ''}`}
-        />
-      </motion.button>
-
-      <div className="p-6 space-y-6 overflow-hidden">
-        {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          const Icon = item.icon;
-          
-          return (
-            <Link key={item.path} to={item.path}>
-              <motion.div
-                whileHover={{ scale: 1.05, x: -5 }}
-                whileTap={{ scale: 0.95 }}
-                className={`flex items-center gap-4 p-3 rounded-xl transition-colors ${
-                  isActive 
-                    ? 'bg-sky-500 text-white' 
-                    : 'text-gray-400 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                <Icon className={`w-6 h-6 ${isCollapsed ? 'mx-auto' : ''}`} />
-                {!isCollapsed && (
-                  <span className="font-medium whitespace-nowrap">{item.name}</span>
-                )}
-              </motion.div>
-            </Link>
-          );
-        })}
+    <aside className="sticky top-0 flex h-screen w-72 flex-col border-r border-slate-200 bg-white/95 px-6 py-8 backdrop-blur">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-600">CheckPR</p>
+        <h1 className="mt-3 text-2xl font-semibold text-slate-950">Repo Command Center</h1>
+        <p className="mt-2 text-sm text-slate-500">
+          Seguimiento operativo de PRs, reviewers, ramas y repositorios sobre multiples providers.
+        </p>
       </div>
-    </motion.div>
+
+      <nav className="mt-10 space-y-2">
+        <NavLink to="/" className={navClassName}>
+          <ChartPieIcon className="h-5 w-5" />
+          Dashboard
+        </NavLink>
+        <NavLink to="/history" className={navClassName}>
+          <ClockIcon className="h-5 w-5" />
+          Historico
+        </NavLink>
+        <NavLink to="/repository-analysis" className={navClassName}>
+          <SparklesIcon className="h-5 w-5" />
+          Repo Analysis
+        </NavLink>
+      </nav>
+
+      <div className="mt-auto space-y-4">
+        <NavLink to="/settings" className={navClassName}>
+          <Cog6ToothIcon className="h-5 w-5" />
+          Settings
+        </NavLink>
+
+        <div className="rounded-3xl bg-slate-950 p-5 text-sm text-slate-300">
+          <p className="font-medium text-white">Core del producto</p>
+          <p className="mt-2">
+            Dashboard y Historico quedan para operacion. Settings centraliza Azure hoy, GitHub y GitLab despues, con Bitbucket en backlog.
+          </p>
+        </div>
+      </div>
+    </aside>
   );
 };
 
