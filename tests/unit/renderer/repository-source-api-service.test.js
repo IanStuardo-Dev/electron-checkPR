@@ -47,7 +47,9 @@ describe('repositorySourceApiService', () => {
       scopeLabel: 'sin scope',
       state,
       diagnostics,
-      onPersistSnapshot: jest.fn(),
+      snapshot: {
+        persistSnapshot: jest.fn(),
+      },
       fetcher: {
         fetchProjects: jest.fn(),
         fetchRepositories: jest.fn(),
@@ -88,7 +90,9 @@ describe('repositorySourceApiService', () => {
       scopeLabel: 'acme / all',
       state,
       diagnostics,
-      onPersistSnapshot: jest.fn(),
+      snapshot: {
+        persistSnapshot: jest.fn(),
+      },
       fetcher,
     });
 
@@ -126,7 +130,9 @@ describe('repositorySourceApiService', () => {
       scopeLabel: 'org-a / core',
       state,
       diagnostics,
-      onPersistSnapshot: jest.fn(),
+      snapshot: {
+        persistSnapshot: jest.fn(),
+      },
       fetcher,
     });
 
@@ -164,7 +170,9 @@ describe('repositorySourceApiService', () => {
       scopeLabel: 'acme / all',
       state,
       diagnostics,
-      onPersistSnapshot,
+      snapshot: {
+        persistSnapshot: onPersistSnapshot,
+      },
       fetcher,
     });
 
@@ -201,7 +209,9 @@ describe('repositorySourceApiService', () => {
       scopeLabel: 'none',
       state,
       diagnostics,
-      onPersistSnapshot: jest.fn(),
+      snapshot: {
+        persistSnapshot: jest.fn(),
+      },
       fetcher: {
         fetchProjects: jest.fn(),
         fetchRepositories: jest.fn(),

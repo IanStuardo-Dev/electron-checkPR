@@ -1,10 +1,8 @@
-import type { useRepositoryDiagnostics } from './hooks/useRepositoryDiagnostics';
+import type { RepositorySourceDiagnosticsPort } from './repositorySourceApiPorts';
 import type { SavedConnectionConfig } from './types';
 
-type RepositorySourceDiagnostics = ReturnType<typeof useRepositoryDiagnostics>;
-
 export function clearRepositoryDiagnostics(
-  diagnostics: RepositorySourceDiagnostics,
+  diagnostics: RepositorySourceDiagnosticsPort,
   operation: 'projects' | 'repositories' | 'pullRequests',
   config: SavedConnectionConfig,
 ) {
@@ -12,7 +10,7 @@ export function clearRepositoryDiagnostics(
 }
 
 export function failRepositoryDiagnostics(
-  diagnostics: RepositorySourceDiagnostics,
+  diagnostics: RepositorySourceDiagnosticsPort,
   operation: 'projects' | 'repositories' | 'pullRequests',
   config: SavedConnectionConfig,
   message: string,
@@ -23,4 +21,3 @@ export function failRepositoryDiagnostics(
 export function getRepositorySourceErrorMessage(activeProviderName: string, error: unknown) {
   return error instanceof Error ? error.message : `Unknown ${activeProviderName} error.`;
 }
-

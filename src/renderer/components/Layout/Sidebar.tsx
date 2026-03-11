@@ -40,13 +40,6 @@ const Sidebar = () => {
           <Cog6ToothIcon className="h-5 w-5" />
           Settings
         </NavLink>
-
-        <div className="rounded-3xl bg-slate-950 p-5 text-sm text-slate-300">
-          <p className="font-medium text-white">Core del producto</p>
-          <p className="mt-2">
-            Dashboard y Historico quedan para operacion. Settings centraliza Azure, GitHub y GitLab, con Bitbucket en backlog.
-          </p>
-        </div>
       </div>
     </aside>
   );

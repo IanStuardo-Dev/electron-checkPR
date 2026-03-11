@@ -1,14 +1,12 @@
 import type { RepositoryProject, ReviewItem } from '../../../types/repository';
-import type { useRepositorySourceState } from './hooks/useRepositorySourceState';
+import type { RepositorySourceStatePort } from './repositorySourceApiPorts';
 
-type RepositorySourceState = ReturnType<typeof useRepositorySourceState>;
-
-export function clearProjectsState(state: RepositorySourceState) {
+export function clearProjectsState(state: RepositorySourceStatePort) {
   state.setProjects([]);
 }
 
 export function applyProjectsSuccess(
-  state: RepositorySourceState,
+  state: RepositorySourceStatePort,
   provider: string,
   projects: RepositoryProject[],
 ) {
@@ -23,7 +21,7 @@ export function applyProjectsSuccess(
 }
 
 export function applyProjectsFailure(
-  state: RepositorySourceState,
+  state: RepositorySourceStatePort,
   message: string,
 ) {
   state.setProjects([]);
@@ -34,19 +32,19 @@ export function applyProjectsFailure(
   );
 }
 
-export function clearRepositoriesState(state: RepositorySourceState) {
+export function clearRepositoriesState(state: RepositorySourceStatePort) {
   state.setRepositories([]);
 }
 
 export function applyRepositoriesSuccess(
-  state: RepositorySourceState,
+  state: RepositorySourceStatePort,
   repositories: Array<{ id: string; name: string; webUrl?: string; defaultBranch?: string }>,
 ) {
   state.setRepositories(repositories);
 }
 
 export function applyRepositoriesFailure(
-  state: RepositorySourceState,
+  state: RepositorySourceStatePort,
   message: string,
 ) {
   state.setError(message);
@@ -54,7 +52,7 @@ export function applyRepositoriesFailure(
 }
 
 export function applyPullRequestsSuccess(
-  state: RepositorySourceState,
+  state: RepositorySourceStatePort,
   result: ReviewItem[],
 ) {
   const snapshotTimestamp = new Date();
@@ -66,7 +64,7 @@ export function applyPullRequestsSuccess(
 }
 
 export function applyPullRequestsFailure(
-  state: RepositorySourceState,
+  state: RepositorySourceStatePort,
   message: string,
 ) {
   state.setPullRequests([]);
@@ -74,4 +72,3 @@ export function applyPullRequestsFailure(
   state.setHasSuccessfulConnection(false);
   state.setError(message);
 }
-

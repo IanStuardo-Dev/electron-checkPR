@@ -1,6 +1,10 @@
 import type React from 'react';
-import type { ReviewItem } from '../../../types/repository';
 import type { RepositorySourceFetcherPort } from './repositorySourceFetcher';
+import type {
+  RepositorySourceDiagnosticsPort,
+  RepositorySourceSnapshotPort,
+  RepositorySourceStatePort,
+} from './repositorySourceApiPorts';
 import {
   clearRepositoryDiagnostics,
   failRepositoryDiagnostics,
@@ -16,20 +20,15 @@ import {
   clearProjectsState,
   clearRepositoriesState,
 } from './repositorySourceStateService';
-import type { useRepositoryDiagnostics } from './hooks/useRepositoryDiagnostics';
-import type { useRepositorySourceState } from './hooks/useRepositorySourceState';
 import type { SavedConnectionConfig } from './types';
-
-type RepositorySourceState = ReturnType<typeof useRepositorySourceState>;
-type RepositorySourceDiagnostics = ReturnType<typeof useRepositoryDiagnostics>;
 
 interface CreateRepositorySourceApiOptions {
   configRef: React.MutableRefObject<SavedConnectionConfig>;
   activeProviderName: string;
   scopeLabel: string;
-  state: RepositorySourceState;
-  diagnostics: RepositorySourceDiagnostics;
-  onPersistSnapshot: (pullRequests: ReviewItem[], capturedAt: Date, scopeLabel: string, targetReviewer?: string) => void;
+  state: RepositorySourceStatePort;
+  diagnostics: RepositorySourceDiagnosticsPort;
+  snapshot: RepositorySourceSnapshotPort;
   fetcher: RepositorySourceFetcherPort;
 }
 
@@ -39,7 +38,7 @@ export function createRepositorySourceApi({
   scopeLabel,
   state,
   diagnostics,
-  onPersistSnapshot,
+  snapshot,
   fetcher,
 }: CreateRepositorySourceApiOptions) {
   async function refreshProjects(nextConfig = configRef.current) {
@@ -116,7 +115,7 @@ export function createRepositorySourceApi({
       await refreshRepositories(activeConfig);
       const result = await fetcher.fetchPullRequests(activeConfig);
       const snapshotTimestamp = applyPullRequestsSuccess(state, result);
-      onPersistSnapshot(result, snapshotTimestamp, scopeLabel, activeConfig.targetReviewer);
+      snapshot.persistSnapshot(result, snapshotTimestamp, scopeLabel, activeConfig.targetReviewer);
     } catch (fetchError) {
       const message = getRepositorySourceErrorMessage(activeProviderName, fetchError);
       failRepositoryDiagnostics(diagnostics, 'pullRequests', activeConfig, message);

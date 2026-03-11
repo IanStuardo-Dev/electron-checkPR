@@ -34,7 +34,9 @@ export function useRepositorySourceApi({
     scopeLabel,
     state,
     diagnostics,
-    onPersistSnapshot,
+    snapshot: {
+      persistSnapshot: onPersistSnapshot,
+    },
     fetcher,
   }), [activeProviderName, configRef, diagnostics, fetcher, onPersistSnapshot, scopeLabel, state]);
 
