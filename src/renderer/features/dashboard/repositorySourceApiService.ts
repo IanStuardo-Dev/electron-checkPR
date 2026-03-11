@@ -1,6 +1,21 @@
 import type React from 'react';
 import type { ReviewItem } from '../../../types/repository';
 import type { RepositorySourceFetcherPort } from './repositorySourceFetcher';
+import {
+  clearRepositoryDiagnostics,
+  failRepositoryDiagnostics,
+  getRepositorySourceErrorMessage,
+} from './repositorySourceDiagnosticsService';
+import {
+  applyProjectsFailure,
+  applyProjectsSuccess,
+  applyPullRequestsFailure,
+  applyPullRequestsSuccess,
+  applyRepositoriesFailure,
+  applyRepositoriesSuccess,
+  clearProjectsState,
+  clearRepositoriesState,
+} from './repositorySourceStateService';
 import type { useRepositoryDiagnostics } from './hooks/useRepositoryDiagnostics';
 import type { useRepositorySourceState } from './hooks/useRepositorySourceState';
 import type { SavedConnectionConfig } from './types';
@@ -29,33 +44,21 @@ export function createRepositorySourceApi({
 }: CreateRepositorySourceApiOptions) {
   async function refreshProjects(nextConfig = configRef.current) {
     if (!nextConfig.provider || !nextConfig.organization || !nextConfig.personalAccessToken) {
-      state.setProjects([]);
+      clearProjectsState(state);
       return [];
     }
 
     state.setProjectsLoading(true);
-    diagnostics.updateDiagnostics('projects', nextConfig, null);
+    clearRepositoryDiagnostics(diagnostics, 'projects', nextConfig);
 
     try {
       const result = await fetcher.fetchProjects(nextConfig);
-      state.setProjects(result);
-      if (nextConfig.provider === 'github' || nextConfig.provider === 'gitlab') {
-        state.setRepositories(result.map((project) => ({
-          id: project.id,
-          name: project.name,
-        })));
-      }
-      state.setProjectDiscoveryWarning(null);
+      applyProjectsSuccess(state, nextConfig.provider, result);
       return result;
     } catch (fetchError) {
-      const message = fetchError instanceof Error ? fetchError.message : `Unknown ${activeProviderName} error.`;
-      state.setProjects([]);
-      diagnostics.updateDiagnostics('projects', nextConfig, message);
-      state.setProjectDiscoveryWarning(
-        message.includes('(404)')
-          ? 'No se pudieron listar proyectos automaticamente. Puedes escribir el proyecto manualmente y seguir trabajando.'
-          : message,
-      );
+      const message = getRepositorySourceErrorMessage(activeProviderName, fetchError);
+      applyProjectsFailure(state, message);
+      failRepositoryDiagnostics(diagnostics, 'projects', nextConfig, message);
       return [];
     } finally {
       state.setProjectsLoading(false);
@@ -64,7 +67,7 @@ export function createRepositorySourceApi({
 
   async function refreshRepositories(nextConfig = configRef.current) {
     if (!nextConfig.provider) {
-      state.setRepositories([]);
+      clearRepositoriesState(state);
       return [];
     }
 
@@ -74,22 +77,21 @@ export function createRepositorySourceApi({
       : Boolean(nextConfig.organization && nextConfig.project && nextConfig.personalAccessToken);
 
     if (!hasMinimumConfig) {
-      state.setRepositories([]);
+      clearRepositoriesState(state);
       return [];
     }
 
     state.setRepositoriesLoading(true);
-    diagnostics.updateDiagnostics('repositories', nextConfig, null);
+    clearRepositoryDiagnostics(diagnostics, 'repositories', nextConfig);
 
     try {
       const result = await fetcher.fetchRepositories(nextConfig);
-      state.setRepositories(result);
+      applyRepositoriesSuccess(state, result);
       return result;
     } catch (fetchError) {
-      const message = fetchError instanceof Error ? fetchError.message : `Unknown ${activeProviderName} error.`;
-      diagnostics.updateDiagnostics('repositories', nextConfig, message);
-      state.setError(message);
-      state.setHasSuccessfulConnection(false);
+      const message = getRepositorySourceErrorMessage(activeProviderName, fetchError);
+      failRepositoryDiagnostics(diagnostics, 'repositories', nextConfig, message);
+      applyRepositoriesFailure(state, message);
       return [];
     } finally {
       state.setRepositoriesLoading(false);
@@ -107,25 +109,18 @@ export function createRepositorySourceApi({
 
     state.setIsLoading(true);
     state.setError(null);
-    diagnostics.updateDiagnostics('pullRequests', activeConfig, null);
+    clearRepositoryDiagnostics(diagnostics, 'pullRequests', activeConfig);
 
     try {
       await refreshProjects(activeConfig);
       await refreshRepositories(activeConfig);
       const result = await fetcher.fetchPullRequests(activeConfig);
-      state.setPullRequests(result);
-      const snapshotTimestamp = new Date();
-      state.setLastUpdatedAt(snapshotTimestamp);
-      state.setHasSuccessfulConnection(true);
-      state.setIsConnectionPanelOpen(false);
+      const snapshotTimestamp = applyPullRequestsSuccess(state, result);
       onPersistSnapshot(result, snapshotTimestamp, scopeLabel, activeConfig.targetReviewer);
     } catch (fetchError) {
-      const message = fetchError instanceof Error ? fetchError.message : `Unknown ${activeProviderName} error.`;
-      diagnostics.updateDiagnostics('pullRequests', activeConfig, message);
-      state.setPullRequests([]);
-      state.setLastUpdatedAt(null);
-      state.setHasSuccessfulConnection(false);
-      state.setError(message);
+      const message = getRepositorySourceErrorMessage(activeProviderName, fetchError);
+      failRepositoryDiagnostics(diagnostics, 'pullRequests', activeConfig, message);
+      applyPullRequestsFailure(state, message);
     } finally {
       state.setIsLoading(false);
     }
@@ -137,14 +132,14 @@ export function createRepositorySourceApi({
     if (!activeConfig.provider) {
       const message = 'Selecciona un provider antes de cargar proyectos.';
       state.setError(message);
-      diagnostics.updateDiagnostics('projects', activeConfig, message);
+      failRepositoryDiagnostics(diagnostics, 'projects', activeConfig, message);
       return;
     }
 
     if (!activeConfig.organization.trim() || !activeConfig.personalAccessToken.trim()) {
       const message = `El alcance principal y el token son obligatorios para cargar ${activeProviderName}.`;
       state.setError(message);
-      diagnostics.updateDiagnostics('projects', activeConfig, message);
+      failRepositoryDiagnostics(diagnostics, 'projects', activeConfig, message);
       return;
     }
 
