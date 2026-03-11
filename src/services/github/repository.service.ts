@@ -153,6 +153,25 @@ async function requestGitHubJson<T>(url: string, personalAccessToken: string, co
   return readGitHubResponse<T>(response, context);
 }
 
+async function requestGitHubJsonResponse<T>(
+  url: string,
+  personalAccessToken: string,
+  context: string,
+): Promise<{ data: T; headers: Headers }> {
+  const response = await fetch(url, {
+    headers: {
+      Accept: 'application/vnd.github+json',
+      Authorization: `Bearer ${personalAccessToken}`,
+      'X-GitHub-Api-Version': GITHUB_API_VERSION,
+    },
+  });
+
+  return {
+    data: await readGitHubResponse<T>(response, context),
+    headers: response.headers,
+  };
+}
+
 async function requestGitHubContent(
   url: string,
   personalAccessToken: string,
@@ -201,6 +220,33 @@ function getReviewerVote(state: string): number {
     default:
       return 0;
   }
+}
+
+function getGitHubNextPage(headers: Headers): string | null {
+  const linkHeader = headers.get('link');
+  if (!linkHeader) {
+    return null;
+  }
+
+  const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+  return nextMatch?.[1] || null;
+}
+
+async function requestGitHubPaginated<T>(
+  url: string,
+  personalAccessToken: string,
+  context: string,
+): Promise<T[]> {
+  const results: T[] = [];
+  let nextUrl: string | null = url;
+
+  while (nextUrl) {
+    const response = await requestGitHubJsonResponse<T[]>(nextUrl, personalAccessToken, context);
+    results.push(...response.data);
+    nextUrl = getGitHubNextPage(response.headers);
+  }
+
+  return results;
 }
 
 async function enumerateGitHubContents(
@@ -312,13 +358,13 @@ export class GitHubRepositoryService {
       throw new Error('Owner/organization y token son obligatorios para GitHub.');
     }
 
-    const payload = await requestGitHubJson<GitHubRepositoryResponse[]>(
+    const allRepositories = await requestGitHubPaginated<GitHubRepositoryResponse>(
       'https://api.github.com/user/repos?per_page=100&sort=updated&affiliation=owner,collaborator,organization_member',
       personalAccessToken,
       'repositories request',
     );
 
-    return payload
+    return allRepositories
       .filter((repository) => repository.owner.login.toLowerCase() === organization.toLowerCase())
       .map(buildRepositorySummary);
   }
@@ -361,7 +407,7 @@ export class GitHubRepositoryService {
 
     const reviewItems = await Promise.all(
       targetRepositories.map(async (targetRepository) => {
-        const pullRequests = await requestGitHubJson<GitHubPullRequestListResponseItem[]>(
+        const pullRequests = await requestGitHubPaginated<GitHubPullRequestListResponseItem>(
           `https://api.github.com/repos/${encodeURIComponent(organization)}/${encodeURIComponent(targetRepository.name)}/pulls?state=open&per_page=50&sort=created&direction=desc`,
           personalAccessToken,
           `pull requests request (${targetRepository.name})`,

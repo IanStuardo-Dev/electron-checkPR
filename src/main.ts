@@ -24,6 +24,7 @@ const ALLOWED_EXTERNAL_HOSTS = new Set([
   'github.com',
   'gitlab.com',
 ]);
+const sessionSecrets = new Map<string, string>();
 
 function isAllowedExternalHost(hostname: string): boolean {
   return ALLOWED_EXTERNAL_HOSTS.has(hostname) || hostname.endsWith('.visualstudio.com');
@@ -212,6 +213,24 @@ ipcMain.handle('analysis:runRepositoryAnalysis', async (_event, payload) => {
 ipcMain.handle('analysis:cancelRepositoryAnalysis', async (_event, requestId: string) => {
   return safeIpcResponse(async () => {
     repositoryAnalysisService.cancelAnalysis(requestId);
+  });
+});
+
+ipcMain.handle('session-secrets:get', async (_event, key: string) => {
+  return safeIpcResponse(async () => sessionSecrets.get(key) || '');
+});
+
+ipcMain.handle('session-secrets:set', async (_event, payload: { key: string; value: string }) => {
+  return safeIpcResponse(async () => {
+    if (!payload?.key || typeof payload.key !== 'string') {
+      throw new Error('Secret key is required.');
+    }
+
+    if (payload.value) {
+      sessionSecrets.set(payload.key, payload.value);
+    } else {
+      sessionSecrets.delete(payload.key);
+    }
   });
 });
 

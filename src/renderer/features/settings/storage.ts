@@ -3,6 +3,22 @@ import type { CodexIntegrationConfig } from '../dashboard/types';
 const CODEX_SETTINGS_STORAGE_KEY = 'checkpr.settings.codex';
 const CODEX_SESSION_API_KEY = 'checkpr.settings.codex.api-key';
 
+async function getSessionSecret(key: string): Promise<string> {
+  const response = await window.electronApi.invoke('session-secrets:get', key) as { ok: boolean; data?: string; error?: string };
+  if (!response.ok) {
+    throw new Error(response.error || 'No fue posible leer el secreto de sesion.');
+  }
+
+  return response.data || '';
+}
+
+async function setSessionSecret(key: string, value: string): Promise<void> {
+  const response = await window.electronApi.invoke('session-secrets:set', { key, value }) as { ok: boolean; error?: string };
+  if (!response.ok) {
+    throw new Error(response.error || 'No fue posible persistir el secreto de sesion.');
+  }
+}
+
 export const defaultCodexConfig: CodexIntegrationConfig = {
   enabled: false,
   model: 'gpt-5.2-codex',
@@ -16,32 +32,30 @@ export const defaultCodexConfig: CodexIntegrationConfig = {
 export function loadCodexConfig(): CodexIntegrationConfig {
   try {
     const saved = window.localStorage.getItem(CODEX_SETTINGS_STORAGE_KEY);
-    const sessionApiKey = window.sessionStorage.getItem(CODEX_SESSION_API_KEY) || '';
 
     if (!saved) {
       return {
         ...defaultCodexConfig,
-        apiKey: sessionApiKey,
+        apiKey: '',
       };
     }
 
     return {
       ...defaultCodexConfig,
       ...(JSON.parse(saved) as Partial<CodexIntegrationConfig>),
-      apiKey: sessionApiKey,
+      apiKey: '',
     };
   } catch {
     return defaultCodexConfig;
   }
 }
 
-export function persistCodexConfig(config: CodexIntegrationConfig): void {
-  if (config.apiKey) {
-    window.sessionStorage.setItem(CODEX_SESSION_API_KEY, config.apiKey);
-  } else {
-    window.sessionStorage.removeItem(CODEX_SESSION_API_KEY);
-  }
+export async function hydrateCodexApiKey(): Promise<string> {
+  return getSessionSecret(CODEX_SESSION_API_KEY);
+}
 
+export async function persistCodexConfig(config: CodexIntegrationConfig): Promise<void> {
+  await setSessionSecret(CODEX_SESSION_API_KEY, config.apiKey);
   const safeConfig: CodexIntegrationConfig = {
     ...config,
     apiKey: '',

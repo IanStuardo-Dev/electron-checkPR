@@ -14,9 +14,24 @@ export const defaultConnectionConfig: SavedConnectionConfig = {
   targetReviewer: '',
 };
 
+async function getSessionSecret(key: string): Promise<string> {
+  const response = await window.electronApi.invoke('session-secrets:get', key) as { ok: boolean; data?: string; error?: string };
+  if (!response.ok) {
+    throw new Error(response.error || 'No fue posible leer el secreto de sesion.');
+  }
+
+  return response.data || '';
+}
+
+async function setSessionSecret(key: string, value: string): Promise<void> {
+  const response = await window.electronApi.invoke('session-secrets:set', { key, value }) as { ok: boolean; error?: string };
+  if (!response.ok) {
+    throw new Error(response.error || 'No fue posible persistir el secreto de sesion.');
+  }
+}
+
 export function loadConnectionConfig(): SavedConnectionConfig {
   try {
-    const sessionPat = window.sessionStorage.getItem(DASHBOARD_SESSION_PAT_KEY) || '';
     const savedSessionConfig = window.sessionStorage.getItem(DASHBOARD_SESSION_CONFIG_KEY);
     window.localStorage.removeItem(DASHBOARD_STORAGE_KEY);
     window.localStorage.removeItem(DASHBOARD_SAVED_CONTEXTS_KEY);
@@ -24,19 +39,19 @@ export function loadConnectionConfig(): SavedConnectionConfig {
     return {
       ...defaultConnectionConfig,
       ...(savedSessionConfig ? (JSON.parse(savedSessionConfig) as Partial<SavedConnectionConfig>) : {}),
-      personalAccessToken: sessionPat,
+      personalAccessToken: '',
     };
   } catch {
     return defaultConnectionConfig;
   }
 }
 
-export function persistConnectionConfig(config: SavedConnectionConfig): void {
-  if (config.personalAccessToken) {
-    window.sessionStorage.setItem(DASHBOARD_SESSION_PAT_KEY, config.personalAccessToken);
-  } else {
-    window.sessionStorage.removeItem(DASHBOARD_SESSION_PAT_KEY);
-  }
+export async function hydrateConnectionSecret(): Promise<string> {
+  return getSessionSecret(DASHBOARD_SESSION_PAT_KEY);
+}
+
+export async function persistConnectionConfig(config: SavedConnectionConfig): Promise<void> {
+  await setSessionSecret(DASHBOARD_SESSION_PAT_KEY, config.personalAccessToken);
   const safeConfig: SavedConnectionConfig = {
     ...config,
     personalAccessToken: '',

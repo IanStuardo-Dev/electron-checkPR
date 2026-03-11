@@ -18,6 +18,8 @@ const ALLOWED_CHANNELS = new Set([
   'gitlab:openExternal',
   'analysis:runRepositoryAnalysis',
   'analysis:cancelRepositoryAnalysis',
+  'session-secrets:get',
+  'session-secrets:set',
 ]);
 
 export type ElectronInvokeChannel = typeof ALLOWED_CHANNELS extends Set<infer T> ? T : never;

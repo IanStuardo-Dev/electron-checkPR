@@ -194,6 +194,28 @@ async function requestAzureJson<T>(url: string, personalAccessToken: string, con
   return readAzureResponse<T>(response, context);
 }
 
+async function requestAzureJsonResponse<T>(
+  url: string,
+  personalAccessToken: string,
+  context: string,
+): Promise<{ data: T; headers: Headers }> {
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Basic ${encodePat(personalAccessToken)}`,
+      Accept: 'application/json',
+    },
+  });
+
+  return {
+    data: await readAzureResponse<T>(response, context),
+    headers: response.headers,
+  };
+}
+
+function getAzureContinuationToken(headers: Headers): string | null {
+  return headers.get('x-ms-continuationtoken');
+}
+
 async function requestAzureText(url: string, personalAccessToken: string, context: string): Promise<string> {
   const response = await fetch(url, {
     headers: {
@@ -224,14 +246,29 @@ export class PullRequestService {
       throw new Error('Organization and personal access token are required.');
     }
 
-    const requestUrl = `https://dev.azure.com/${encodeURIComponent(organization)}/_apis/projects?api-version=${AZURE_API_VERSION}`;
-    const payload = await requestAzureJson<AzureProjectsResponse>(requestUrl, personalAccessToken, 'projects request');
+    const projects: AzureProject[] = [];
+    let continuationToken: string | null = null;
 
-    return payload.value.map((project) => ({
-      id: project.id,
-      name: project.name,
-      state: project.state,
-    }));
+    do {
+      const query = new URLSearchParams({
+        'api-version': AZURE_API_VERSION,
+      });
+
+      if (continuationToken) {
+        query.set('continuationToken', continuationToken);
+      }
+
+      const requestUrl = `https://dev.azure.com/${encodeURIComponent(organization)}/_apis/projects?${query.toString()}`;
+      const response = await requestAzureJsonResponse<AzureProjectsResponse>(requestUrl, personalAccessToken, 'projects request');
+      projects.push(...response.data.value.map((project) => ({
+        id: project.id,
+        name: project.name,
+        state: project.state,
+      })));
+      continuationToken = getAzureContinuationToken(response.headers);
+    } while (continuationToken);
+
+    return projects;
   }
 
   async getRepositories(config: AzureConnectionConfig): Promise<AzureRepository[]> {
@@ -241,15 +278,30 @@ export class PullRequestService {
       throw new Error('Organization, project, and personal access token are required.');
     }
 
-    const requestUrl = `https://dev.azure.com/${encodeURIComponent(organization)}/${encodeURIComponent(project)}/_apis/git/repositories?api-version=${AZURE_API_VERSION}`;
-    const payload = await requestAzureJson<AzureRepositoriesResponse>(requestUrl, personalAccessToken, 'repositories request');
+    const repositories: AzureRepository[] = [];
+    let continuationToken: string | null = null;
 
-    return payload.value.map((repository) => ({
-      id: repository.id,
-      name: repository.name,
-      webUrl: repository.webUrl,
-      defaultBranch: repository.defaultBranch,
-    }));
+    do {
+      const query = new URLSearchParams({
+        'api-version': AZURE_API_VERSION,
+      });
+
+      if (continuationToken) {
+        query.set('continuationToken', continuationToken);
+      }
+
+      const requestUrl = `https://dev.azure.com/${encodeURIComponent(organization)}/${encodeURIComponent(project)}/_apis/git/repositories?${query.toString()}`;
+      const response = await requestAzureJsonResponse<AzureRepositoriesResponse>(requestUrl, personalAccessToken, 'repositories request');
+      repositories.push(...response.data.value.map((repository) => ({
+        id: repository.id,
+        name: repository.name,
+        webUrl: repository.webUrl,
+        defaultBranch: repository.defaultBranch,
+      })));
+      continuationToken = getAzureContinuationToken(response.headers);
+    } while (continuationToken);
+
+    return repositories;
   }
 
   async getBranches(config: AzureConnectionConfig): Promise<AzureBranch[]> {
@@ -288,34 +340,49 @@ export class PullRequestService {
     }
 
     const requestUrl = `https://dev.azure.com/${encodeURIComponent(organization)}/${encodeURIComponent(project)}/_apis/git/pullrequests?${query.toString()}`;
-    const payload = await requestAzureJson<AzurePullRequestResponse>(requestUrl, personalAccessToken, 'pull requests request');
+    const pullRequests: PullRequest[] = [];
+    let skip = 0;
 
-    return payload.value.map((pr) => ({
-      id: pr.pullRequestId,
-      title: pr.title,
-      description: pr.description || 'No description provided.',
-      status: pr.status,
-      repository: pr.repository?.name || 'Unknown repository',
-      createdAt: pr.creationDate,
-      sourceBranch: normalizeBranchName(pr.sourceRefName),
-      targetBranch: normalizeBranchName(pr.targetRefName),
-      url: pr.repository?.webUrl
-        ? `${pr.repository.webUrl}/pullrequest/${pr.pullRequestId}`
-        : pr.url,
-      isDraft: Boolean(pr.isDraft),
-      mergeStatus: pr.mergeStatus || 'unknown',
-      createdBy: {
-        displayName: pr.createdBy?.displayName || 'Unknown author',
-        uniqueName: pr.createdBy?.uniqueName,
-        imageUrl: pr.createdBy?.imageUrl,
-      },
-      reviewers: (pr.reviewers || []).map((reviewer) => ({
-        displayName: reviewer.displayName,
-        uniqueName: reviewer.uniqueName,
-        vote: reviewer.vote,
-        isRequired: reviewer.isRequired,
-      })),
-    }));
+    while (true) {
+      query.set('$skip', String(skip));
+      const requestUrl = `https://dev.azure.com/${encodeURIComponent(organization)}/${encodeURIComponent(project)}/_apis/git/pullrequests?${query.toString()}`;
+      const payload = await requestAzureJson<AzurePullRequestResponse>(requestUrl, personalAccessToken, 'pull requests request');
+
+      pullRequests.push(...payload.value.map((pr) => ({
+        id: pr.pullRequestId,
+        title: pr.title,
+        description: pr.description || 'No description provided.',
+        status: pr.status,
+        repository: pr.repository?.name || 'Unknown repository',
+        createdAt: pr.creationDate,
+        sourceBranch: normalizeBranchName(pr.sourceRefName),
+        targetBranch: normalizeBranchName(pr.targetRefName),
+        url: pr.repository?.webUrl
+          ? `${pr.repository.webUrl}/pullrequest/${pr.pullRequestId}`
+          : pr.url,
+        isDraft: Boolean(pr.isDraft),
+        mergeStatus: pr.mergeStatus || 'unknown',
+        createdBy: {
+          displayName: pr.createdBy?.displayName || 'Unknown author',
+          uniqueName: pr.createdBy?.uniqueName,
+          imageUrl: pr.createdBy?.imageUrl,
+        },
+        reviewers: (pr.reviewers || []).map((reviewer) => ({
+          displayName: reviewer.displayName,
+          uniqueName: reviewer.uniqueName,
+          vote: reviewer.vote,
+          isRequired: reviewer.isRequired,
+        })),
+      })));
+
+      if (payload.value.length < 100) {
+        break;
+      }
+
+      skip += 100;
+    }
+
+    return pullRequests;
   }
 
   async getRepositorySnapshot(

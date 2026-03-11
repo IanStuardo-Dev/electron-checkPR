@@ -123,6 +123,34 @@ async function requestGitLabJson<T>(url: string, personalAccessToken: string, co
   return readGitLabResponse<T>(response, context);
 }
 
+async function requestGitLabPaginated<T>(
+  buildUrl: (page: number, perPage: number) => string,
+  personalAccessToken: string,
+  context: string,
+  perPage = 100,
+): Promise<T[]> {
+  const items: T[] = [];
+  let page = 1;
+
+  while (true) {
+    const payload = await requestGitLabJson<T[]>(
+      buildUrl(page, perPage),
+      personalAccessToken,
+      `${context} (page ${page})`,
+    );
+
+    items.push(...payload);
+
+    if (payload.length < perPage) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  return items;
+}
+
 async function requestPaginatedGitLabTree(
   project: string,
   branchName: string,
@@ -237,8 +265,8 @@ export class GitLabRepositoryService {
       throw new Error('Namespace/group y token son obligatorios para GitLab.');
     }
 
-    const payload = await requestGitLabJson<GitLabProjectResponse[]>(
-      `${GITLAB_API_BASE_URL}/projects?membership=true&simple=true&per_page=100&order_by=last_activity_at&sort=desc`,
+    const payload = await requestGitLabPaginated<GitLabProjectResponse>(
+      (page, perPage) => `${GITLAB_API_BASE_URL}/projects?membership=true&simple=true&per_page=${perPage}&page=${page}&order_by=last_activity_at&sort=desc`,
       personalAccessToken,
       'projects request',
     );
@@ -283,10 +311,11 @@ export class GitLabRepositoryService {
 
     const mergeRequests = await Promise.all(
       targetProjects.map(async (targetProject) => {
-        const payload = await requestGitLabJson<GitLabMergeRequestResponse[]>(
-          `${GITLAB_API_BASE_URL}/projects/${encodeURIComponent(targetProject.id)}/merge_requests?state=opened&scope=all&per_page=50&order_by=created_at&sort=desc`,
+        const payload = await requestGitLabPaginated<GitLabMergeRequestResponse>(
+          (page, perPage) => `${GITLAB_API_BASE_URL}/projects/${encodeURIComponent(targetProject.id)}/merge_requests?state=opened&scope=all&per_page=${perPage}&page=${page}&order_by=created_at&sort=desc`,
           personalAccessToken,
           `merge requests request (${targetProject.name})`,
+          50,
         );
 
         return Promise.all(payload.map(async (mergeRequest) => {

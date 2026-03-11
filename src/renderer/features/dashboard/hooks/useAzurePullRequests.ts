@@ -5,6 +5,7 @@ import { fetchProjects, fetchPullRequests, fetchRepositories, openReviewItem } f
 import { persistDashboardSnapshot } from '../history';
 import { buildDashboardSummary } from '../metrics';
 import {
+  hydrateConnectionSecret,
   loadConnectionConfig,
   persistConnectionConfig,
   persistSavedAzureContext,
@@ -247,13 +248,43 @@ export function useRepositorySource() {
   }, [activeProvider.name, refreshProjects, refreshRepositories, scopeLabel, updateDiagnostics]);
 
   React.useEffect(() => {
+    void hydrateConnectionSecret().then((personalAccessToken) => {
+      if (!personalAccessToken) {
+        return;
+      }
+
+      setConfig((current) => {
+        const nextConfig = {
+          ...current,
+          personalAccessToken,
+        };
+        configRef.current = nextConfig;
+        return nextConfig;
+      });
+
+      const nextConfig = {
+        ...configRef.current,
+        personalAccessToken,
+      };
+      configRef.current = nextConfig;
+
+      const hasMinimumConfig = nextConfig.provider === 'github' || nextConfig.provider === 'gitlab'
+        ? Boolean(nextConfig.organization && nextConfig.personalAccessToken)
+        : Boolean(nextConfig.organization && nextConfig.project && nextConfig.personalAccessToken);
+
+      if (hasMinimumConfig) {
+        void refreshPullRequests();
+      }
+    }).catch(() => undefined);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  React.useEffect(() => {
     const hasMinimumConfig = config.provider === 'github' || config.provider === 'gitlab'
       ? Boolean(config.organization && config.personalAccessToken)
       : Boolean(config.organization && config.project && config.personalAccessToken);
 
-    if (hasMinimumConfig) {
-      void refreshPullRequests();
-    } else {
+    if (!hasMinimumConfig) {
       setProjects([]);
       setRepositories([]);
       setHasSuccessfulConnection(false);
@@ -262,7 +293,7 @@ export function useRepositorySource() {
 
   React.useEffect(() => {
     configRef.current = config;
-    persistConnectionConfig(config);
+    void persistConnectionConfig(config);
   }, [config]);
 
   React.useEffect(() => {

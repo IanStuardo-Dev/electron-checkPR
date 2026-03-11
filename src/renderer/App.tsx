@@ -9,6 +9,7 @@ import AnalysisDashboard from './components/CodeAnalysis/AnalysisDashboard';
 import Sidebar from './components/Layout/Sidebar';
 import Settings from './pages/Settings';
 import RepositoryAnalysis from './pages/RepositoryAnalysis';
+import { environment } from '../config/environment';
 
 const App = () => {
   return (
@@ -19,18 +20,18 @@ const App = () => {
           <main className="min-w-0 flex-1 px-6 py-8 lg:px-10">
           <Routes>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/pr/:id" element={<PRDetail />} />
             <Route path="/history" element={<History />} />
             <Route path="/repository-analysis" element={<RepositoryAnalysis />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/analysis" element={
+            <Route path="/pr/:id" element={environment.enableDemoRoutes ? <PRDetail /> : <Navigate to="/" replace />} />
+            <Route path="/analysis" element={environment.enableDemoRoutes ? (
               <div>
                 <h1>Testing Route</h1>
                 <AnalysisDashboard />
               </div>
-            } />
-            <Route path="/notifications" element={<NotificationTest />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            ) : <Navigate to="/" replace />} />
+            <Route path="/notifications" element={environment.enableDemoRoutes ? <NotificationTest /> : <Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           </main>
         </div>
