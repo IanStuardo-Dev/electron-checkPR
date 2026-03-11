@@ -8,7 +8,6 @@ import type {
   SnapshotProviderPort,
 } from './repository-analysis.ports';
 import { RepositoryAnalysisResponseParser } from './repository-analysis.response-parser';
-import { RepositoryAnalysisSnapshotProvider } from './repository-analysis.snapshot-provider';
 
 interface ActiveAnalysisRun {
   cancelled: boolean;
@@ -22,7 +21,7 @@ export class RepositoryAnalysisService {
   private activeRuns = new Map<string, ActiveAnalysisRun>();
 
   constructor(
-    private readonly snapshotProvider: SnapshotProviderPort = new RepositoryAnalysisSnapshotProvider(),
+    private readonly snapshotProvider: SnapshotProviderPort,
     private readonly promptBuilder: AnalysisPromptBuilderPort = new RepositoryAnalysisPromptBuilder(),
     private readonly analysisClient: AnalysisClientPort = new OpenAIRepositoryAnalysisClient(),
     private readonly responseParser: AnalysisResponseParserPort = new RepositoryAnalysisResponseParser(),
@@ -134,5 +133,3 @@ export class RepositoryAnalysisService {
     this.activeRuns.delete(requestId);
   }
 }
-
-export const repositoryAnalysisService = new RepositoryAnalysisService();

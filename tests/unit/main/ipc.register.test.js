@@ -18,10 +18,13 @@ const { registerIpcHandlers } = require('../../../src/main/ipc/register');
 
 describe('ipc register', () => {
   test('registra todos los dominios ipc', () => {
-    registerIpcHandlers();
+    const providerRegistry = { get: jest.fn() };
+    const repositoryAnalysisService = { runAnalysis: jest.fn(), cancelAnalysis: jest.fn() };
 
-    expect(registerRepositoryProviderIpc).toHaveBeenCalled();
-    expect(registerAnalysisIpc).toHaveBeenCalled();
+    registerIpcHandlers(providerRegistry, repositoryAnalysisService);
+
+    expect(registerRepositoryProviderIpc).toHaveBeenCalledWith(providerRegistry);
+    expect(registerAnalysisIpc).toHaveBeenCalledWith(repositoryAnalysisService);
     expect(SessionSecretsStore).toHaveBeenCalled();
     expect(registerSessionSecretsIpc).toHaveBeenCalled();
   });

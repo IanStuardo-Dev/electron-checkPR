@@ -1,6 +1,6 @@
 import type { RepositoryAnalysisRequest } from '../../types/analysis';
 import type { RepositoryProviderKind } from '../../types/repository';
-import { repositoryAnalysisService } from '../../services/analysis/repository-analysis.service';
+import { RepositoryAnalysisService } from '../../services/analysis/repository-analysis.service';
 import { registerHandle } from './shared';
 
 function readString(value: unknown, fieldName: string): string {
@@ -77,7 +77,7 @@ export function sanitizeAnalysisPayload(payload: unknown): RepositoryAnalysisReq
   };
 }
 
-export function registerAnalysisIpc(): void {
+export function registerAnalysisIpc(repositoryAnalysisService: RepositoryAnalysisService): void {
   registerHandle<unknown, unknown>('analysis:runRepositoryAnalysis', async (payload) => (
     repositoryAnalysisService.runAnalysis(sanitizeAnalysisPayload(payload))
   ));

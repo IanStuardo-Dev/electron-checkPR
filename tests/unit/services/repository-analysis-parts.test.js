@@ -86,7 +86,9 @@ describe('repository analysis parts', () => {
     const provider = {
       getRepositorySnapshot: jest.fn().mockResolvedValue({ files: [] }),
     };
-    const snapshotProvider = new RepositoryAnalysisSnapshotProvider(() => provider);
+    const snapshotProvider = new RepositoryAnalysisSnapshotProvider({
+      get: jest.fn().mockReturnValue(provider),
+    });
 
     await snapshotProvider.getSnapshot({
       source: {

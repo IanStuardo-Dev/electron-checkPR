@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">61.53% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>7/7</span>
+                <span class='fraction'>8/13</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">60% </span>
+                <span class="strong">33.33% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>3/5</span>
+                <span class='fraction'>3/9</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">50% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>2/2</span>
+                <span class='fraction'>2/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">66.66% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>7/7</span>
+                <span class='fraction'>8/12</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line medium'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -92,15 +92,15 @@
 <a name='L27'></a><a href='#L27'>27</a>
 <a name='L28'></a><a href='#L28'>28</a>
 <a name='L29'></a><a href='#L29'>29</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -108,41 +108,41 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import type { RepositoryAnalysisRequest } from '../../types/analysis';
 import { getRepositoryProviderPort } from '../providers/repository-provider.registry';
 import type { SnapshotProviderPort } from './repository-analysis.ports';
 &nbsp;
 export class RepositoryAnalysisSnapshotProvider implements SnapshotProviderPort {
-  constructor(
-    private readonly providerResolver: typeof getRepositoryProviderPort = getRepositoryProviderPort,
-  ) {}
+<span class="cstat-no" title="statement not covered" >  constructor(</span>
+    private readonly <span class="fstat-no" title="function not covered" >providerResolver:</span> typeof getRepositoryProviderPort = <span class="branch-0 cbranch-no" title="branch not covered" >getRepositoryProviderPort,</span>
+  ) {<span class="fstat-no" title="function not covered" >}</span>
 &nbsp;
-  async getSnapshot(request: RepositoryAnalysisRequest) {
-    const provider = this.providerResolver(request.source.provider);
+  async getSnapshot(<span class="cstat-no" title="statement not covered" >request: RepositoryAnalysisRequest) {</span>
+    const provider = this<span class="cstat-no" title="statement not covered" >.providerResolver(request.source.provider);</span>
     const sourceConfig = {
       ...request.source,
       repositoryId: request.repositoryId,
       project: request.source.provider === 'azure-devops'
-        ? <span class="branch-0 cbranch-no" title="branch not covered" >request.source.project</span>
+        ? <span class="branch-0 cbranch-no" title="branch not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >request.source.project</span></span>
         : request.repositoryId || <span class="branch-1 cbranch-no" title="branch not covered" >request.source.project,</span>
-    };
+    };<span class="cstat-no" title="statement not covered" ></span>
 &nbsp;
     const options = {
       branchName: request.branchName,
       maxFiles: request.maxFilesPerRun,
       includeTests: request.includeTests,
-    };
+    }<span class="cstat-no" title="statement not covered" >;</span>
 &nbsp;
     return provider.getRepositorySnapshot(sourceConfig, options);
   }
@@ -154,7 +154,7 @@ export class RepositoryAnalysisSnapshotProvider implements SnapshotProviderPort 
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-11T20:14:35.936Z
+                at 2026-03-11T21:32:49.036Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

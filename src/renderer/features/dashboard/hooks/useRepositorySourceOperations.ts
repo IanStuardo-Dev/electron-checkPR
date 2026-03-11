@@ -12,6 +12,12 @@ interface UseRepositorySourceOperationsOptions {
   activeProviderName: string;
   scopeLabel: string;
   onPersistSnapshot: (pullRequests: ReviewItem[], capturedAt: Date, scopeLabel: string, targetReviewer?: string) => void;
+  dependencies?: {
+    useStateHook?: typeof useRepositorySourceState;
+    useDiagnosticsHook?: typeof useRepositoryDiagnostics;
+    useActionsHook?: typeof useRepositorySourceActions;
+    useApiHook?: typeof useRepositorySourceApi;
+  };
 }
 
 export function useRepositorySourceOperations({
@@ -20,14 +26,20 @@ export function useRepositorySourceOperations({
   activeProviderName,
   scopeLabel,
   onPersistSnapshot,
+  dependencies,
 }: UseRepositorySourceOperationsOptions) {
-  const state = useRepositorySourceState(config.provider);
-  const diagnostics = useRepositoryDiagnostics(config);
-  const actions = useRepositorySourceActions({
+  const useStateHook = dependencies?.useStateHook ?? useRepositorySourceState;
+  const useDiagnosticsHook = dependencies?.useDiagnosticsHook ?? useRepositoryDiagnostics;
+  const useActionsHook = dependencies?.useActionsHook ?? useRepositorySourceActions;
+  const useApiHook = dependencies?.useApiHook ?? useRepositorySourceApi;
+
+  const state = useStateHook(config.provider);
+  const diagnostics = useDiagnosticsHook(config);
+  const actions = useActionsHook({
     state,
     diagnostics,
   });
-  const api = useRepositorySourceApi({
+  const api = useApiHook({
     config,
     configRef,
     activeProviderName,

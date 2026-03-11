@@ -29,25 +29,3 @@ export class RepositoryProviderRegistry {
     this.providers.clear();
   }
 }
-
-const defaultRepositoryProviderRegistry = new RepositoryProviderRegistry();
-
-export function registerRepositoryProviderPort(provider: RepositoryProviderPort): void {
-  defaultRepositoryProviderRegistry.register(provider);
-}
-
-export function registerRepositoryProviderPorts(providers: RepositoryProviderPort[]): void {
-  defaultRepositoryProviderRegistry.registerMany(providers);
-}
-
-export function getRepositoryProviderPort(kind: RepositoryProviderKind): RepositoryProviderPort {
-  return defaultRepositoryProviderRegistry.get(kind);
-}
-
-export function getRepositoryProviderPorts(): RepositoryProviderPort[] {
-  return defaultRepositoryProviderRegistry.list();
-}
-
-export function resetRepositoryProviderRegistry(): void {
-  defaultRepositoryProviderRegistry.clear();
-}

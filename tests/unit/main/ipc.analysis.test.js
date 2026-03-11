@@ -2,22 +2,12 @@ jest.mock('../../../src/main/ipc/shared', () => ({
   registerHandle: jest.fn(),
 }));
 
-jest.mock('../../../src/services/analysis/repository-analysis.service', () => ({
-  repositoryAnalysisService: {
-    runAnalysis: jest.fn(),
-    cancelAnalysis: jest.fn(),
-  },
-}));
-
 const { registerHandle } = require('../../../src/main/ipc/shared');
-const { repositoryAnalysisService } = require('../../../src/services/analysis/repository-analysis.service');
 const { sanitizeAnalysisPayload, registerAnalysisIpc } = require('../../../src/main/ipc/analysis');
 
 describe('analysis ipc', () => {
   beforeEach(() => {
     registerHandle.mockReset();
-    repositoryAnalysisService.runAnalysis.mockReset();
-    repositoryAnalysisService.cancelAnalysis.mockReset();
   });
 
   test('sanitizeAnalysisPayload normaliza limites y directivas', () => {
@@ -51,8 +41,12 @@ describe('analysis ipc', () => {
   });
 
   test('registerAnalysisIpc registra run y cancel', async () => {
-    repositoryAnalysisService.runAnalysis.mockResolvedValue({ summary: 'ok' });
-    registerAnalysisIpc();
+    const repositoryAnalysisService = {
+      runAnalysis: jest.fn().mockResolvedValue({ summary: 'ok' }),
+      cancelAnalysis: jest.fn(),
+    };
+
+    registerAnalysisIpc(repositoryAnalysisService);
 
     expect(registerHandle).toHaveBeenCalledTimes(2);
     const runHandler = registerHandle.mock.calls[0][1];

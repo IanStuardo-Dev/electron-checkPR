@@ -1,16 +1,10 @@
 const {
   RepositoryProviderRegistry,
-  getRepositoryProviderPort,
-  registerRepositoryProviderPort,
-  resetRepositoryProviderRegistry,
 } = require('../../../src/services/providers/repository-provider.registry');
 
 describe('RepositoryProviderRegistry', () => {
-  beforeEach(() => {
-    resetRepositoryProviderRegistry();
-  });
-
   test('registra y resuelve providers', () => {
+    const registry = new RepositoryProviderRegistry();
     const provider = {
       kind: 'github',
       getProjects: jest.fn(),
@@ -20,9 +14,9 @@ describe('RepositoryProviderRegistry', () => {
       getRepositorySnapshot: jest.fn(),
     };
 
-    registerRepositoryProviderPort(provider);
+    registry.register(provider);
 
-    expect(getRepositoryProviderPort('github')).toBe(provider);
+    expect(registry.get('github')).toBe(provider);
   });
 
   test('permite usar una instancia aislada del registry', () => {

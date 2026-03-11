@@ -2,7 +2,6 @@ import { pullRequestService } from '../azure/pr.service';
 import { gitHubRepositoryService } from '../github/repository.service';
 import { gitLabRepositoryService } from '../gitlab/repository.service';
 import type { RepositoryProviderPort } from './repository-provider.port';
-import { registerRepositoryProviderPorts } from './repository-provider.registry';
 import type {
   RepositoryBranch,
   RepositoryConnectionConfig,
@@ -34,18 +33,10 @@ function createProviderPort(
   };
 }
 
-let defaultProvidersRegistered = false;
-
-export function registerDefaultRepositoryProviders(): void {
-  if (defaultProvidersRegistered) {
-    return;
-  }
-
-  registerRepositoryProviderPorts([
+export function buildDefaultRepositoryProviderPorts(): RepositoryProviderPort[] {
+  return [
     createProviderPort('azure-devops', pullRequestService),
     createProviderPort('github', gitHubRepositoryService),
     createProviderPort('gitlab', gitLabRepositoryService),
-  ]);
-
-  defaultProvidersRegistered = true;
+  ];
 }

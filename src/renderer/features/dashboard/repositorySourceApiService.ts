@@ -6,20 +6,12 @@ import type {
   RepositorySourceStatePort,
 } from './repositorySourceApiPorts';
 import {
-  clearRepositoryDiagnostics,
-  failRepositoryDiagnostics,
-  getRepositorySourceErrorMessage,
-} from './repositorySourceDiagnosticsService';
-import {
-  applyProjectsFailure,
-  applyProjectsSuccess,
-  applyPullRequestsFailure,
-  applyPullRequestsSuccess,
-  applyRepositoriesFailure,
-  applyRepositoriesSuccess,
-  clearProjectsState,
-  clearRepositoriesState,
-} from './repositorySourceStateService';
+  createDiscoverProjectsUseCase,
+  createFetchProjectsUseCase,
+  createFetchRepositoriesUseCase,
+  createOpenExternalLinkUseCase,
+  createSyncPullRequestsUseCase,
+} from './repositorySourceUseCases';
 import type { SavedConnectionConfig } from './types';
 
 interface CreateRepositorySourceApiOptions {
@@ -41,129 +33,46 @@ export function createRepositorySourceApi({
   snapshot,
   fetcher,
 }: CreateRepositorySourceApiOptions) {
-  async function refreshProjects(nextConfig = configRef.current) {
-    if (!nextConfig.provider || !nextConfig.organization || !nextConfig.personalAccessToken) {
-      clearProjectsState(state);
-      return [];
-    }
+  const fetchProjectsUseCase = createFetchProjectsUseCase({
+    fetcher,
+    state,
+    diagnostics,
+    activeProviderName,
+  });
 
-    state.setProjectsLoading(true);
-    clearRepositoryDiagnostics(diagnostics, 'projects', nextConfig);
+  const fetchRepositoriesUseCase = createFetchRepositoriesUseCase({
+    fetcher,
+    state,
+    diagnostics,
+    activeProviderName,
+  });
 
-    try {
-      const result = await fetcher.fetchProjects(nextConfig);
-      applyProjectsSuccess(state, nextConfig.provider, result);
-      return result;
-    } catch (fetchError) {
-      const message = getRepositorySourceErrorMessage(activeProviderName, fetchError);
-      applyProjectsFailure(state, message);
-      failRepositoryDiagnostics(diagnostics, 'projects', nextConfig, message);
-      return [];
-    } finally {
-      state.setProjectsLoading(false);
-    }
-  }
+  const syncPullRequestsUseCase = createSyncPullRequestsUseCase({
+    fetcher,
+    state,
+    diagnostics,
+    snapshot,
+    activeProviderName,
+    scopeLabel,
+  });
 
-  async function refreshRepositories(nextConfig = configRef.current) {
-    if (!nextConfig.provider) {
-      clearRepositoriesState(state);
-      return [];
-    }
+  const discoverProjectsUseCase = createDiscoverProjectsUseCase({
+    state,
+    diagnostics,
+    activeProviderName,
+  });
 
-    const needsOnlyOrganization = nextConfig.provider === 'github' || nextConfig.provider === 'gitlab';
-    const hasMinimumConfig = needsOnlyOrganization
-      ? Boolean(nextConfig.organization && nextConfig.personalAccessToken)
-      : Boolean(nextConfig.organization && nextConfig.project && nextConfig.personalAccessToken);
-
-    if (!hasMinimumConfig) {
-      clearRepositoriesState(state);
-      return [];
-    }
-
-    state.setRepositoriesLoading(true);
-    clearRepositoryDiagnostics(diagnostics, 'repositories', nextConfig);
-
-    try {
-      const result = await fetcher.fetchRepositories(nextConfig);
-      applyRepositoriesSuccess(state, result);
-      return result;
-    } catch (fetchError) {
-      const message = getRepositorySourceErrorMessage(activeProviderName, fetchError);
-      failRepositoryDiagnostics(diagnostics, 'repositories', nextConfig, message);
-      applyRepositoriesFailure(state, message);
-      return [];
-    } finally {
-      state.setRepositoriesLoading(false);
-    }
-  }
-
-  async function refreshPullRequests() {
-    const activeConfig = configRef.current;
-
-    if (!activeConfig.provider) {
-      state.setError('Selecciona un provider antes de sincronizar.');
-      state.setHasSuccessfulConnection(false);
-      return;
-    }
-
-    state.setIsLoading(true);
-    state.setError(null);
-    clearRepositoryDiagnostics(diagnostics, 'pullRequests', activeConfig);
-
-    try {
-      await refreshProjects(activeConfig);
-      await refreshRepositories(activeConfig);
-      const result = await fetcher.fetchPullRequests(activeConfig);
-      const snapshotTimestamp = applyPullRequestsSuccess(state, result);
-      snapshot.persistSnapshot(result, snapshotTimestamp, scopeLabel, activeConfig.targetReviewer);
-    } catch (fetchError) {
-      const message = getRepositorySourceErrorMessage(activeProviderName, fetchError);
-      failRepositoryDiagnostics(diagnostics, 'pullRequests', activeConfig, message);
-      applyPullRequestsFailure(state, message);
-    } finally {
-      state.setIsLoading(false);
-    }
-  }
-
-  async function discoverProjects() {
-    const activeConfig = configRef.current;
-
-    if (!activeConfig.provider) {
-      const message = 'Selecciona un provider antes de cargar proyectos.';
-      state.setError(message);
-      failRepositoryDiagnostics(diagnostics, 'projects', activeConfig, message);
-      return;
-    }
-
-    if (!activeConfig.organization.trim() || !activeConfig.personalAccessToken.trim()) {
-      const message = `El alcance principal y el token son obligatorios para cargar ${activeProviderName}.`;
-      state.setError(message);
-      failRepositoryDiagnostics(diagnostics, 'projects', activeConfig, message);
-      return;
-    }
-
-    state.setError(null);
-    await refreshProjects(activeConfig);
-  }
-
-  async function openPullRequest(url: string) {
-    try {
-      if (!configRef.current.provider) {
-        throw new Error('Selecciona un provider antes de abrir un PR.');
-      }
-
-      await fetcher.openReviewItem(url, configRef.current);
-    } catch (openError) {
-      const message = openError instanceof Error ? openError.message : 'Unable to open pull request.';
-      state.setError(message);
-    }
-  }
+  const openExternalLinkUseCase = createOpenExternalLinkUseCase({
+    fetcher,
+    state,
+    configRef,
+  });
 
   return {
-    refreshProjects,
-    refreshRepositories,
-    refreshPullRequests,
-    discoverProjects,
-    openPullRequest,
+    refreshProjects: (nextConfig = configRef.current) => fetchProjectsUseCase(nextConfig),
+    refreshRepositories: (nextConfig = configRef.current) => fetchRepositoriesUseCase(nextConfig),
+    refreshPullRequests: () => syncPullRequestsUseCase(configRef.current, fetchProjectsUseCase, fetchRepositoriesUseCase),
+    discoverProjects: () => discoverProjectsUseCase(configRef.current, fetchProjectsUseCase),
+    openPullRequest: (url: string) => openExternalLinkUseCase(url),
   };
 }

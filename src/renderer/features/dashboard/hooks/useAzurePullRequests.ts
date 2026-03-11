@@ -3,20 +3,16 @@ import type { SavedConnectionConfig } from '../types';
 import { useRepositorySourceBootstrap } from './useRepositorySourceBootstrap';
 import { useRepositorySourceConfig } from './useRepositorySourceConfig';
 import { useRepositorySourceDerived } from './useRepositorySourceDerived';
+import { useRepositorySourceFacade } from './useRepositorySourceFacade';
 import { useRepositorySourceOperations } from './useRepositorySourceOperations';
 import { useRepositorySourceMetadata } from '../useRepositorySourceMetadata';
 import { useRepositorySourceSnapshotPersistence } from '../useRepositorySourceSnapshotPersistence';
 
-interface RepositorySourceConfigHandlers {
-  onConfigChangeStart: (name: keyof SavedConnectionConfig, value: string) => void;
-  onProjectSelected: (project: string) => void;
-}
-
 export function useRepositorySource() {
-  const configHandlersRef = React.useRef<RepositorySourceConfigHandlers | null>(null);
+  const facadeRef = React.useRef<ReturnType<typeof useRepositorySourceFacade> | null>(null);
   const configHook = useRepositorySourceConfig({
-    onConfigChangeStart: (name, value) => configHandlersRef.current?.onConfigChangeStart(name, value),
-    onProjectSelected: (project) => configHandlersRef.current?.onProjectSelected(project),
+    onConfigChangeStart: (name, value) => facadeRef.current?.current?.onConfigChangeStart(name, value),
+    onProjectSelected: (project) => facadeRef.current?.current?.onProjectSelected(project),
   });
   const { config, configRef, updateConfig, selectProjectConfig, hydrateSecret } = configHook;
   const { activeProviderName, baseScopeLabel } = useRepositorySourceMetadata(config);
@@ -49,10 +45,10 @@ export function useRepositorySource() {
     onPersistSnapshot: persistSnapshot,
   });
 
-  configHandlersRef.current = {
-    onConfigChangeStart: resetForConfigChange,
-    onProjectSelected: selectProject,
-  };
+  facadeRef.current = useRepositorySourceFacade({
+    resetForConfigChange,
+    selectProject,
+  });
   const derived = useRepositorySourceDerived({
     config,
     projects,
