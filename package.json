@@ -10,7 +10,7 @@
     "dev": "NODE_ENV=development npm run start",
     "build:prod": "NODE_ENV=production electron-builder build",
     "test": "npm run build && jest --runInBand",
-    "test:prod": "jest --coverage",
+    "test:prod": "npm run build && jest --coverage --runInBand",
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "analyze:complexity": "cr src/",

@@ -2,6 +2,7 @@ interface RetryOptions {
   retries?: number;
   initialDelayMs?: number;
   shouldRetry?: (error: unknown) => boolean;
+  onRetry?: (attempt: number, error: unknown, delayMs: number) => void;
 }
 
 const DEFAULT_RETRIES = 3;
@@ -34,6 +35,7 @@ export async function retryWithBackoff<T>(
   const retries = options.retries ?? DEFAULT_RETRIES;
   const initialDelayMs = options.initialDelayMs ?? DEFAULT_INITIAL_DELAY_MS;
   const shouldRetry = options.shouldRetry ?? isRetryableHttpError;
+  const onRetry = options.onRetry;
 
   let attempt = 0;
 
@@ -46,6 +48,7 @@ export async function retryWithBackoff<T>(
       }
 
       const delayMs = initialDelayMs * (2 ** attempt);
+      onRetry?.(attempt + 1, error, delayMs);
       attempt += 1;
       await wait(delayMs);
     }

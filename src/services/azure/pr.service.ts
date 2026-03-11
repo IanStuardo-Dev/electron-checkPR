@@ -2,6 +2,7 @@ import type { AzureBranch, AzureConnectionConfig, AzureProject, AzureRepository,
 import type { RepositorySnapshot } from '../../types/analysis';
 import type { RepositorySnapshotOptions } from '../../types/repository';
 import { mapWithConcurrency, retryWithBackoff } from '../shared/request-control';
+import { appendPartialReason, isProbablyBinaryContent, MAX_SNAPSHOT_FILE_BYTES } from '../shared/snapshot-content';
 
 interface AzurePullRequestResponse {
   value: Array<{
@@ -321,6 +322,7 @@ export class PullRequestService {
     config: AzureConnectionConfig,
     options: RepositorySnapshotOptions,
   ): Promise<RepositorySnapshot> {
+    const startedAt = Date.now();
     const { organization, project, personalAccessToken } = getAzureConfig(config);
     const repositoryId = config.repositoryId?.trim();
 
@@ -338,9 +340,29 @@ export class PullRequestService {
       .sort((left, right) => rankPath(right.path) - rankPath(left.path) || left.path.localeCompare(right.path));
 
     const selectedFiles = candidateFiles.slice(0, options.maxFiles);
-    const files = await mapWithConcurrency(selectedFiles, 5, async (file) => {
+    let retryCount = 0;
+    let skippedLargeFiles = 0;
+    let skippedBinaryFiles = 0;
+    const files = (await mapWithConcurrency(selectedFiles, 5, async (file) => {
       const contentUrl = `https://dev.azure.com/${encodeURIComponent(organization)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repositoryId)}/items?path=${encodeURIComponent(file.path)}&versionDescriptor.version=${encodeURIComponent(options.branchName)}&versionDescriptor.versionType=branch&download=false&resolveLfs=true&api-version=${AZURE_API_VERSION}`;
-      const content = await retryWithBackoff(() => requestAzureText(contentUrl, personalAccessToken, `item content request (${file.path})`));
+      const content = await retryWithBackoff(
+        () => requestAzureText(contentUrl, personalAccessToken, `item content request (${file.path})`),
+        {
+          onRetry: () => {
+            retryCount += 1;
+          },
+        },
+      );
+
+      if (Buffer.byteLength(content, 'utf8') > MAX_SNAPSHOT_FILE_BYTES) {
+        skippedLargeFiles += 1;
+        return null;
+      }
+
+      if (isProbablyBinaryContent(content)) {
+        skippedBinaryFiles += 1;
+        return null;
+      }
 
       return {
         path: file.path.replace(/^\//, ''),
@@ -348,7 +370,17 @@ export class PullRequestService {
         size: content.length,
         content,
       };
-    });
+    })).filter((file) => file !== null);
+
+    const partialReason = appendPartialReason(
+      candidateFiles.length > options.maxFiles
+        ? `El snapshot se recorto a ${options.maxFiles} archivos priorizados de ${candidateFiles.length} descubiertos en Azure DevOps.`
+        : undefined,
+      [
+        skippedLargeFiles > 0 ? `Se omitieron ${skippedLargeFiles} archivos por exceder ${Math.round(MAX_SNAPSHOT_FILE_BYTES / 1024)} KB.` : '',
+        skippedBinaryFiles > 0 ? `Se omitieron ${skippedBinaryFiles} archivos por contenido binario o no legible.` : '',
+      ],
+    );
 
     return {
       provider: 'azure-devops',
@@ -356,10 +388,15 @@ export class PullRequestService {
       branch: options.branchName,
       files,
       totalFilesDiscovered: candidateFiles.length,
-      truncated: candidateFiles.length > options.maxFiles,
-      partialReason: candidateFiles.length > options.maxFiles
-        ? `El snapshot se recorto a ${options.maxFiles} archivos priorizados de ${candidateFiles.length} descubiertos en Azure DevOps.`
-        : undefined,
+      truncated: candidateFiles.length > options.maxFiles || skippedLargeFiles > 0 || skippedBinaryFiles > 0,
+      partialReason,
+      metrics: {
+        durationMs: Date.now() - startedAt,
+        retryCount,
+        discardedByPrioritization: Math.max(0, candidateFiles.length - selectedFiles.length),
+        discardedBySize: skippedLargeFiles,
+        discardedByBinaryDetection: skippedBinaryFiles,
+      },
     };
   }
 }

@@ -15,6 +15,13 @@ export interface RepositorySnapshot {
   totalFilesDiscovered: number;
   truncated: boolean;
   partialReason?: string;
+  metrics?: {
+    durationMs: number;
+    retryCount: number;
+    discardedByPrioritization: number;
+    discardedBySize: number;
+    discardedByBinaryDetection: number;
+  };
 }
 
 export interface RepositoryAnalysisRequest {
@@ -57,5 +64,10 @@ export interface RepositoryAnalysisResult {
     filesAnalyzed: number;
     truncated: boolean;
     partialReason?: string;
+    durationMs?: number;
+    retryCount?: number;
+    discardedByPrioritization?: number;
+    discardedBySize?: number;
+    discardedByBinaryDetection?: number;
   };
 }

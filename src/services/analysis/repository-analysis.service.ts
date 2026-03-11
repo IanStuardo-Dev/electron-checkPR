@@ -308,6 +308,11 @@ export class RepositoryAnalysisService {
           filesAnalyzed: snapshot.files.length,
           truncated: snapshot.truncated,
           partialReason: snapshot.partialReason,
+          durationMs: snapshot.metrics?.durationMs,
+          retryCount: snapshot.metrics?.retryCount,
+          discardedByPrioritization: snapshot.metrics?.discardedByPrioritization,
+          discardedBySize: snapshot.metrics?.discardedBySize,
+          discardedByBinaryDetection: snapshot.metrics?.discardedByBinaryDetection,
         },
       };
     } catch (error) {

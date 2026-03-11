@@ -305,11 +305,18 @@ const RepositoryAnalysis = () => {
                 <MetricCard label="Archivos analizados" value={`${result.snapshot.filesAnalyzed}`} />
                 <MetricCard label="Total descubiertos" value={`${result.snapshot.totalFilesDiscovered}`} />
               </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <MetricCard label="Tiempo snapshot" value={formatDuration(result.snapshot.durationMs)} />
+                <MetricCard label="Reintentos" value={`${result.snapshot.retryCount ?? 0}`} />
+                <MetricCard label="Descartados por prioridad" value={`${result.snapshot.discardedByPrioritization ?? 0}`} />
+                <MetricCard label="Descartados peso/binario" value={`${(result.snapshot.discardedBySize ?? 0) + (result.snapshot.discardedByBinaryDetection ?? 0)}`} />
+              </div>
               <div className="mt-5 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
                 <p><span className="font-medium text-slate-900">Provider:</span> {activeProvider.name}</p>
                 <p><span className="font-medium text-slate-900">Repositorio:</span> {result.repository}</p>
                 <p><span className="font-medium text-slate-900">Rama:</span> {result.branch}</p>
                 <p><span className="font-medium text-slate-900">Modelo:</span> {result.model}</p>
+                <p><span className="font-medium text-slate-900">Metricas snapshot:</span> {buildSnapshotSummary(result)}</p>
                 {result.snapshot.truncated ? (
                   <p className="mt-2 text-amber-700">
                     {result.snapshot.partialReason || 'El snapshot fue truncado al maximo configurado de archivos para mantener la corrida utilizable.'}
@@ -407,6 +414,34 @@ const MetricCard = ({ label, value }: { label: string; value: string }) => (
     <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
   </div>
 );
+
+function formatDuration(durationMs?: number): string {
+  if (!durationMs || durationMs <= 0) {
+    return '-';
+  }
+
+  if (durationMs < 1000) {
+    return `${durationMs} ms`;
+  }
+
+  return `${(durationMs / 1000).toFixed(1)} s`;
+}
+
+function buildSnapshotSummary(result: {
+  snapshot: {
+    retryCount?: number;
+    discardedByPrioritization?: number;
+    discardedBySize?: number;
+    discardedByBinaryDetection?: number;
+  };
+}): string {
+  const retryCount = result.snapshot.retryCount ?? 0;
+  const discardedByPrioritization = result.snapshot.discardedByPrioritization ?? 0;
+  const discardedBySize = result.snapshot.discardedBySize ?? 0;
+  const discardedByBinaryDetection = result.snapshot.discardedByBinaryDetection ?? 0;
+
+  return `${retryCount} reintentos, ${discardedByPrioritization} por priorizacion, ${discardedBySize} por peso y ${discardedByBinaryDetection} por binario.`;
+}
 
 function riskBadgeClass(value: 'low' | 'medium' | 'high' | 'critical'): string {
   switch (value) {

@@ -4,6 +4,7 @@ import { pullRequestService } from './services/azure/pr.service';
 import { gitHubRepositoryService } from './services/github/repository.service';
 import { gitLabRepositoryService } from './services/gitlab/repository.service';
 import { repositoryAnalysisService } from './services/analysis/repository-analysis.service';
+import type { RepositoryAnalysisRequest } from './types/analysis';
 
 interface IpcSuccessResponse<T> {
   ok: true;
@@ -49,6 +50,59 @@ function validateExternalUrl(rawUrl: string): string {
   }
 
   return url.toString();
+}
+
+function readString(value: unknown, fieldName: string): string {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new Error(`${fieldName} es obligatorio.`);
+  }
+
+  return value.trim();
+}
+
+function sanitizeAnalysisPayload(payload: unknown): RepositoryAnalysisRequest {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('El payload de analisis es invalido.');
+  }
+
+  const request = payload as Partial<RepositoryAnalysisRequest>;
+  const maxFilesPerRun = Math.min(200, Math.max(10, Math.floor(Number(request.maxFilesPerRun) || 0)));
+  const timeoutMs = Math.min(120_000, Math.max(15_000, Math.floor(Number(request.timeoutMs) || 90_000)));
+  const analysisDepth = request.analysisDepth === 'deep' ? 'deep' : 'standard';
+
+  if (!request.source || typeof request.source !== 'object') {
+    throw new Error('La fuente del analisis es obligatoria.');
+  }
+
+  const source = request.source as RepositoryAnalysisRequest['source'];
+  if (!['azure-devops', 'github', 'gitlab'].includes(source.provider)) {
+    throw new Error('El provider del analisis no es valido.');
+  }
+
+  if (source.provider === 'azure-devops' && !(typeof source.project === 'string' && source.project.trim())) {
+    throw new Error('Azure DevOps requiere un project valido para ejecutar el analisis.');
+  }
+
+  return {
+    requestId: readString(request.requestId, 'requestId'),
+    source: {
+      ...source,
+      provider: source.provider,
+      organization: readString(source.organization, 'organization'),
+      project: typeof source.project === 'string' ? source.project.trim() : '',
+      repositoryId: typeof source.repositoryId === 'string' ? source.repositoryId.trim() : undefined,
+      personalAccessToken: readString(source.personalAccessToken, 'personalAccessToken'),
+      targetReviewer: typeof source.targetReviewer === 'string' ? source.targetReviewer.trim() : undefined,
+    },
+    repositoryId: readString(request.repositoryId, 'repositoryId'),
+    branchName: readString(request.branchName, 'branchName'),
+    model: readString(request.model, 'model'),
+    apiKey: readString(request.apiKey, 'apiKey'),
+    analysisDepth,
+    maxFilesPerRun,
+    includeTests: Boolean(request.includeTests),
+    timeoutMs,
+  };
 }
 
 function createWindow() {
@@ -152,7 +206,7 @@ ipcMain.handle('gitlab:openExternal', async (_event, url: string) => {
 });
 
 ipcMain.handle('analysis:runRepositoryAnalysis', async (_event, payload) => {
-  return safeIpcResponse(() => repositoryAnalysisService.runAnalysis(payload));
+  return safeIpcResponse(() => repositoryAnalysisService.runAnalysis(sanitizeAnalysisPayload(payload)));
 });
 
 ipcMain.handle('analysis:cancelRepositoryAnalysis', async (_event, requestId: string) => {

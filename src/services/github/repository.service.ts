@@ -1,6 +1,7 @@
 import type { RepositoryBranch, RepositoryConnectionConfig, RepositoryProject, RepositorySnapshotOptions, RepositorySummary, ReviewItem, ReviewItemReviewer } from '../../types/repository';
 import type { RepositorySnapshot } from '../../types/analysis';
 import { mapWithConcurrency, retryWithBackoff } from '../shared/request-control';
+import { appendPartialReason, isProbablyBinaryContent, MAX_SNAPSHOT_FILE_BYTES } from '../shared/snapshot-content';
 
 interface GitHubRepositoryResponse {
   id: number;
@@ -408,6 +409,7 @@ export class GitHubRepositoryService {
     config: RepositoryConnectionConfig,
     options: RepositorySnapshotOptions,
   ): Promise<RepositorySnapshot> {
+    const startedAt = Date.now();
     const { organization, personalAccessToken, repository } = getGitHubConfig({
       ...config,
       repositoryId: config.repositoryId || config.project,
@@ -446,12 +448,24 @@ export class GitHubRepositoryService {
       });
 
     const selectedFiles = candidateFiles.slice(0, options.maxFiles);
-    const files = await mapWithConcurrency(selectedFiles, 5, async (file) => {
+    let retryCount = 0;
+    let skippedLargeFiles = 0;
+    let skippedBinaryFiles = 0;
+    const files = (await mapWithConcurrency(selectedFiles, 5, async (file) => {
+      if ((file.size || 0) > MAX_SNAPSHOT_FILE_BYTES) {
+        skippedLargeFiles += 1;
+        return null;
+      }
+
       const contentPayload = await retryWithBackoff(() => requestGitHubContent(
         `https://api.github.com/repos/${encodeURIComponent(organization)}/${encodeURIComponent(repository)}/contents/${file.path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(options.branchName)}`,
         personalAccessToken,
         `content request (${file.path})`,
-      ));
+      ), {
+        onRetry: () => {
+          retryCount += 1;
+        },
+      });
 
       if (Array.isArray(contentPayload) || contentPayload.type !== 'file') {
         throw new Error(`GitHub content request (${file.path}) returned a directory payload unexpectedly.`);
@@ -461,13 +475,35 @@ export class GitHubRepositoryService {
         ? Buffer.from(contentPayload.content.replace(/\n/g, ''), 'base64').toString('utf8')
         : contentPayload.content;
 
+      if (contentPayload.size > MAX_SNAPSHOT_FILE_BYTES) {
+        skippedLargeFiles += 1;
+        return null;
+      }
+
+      if (isProbablyBinaryContent(content)) {
+        skippedBinaryFiles += 1;
+        return null;
+      }
+
       return {
         path: file.path,
         extension: file.path.split('.').pop()?.toLowerCase() || '',
         size: contentPayload.size,
         content,
       };
-    });
+    })).filter((file) => file !== null);
+
+    const partialReason = appendPartialReason(
+      tree.truncated
+        ? 'GitHub reporto el tree como truncado; se reconstruyo el inventario via contents y el analisis puede omitir archivos profundos o no textuales.'
+        : candidateFiles.length > options.maxFiles
+          ? `El snapshot se recorto a ${options.maxFiles} archivos priorizados de ${candidateFiles.length} descubiertos.`
+          : undefined,
+      [
+        skippedLargeFiles > 0 ? `Se omitieron ${skippedLargeFiles} archivos por exceder ${Math.round(MAX_SNAPSHOT_FILE_BYTES / 1024)} KB.` : '',
+        skippedBinaryFiles > 0 ? `Se omitieron ${skippedBinaryFiles} archivos por contenido binario o no legible.` : '',
+      ],
+    );
 
     return {
       provider: 'github',
@@ -475,12 +511,15 @@ export class GitHubRepositoryService {
       branch: options.branchName,
       files,
       totalFilesDiscovered: candidateFiles.length,
-      truncated: candidateFiles.length > options.maxFiles || Boolean(tree.truncated),
-      partialReason: tree.truncated
-        ? 'GitHub reporto el tree como truncado; se reconstruyo el inventario via contents y el analisis puede omitir archivos profundos o no textuales.'
-        : candidateFiles.length > options.maxFiles
-          ? `El snapshot se recorto a ${options.maxFiles} archivos priorizados de ${candidateFiles.length} descubiertos.`
-          : undefined,
+      truncated: candidateFiles.length > options.maxFiles || Boolean(tree.truncated) || skippedLargeFiles > 0 || skippedBinaryFiles > 0,
+      partialReason,
+      metrics: {
+        durationMs: Date.now() - startedAt,
+        retryCount,
+        discardedByPrioritization: Math.max(0, candidateFiles.length - selectedFiles.length),
+        discardedBySize: skippedLargeFiles,
+        discardedByBinaryDetection: skippedBinaryFiles,
+      },
     };
   }
 }
