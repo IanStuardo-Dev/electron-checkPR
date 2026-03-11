@@ -23,9 +23,9 @@ module.exports = {
       displayName: 'dom',
       testEnvironment: 'jsdom',
       testMatch: ['<rootDir>/tests/**/*.dom.test.js'],
-      setupFilesAfterEnv: ['<rootDir>/tests/setup.dom.js'],
+      setupFilesAfterEnv: ['<rootDir>/tests/support/setup.dom.js'],
       moduleNameMapper: {
-        '\\.(css|less|scss|sass)$': '<rootDir>/tests/style.mock.js',
+        '\\.(css|less|scss|sass)$': '<rootDir>/tests/support/style.mock.js',
       },
       transform: {
         '^.+\\.(ts|tsx)$': ['ts-jest', {

@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">83.33% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/18</span>
+                <span class='fraction'>15/18</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>1/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">57.14% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>4/7</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">83.33% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/18</span>
+                <span class='fraction'>15/18</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -94,66 +94,66 @@
 <a name='L29'></a><a href='#L29'>29</a>
 <a name='L30'></a><a href='#L30'>30</a>
 <a name='L31'></a><a href='#L31'>31</a>
-<a name='L32'></a><a href='#L32'>32</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L32'></a><a href='#L32'>32</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { shell } from 'electron';</span>
-<span class="cstat-no" title="statement not covered" >import { getRepositoryProviderPort } from '../../services/providers/repository-provider.registry';</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { shell } from 'electron';
+import { getRepositoryProviderPort } from '../../services/providers/repository-provider.registry';
 import type { RepositoryConnectionConfig, RepositoryProviderKind } from '../../types/repository';
-<span class="cstat-no" title="statement not covered" >import { validateExternalUrl } from './external-links';</span>
-<span class="cstat-no" title="statement not covered" >import { registerHandle } from './shared';</span>
+import { validateExternalUrl } from './external-links';
+import { registerHandle } from './shared';
 &nbsp;
-function <span class="fstat-no" title="function not covered" >readProvider(</span>config: Pick&lt;RepositoryConnectionConfig, 'provider'&gt;): RepositoryProviderKind {
-<span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (!config?.provider) {</span>
-<span class="cstat-no" title="statement not covered" >    throw new Error('Selecciona un provider antes de ejecutar esta accion.');</span>
+function readProvider(config: Pick&lt;RepositoryConnectionConfig, 'provider'&gt;): RepositoryProviderKind {
+  if (!config?.provider) {
+    throw new Error('Selecciona un provider antes de ejecutar esta accion.');
   }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  return config.provider;</span>
+  return config.provider;
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export function <span class="fstat-no" title="function not covered" >r</span>egisterRepositoryProviderIpc(</span>): void {
-<span class="cstat-no" title="statement not covered" >  registerHandle&lt;RepositoryConnectionConfig, unknown[]&gt;('repository-source:fetchPullRequests', <span class="fstat-no" title="function not covered" >async </span>(config) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >    getRepositoryProviderPort(readProvider(config)).getPullRequests(config)</span>
+export function registerRepositoryProviderIpc(): void {
+  registerHandle&lt;RepositoryConnectionConfig, unknown[]&gt;('repository-source:fetchPullRequests', async (config) =&gt; (
+    getRepositoryProviderPort(readProvider(config)).getPullRequests(config)
   ));
-<span class="cstat-no" title="statement not covered" >  registerHandle&lt;RepositoryConnectionConfig, unknown[]&gt;('repository-source:fetchProjects', <span class="fstat-no" title="function not covered" >async </span>(config) =&gt; (</span>
+  registerHandle&lt;RepositoryConnectionConfig, unknown[]&gt;('repository-source:fetchProjects', <span class="fstat-no" title="function not covered" >async </span>(config) =&gt; (
 <span class="cstat-no" title="statement not covered" >    getRepositoryProviderPort(readProvider(config)).getProjects(config)</span>
   ));
-<span class="cstat-no" title="statement not covered" >  registerHandle&lt;RepositoryConnectionConfig, unknown[]&gt;('repository-source:fetchRepositories', <span class="fstat-no" title="function not covered" >async </span>(config) =&gt; (</span>
+  registerHandle&lt;RepositoryConnectionConfig, unknown[]&gt;('repository-source:fetchRepositories', <span class="fstat-no" title="function not covered" >async </span>(config) =&gt; (
 <span class="cstat-no" title="statement not covered" >    getRepositoryProviderPort(readProvider(config)).getRepositories(config)</span>
   ));
-<span class="cstat-no" title="statement not covered" >  registerHandle&lt;RepositoryConnectionConfig, unknown[]&gt;('repository-source:fetchBranches', <span class="fstat-no" title="function not covered" >async </span>(config) =&gt; (</span>
+  registerHandle&lt;RepositoryConnectionConfig, unknown[]&gt;('repository-source:fetchBranches', <span class="fstat-no" title="function not covered" >async </span>(config) =&gt; (
 <span class="cstat-no" title="statement not covered" >    getRepositoryProviderPort(readProvider(config)).getBranches(config)</span>
   ));
-<span class="cstat-no" title="statement not covered" >  registerHandle&lt;string, void&gt;('repository-source:openExternal', <span class="fstat-no" title="function not covered" >async </span>(url) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    await shell.openExternal(validateExternalUrl(url));</span>
+  registerHandle&lt;string, void&gt;('repository-source:openExternal', async (url) =&gt; {
+    await shell.openExternal(validateExternalUrl(url));
   });
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -163,7 +163,7 @@ function <span class="fstat-no" title="function not covered" >readProvider(</spa
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-11T19:40:11.261Z
+                at 2026-03-11T19:53:17.548Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

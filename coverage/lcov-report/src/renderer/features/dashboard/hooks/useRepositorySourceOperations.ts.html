@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/10</span>
+                <span class='fraction'>10/10</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>1/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/10</span>
+                <span class='fraction'>10/10</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -128,10 +128,10 @@
 <a name='L63'></a><a href='#L63'>63</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -141,30 +141,30 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -190,10 +190,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React from 'react';
 import type { ReviewItem } from '../../../../types/repository';
 import type { SavedConnectionConfig } from '../types';
-<span class="cstat-no" title="statement not covered" >import { useRepositorySourceActions } from './useRepositorySourceActions';</span>
-<span class="cstat-no" title="statement not covered" >import { useRepositoryDiagnostics } from './useRepositoryDiagnostics';</span>
-<span class="cstat-no" title="statement not covered" >import { useRepositorySourceApi } from './useRepositorySourceApi';</span>
-<span class="cstat-no" title="statement not covered" >import { useRepositorySourceState } from './useRepositorySourceState';</span>
+import { useRepositorySourceActions } from './useRepositorySourceActions';
+import { useRepositoryDiagnostics } from './useRepositoryDiagnostics';
+import { useRepositorySourceApi } from './useRepositorySourceApi';
+import { useRepositorySourceState } from './useRepositorySourceState';
 &nbsp;
 interface UseRepositorySourceOperationsOptions {
   config: SavedConnectionConfig;
@@ -203,20 +203,20 @@ interface UseRepositorySourceOperationsOptions {
   onPersistSnapshot: (pullRequests: ReviewItem[], capturedAt: Date, scopeLabel: string, targetReviewer?: string) =&gt; void;
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export function <span class="fstat-no" title="function not covered" >u</span>seRepositorySourceOperations(</span>{
+export function useRepositorySourceOperations({
   config,
   configRef,
   activeProviderName,
   scopeLabel,
   onPersistSnapshot,
 }: UseRepositorySourceOperationsOptions) {
-  const state = <span class="cstat-no" title="statement not covered" >useRepositorySourceState(config.provider);</span>
-  const diagnostics = <span class="cstat-no" title="statement not covered" >useRepositoryDiagnostics(config);</span>
-  const actions = <span class="cstat-no" title="statement not covered" >useRepositorySourceActions({</span>
+  const state = useRepositorySourceState(config.provider);
+  const diagnostics = useRepositoryDiagnostics(config);
+  const actions = useRepositorySourceActions({
     state,
     diagnostics,
   });
-  const api = <span class="cstat-no" title="statement not covered" >useRepositorySourceApi({</span>
+  const api = useRepositorySourceApi({
     config,
     configRef,
     activeProviderName,
@@ -226,7 +226,7 @@ interface UseRepositorySourceOperationsOptions {
     onPersistSnapshot,
   });
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  return {</span>
+  return {
     pullRequests: state.pullRequests,
     projects: state.projects,
     repositories: state.repositories,
@@ -256,7 +256,7 @@ interface UseRepositorySourceOperationsOptions {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-11T19:40:11.261Z
+                at 2026-03-11T19:53:17.548Z
             </div>
         <script src="../../../../../prettify.js"></script>
         <script>

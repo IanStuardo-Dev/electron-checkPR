@@ -1,0 +1,246 @@
+const { renderHook, act } = require('@testing-library/react');
+
+jest.mock('../../../src/renderer/features/dashboard/ipc', () => ({
+  fetchProjects: jest.fn(),
+  fetchRepositories: jest.fn(),
+  fetchPullRequests: jest.fn(),
+  openReviewItem: jest.fn(),
+}));
+
+jest.mock('../../../src/renderer/features/dashboard/hooks/useRepositorySourceEffects', () => ({
+  useRepositorySourceEffects: jest.fn(),
+}));
+
+jest.mock('../../../src/renderer/features/dashboard/hooks/useRepositorySourceState', () => ({
+  useRepositorySourceState: jest.fn(),
+}));
+
+jest.mock('../../../src/renderer/features/dashboard/hooks/useRepositoryDiagnostics', () => ({
+  useRepositoryDiagnostics: jest.fn(),
+}));
+
+const ipc = require('../../../src/renderer/features/dashboard/ipc');
+const { useRepositorySourceEffects } = require('../../../src/renderer/features/dashboard/hooks/useRepositorySourceEffects');
+const { useRepositorySourceState } = require('../../../src/renderer/features/dashboard/hooks/useRepositorySourceState');
+const { useRepositoryDiagnostics } = require('../../../src/renderer/features/dashboard/hooks/useRepositoryDiagnostics');
+const { useRepositorySourceApi } = require('../../../src/renderer/features/dashboard/hooks/useRepositorySourceApi');
+const { useRepositorySourceActions } = require('../../../src/renderer/features/dashboard/hooks/useRepositorySourceActions');
+const { useRepositorySourceOperations } = require('../../../src/renderer/features/dashboard/hooks/useRepositorySourceOperations');
+const actualStateModule = jest.requireActual('../../../src/renderer/features/dashboard/hooks/useRepositorySourceState');
+const actualDiagnosticsModule = jest.requireActual('../../../src/renderer/features/dashboard/hooks/useRepositoryDiagnostics');
+const actualEffectsModule = jest.requireActual('../../../src/renderer/features/dashboard/hooks/useRepositorySourceEffects');
+
+function createStateMock() {
+  return {
+    pullRequests: [],
+    projects: [],
+    repositories: [],
+    error: null,
+    projectDiscoveryWarning: null,
+    isLoading: false,
+    projectsLoading: false,
+    repositoriesLoading: false,
+    lastUpdatedAt: null,
+    hasSuccessfulConnection: false,
+    shouldLoadRepositories: false,
+    isConnectionPanelOpen: true,
+    setPullRequests: jest.fn(),
+    setProjects: jest.fn(),
+    setRepositories: jest.fn(),
+    setError: jest.fn(),
+    setProjectDiscoveryWarning: jest.fn(),
+    setIsLoading: jest.fn(),
+    setProjectsLoading: jest.fn(),
+    setRepositoriesLoading: jest.fn(),
+    setLastUpdatedAt: jest.fn(),
+    setHasSuccessfulConnection: jest.fn(),
+    setShouldLoadRepositories: jest.fn(),
+    setIsConnectionPanelOpen: jest.fn(),
+    resetForConfigChange: jest.fn(),
+    resetDisconnectedState: jest.fn(),
+    markProjectSelection: jest.fn(),
+  };
+}
+
+function createDiagnosticsMock() {
+  return {
+    diagnostics: {
+      operation: null,
+      provider: '',
+      organization: '',
+      project: '',
+      repositoryId: '',
+      requestPath: '',
+      lastError: null,
+    },
+    updateDiagnostics: jest.fn(),
+    resetDiagnosticsError: jest.fn(),
+  };
+}
+
+describe('repository source hooks', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('useRepositorySourceState resetea segun cambios de config', () => {
+    const { result } = renderHook(() => actualStateModule.useRepositorySourceState('github'));
+
+    act(() => {
+      result.current.resetForConfigChange('organization', 'acme');
+    });
+    expect(result.current.projects).toEqual([]);
+    expect(result.current.repositories).toEqual([]);
+
+    act(() => {
+      result.current.markProjectSelection('repo-a');
+    });
+    expect(result.current.shouldLoadRepositories).toBe(true);
+  });
+
+  test('useRepositoryDiagnostics actualiza request path y limpia error', () => {
+    const { result } = renderHook(() => actualDiagnosticsModule.useRepositoryDiagnostics({
+      provider: 'github',
+      organization: '',
+      project: '',
+      repositoryId: '',
+      personalAccessToken: '',
+      targetReviewer: '',
+    }));
+
+    act(() => {
+      result.current.updateDiagnostics('pullRequests', {
+        provider: 'github',
+        organization: 'acme',
+        project: 'repo-a',
+        repositoryId: '',
+        personalAccessToken: 'pat',
+        targetReviewer: '',
+      }, 'boom');
+    });
+    expect(result.current.diagnostics.requestPath).toContain('api.github.com/repos/acme/repo-a/pulls');
+
+    act(() => {
+      result.current.resetDiagnosticsError();
+    });
+    expect(result.current.diagnostics.lastError).toBeNull();
+  });
+
+  test('useRepositorySourceActions delega en state y diagnostics', () => {
+    const state = createStateMock();
+    const diagnostics = createDiagnosticsMock();
+    const { result } = renderHook(() => useRepositorySourceActions({ state, diagnostics }));
+
+    act(() => {
+      result.current.resetForConfigChange('provider', 'github');
+      result.current.openConnectionPanel();
+      result.current.selectProject('repo-a');
+    });
+
+    expect(state.resetForConfigChange).toHaveBeenCalledWith('provider', 'github');
+    expect(diagnostics.resetDiagnosticsError).toHaveBeenCalled();
+    expect(state.setIsConnectionPanelOpen).toHaveBeenCalledWith(true);
+    expect(state.markProjectSelection).toHaveBeenCalledWith('repo-a');
+  });
+
+  test('useRepositorySourceApi sincroniza proyectos, repos y pull requests', async () => {
+    const state = createStateMock();
+    const diagnostics = createDiagnosticsMock();
+    ipc.fetchProjects.mockResolvedValue([{ id: 'repo-a', name: 'repo-a', state: 'active' }]);
+    ipc.fetchRepositories.mockResolvedValue([{ id: 'repo-a', name: 'repo-a' }]);
+    ipc.fetchPullRequests.mockResolvedValue([{ id: 1, title: 'PR' }]);
+    ipc.openReviewItem.mockResolvedValue(undefined);
+
+    const config = {
+      provider: 'github',
+      organization: 'acme',
+      project: '',
+      repositoryId: '',
+      personalAccessToken: 'pat',
+      targetReviewer: '',
+    };
+    const configRef = { current: config };
+    const onPersistSnapshot = jest.fn();
+
+    const { result } = renderHook(() => useRepositorySourceApi({
+      config,
+      configRef,
+      activeProviderName: 'GitHub',
+      scopeLabel: 'acme / all',
+      state,
+      diagnostics,
+      onPersistSnapshot,
+    }));
+
+    await act(async () => {
+      await result.current.discoverProjects();
+      await result.current.refreshPullRequests();
+      await result.current.openPullRequest('https://github.com/acme/repo-a/pull/1');
+    });
+
+    expect(ipc.fetchProjects).toHaveBeenCalled();
+    expect(ipc.fetchRepositories).toHaveBeenCalled();
+    expect(ipc.fetchPullRequests).toHaveBeenCalled();
+    expect(state.setHasSuccessfulConnection).toHaveBeenCalledWith(true);
+    expect(onPersistSnapshot).toHaveBeenCalled();
+    expect(ipc.openReviewItem).toHaveBeenCalled();
+  });
+
+  test('useRepositorySourceEffects resetea estado o carga repos segun config', async () => {
+    const state = createStateMock();
+    const refreshRepositories = jest.fn().mockResolvedValue([]);
+    const config = {
+      provider: 'gitlab',
+      organization: '',
+      project: '',
+      repositoryId: '',
+      personalAccessToken: '',
+      targetReviewer: '',
+    };
+    const configRef = { current: { ...config } };
+
+    renderHook(() => actualEffectsModule.useRepositorySourceEffects({ config, configRef, state, refreshRepositories }));
+    expect(state.resetDisconnectedState).toHaveBeenCalled();
+
+    state.shouldLoadRepositories = true;
+    config.organization = 'acme';
+    config.personalAccessToken = 'pat';
+    configRef.current = { ...config };
+
+    renderHook(() => actualEffectsModule.useRepositorySourceEffects({ config, configRef, state, refreshRepositories }));
+    await Promise.resolve();
+    expect(refreshRepositories).toHaveBeenCalled();
+  });
+
+  test('useRepositorySourceOperations compone estado, acciones y api', () => {
+    const state = createStateMock();
+    const diagnostics = createDiagnosticsMock();
+    useRepositorySourceState.mockReturnValue(state);
+    useRepositoryDiagnostics.mockReturnValue(diagnostics);
+
+    const { result } = renderHook(() => useRepositorySourceOperations({
+      config: {
+        provider: 'github',
+        organization: 'acme',
+        project: '',
+        repositoryId: '',
+        personalAccessToken: 'pat',
+        targetReviewer: '',
+      },
+      configRef: { current: {
+        provider: 'github',
+        organization: 'acme',
+        project: '',
+        repositoryId: '',
+        personalAccessToken: 'pat',
+        targetReviewer: '',
+      } },
+      activeProviderName: 'GitHub',
+      scopeLabel: 'acme / all',
+      onPersistSnapshot: jest.fn(),
+    }));
+
+    expect(result.current.pullRequests).toBe(state.pullRequests);
+    expect(useRepositorySourceEffects).toHaveBeenCalled();
+  });
+});
