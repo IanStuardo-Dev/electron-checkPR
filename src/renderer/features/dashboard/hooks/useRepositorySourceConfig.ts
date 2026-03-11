@@ -17,7 +17,6 @@ interface UseRepositorySourceConfigResult {
 export function useRepositorySourceConfig(
   handlers: {
     onConfigChangeStart: (name: keyof SavedConnectionConfig, value: string) => void;
-    onConfigChanged: (nextConfig: SavedConnectionConfig, name: keyof SavedConnectionConfig, value: string) => void;
     onProjectSelected: (project: string) => void;
   },
 ): UseRepositorySourceConfigResult {
@@ -55,7 +54,6 @@ export function useRepositorySourceConfig(
       };
 
       configRef.current = nextConfig;
-      handlers.onConfigChanged(nextConfig, name, value);
       return nextConfig;
     });
   }, [handlers]);

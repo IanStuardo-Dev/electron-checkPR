@@ -1,0 +1,31 @@
+import type { ReviewItem } from '../../../types/repository';
+import { persistDashboardSnapshot } from './history';
+import { buildDashboardSummary } from './metrics';
+import { buildScopeLabel } from './repositorySourceDiagnostics';
+import { persistSavedAzureContext } from './storage';
+import type { SavedConnectionConfig } from './types';
+
+export function persistRepositorySourceSnapshot(
+  config: SavedConnectionConfig,
+  result: ReviewItem[],
+  snapshotTimestamp: Date,
+  targetReviewer?: string,
+): void {
+  const effectiveScopeLabel = buildScopeLabel(config, null, null);
+  persistSavedAzureContext(config);
+  const snapshotSummary = buildDashboardSummary(result, snapshotTimestamp, effectiveScopeLabel, targetReviewer);
+
+  persistDashboardSnapshot({
+    id: `${snapshotTimestamp.toISOString()}-${effectiveScopeLabel}`,
+    capturedAt: snapshotTimestamp.toISOString(),
+    scopeLabel: effectiveScopeLabel,
+    activePRs: snapshotSummary.activePRs,
+    highRiskPRs: snapshotSummary.highRiskPRs,
+    blockedPRs: snapshotSummary.blockedPRs,
+    reviewBacklog: snapshotSummary.reviewBacklog,
+    averageAgeHours: snapshotSummary.averageAgeHours,
+    stalePRs: snapshotSummary.stalePRs,
+    repositoryCount: snapshotSummary.repositoryCount,
+    hotfixPRs: snapshotSummary.hotfixPRs,
+  });
+}

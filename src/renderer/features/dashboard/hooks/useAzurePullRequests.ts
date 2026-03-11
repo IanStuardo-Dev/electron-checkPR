@@ -1,17 +1,16 @@
 import React from 'react';
 import type { ReviewItem } from '../../../../types/repository';
 import { getRepositoryProvider } from '../../repository-source/providers';
-import { persistDashboardSnapshot } from '../history';
-import { buildDashboardSummary } from '../metrics';
 import { buildScopeLabel, getProviderDisplayName } from '../repositorySourceDiagnostics';
-import { persistSavedAzureContext } from '../storage';
 import type { SavedConnectionConfig } from '../types';
+import { useRepositorySourceBootstrap } from './useRepositorySourceBootstrap';
 import { useRepositorySourceConfig } from './useRepositorySourceConfig';
+import { useRepositorySourceDerived } from './useRepositorySourceDerived';
 import { useRepositorySourceOperations } from './useRepositorySourceOperations';
+import { persistRepositorySourceSnapshot } from '../repositorySourcePersistence';
 
 interface RepositorySourceConfigHandlers {
   onConfigChangeStart: (name: keyof SavedConnectionConfig, value: string) => void;
-  onConfigChanged: (nextConfig: SavedConnectionConfig, name: keyof SavedConnectionConfig, value: string) => void;
   onProjectSelected: (project: string) => void;
 }
 
@@ -19,34 +18,17 @@ export function useRepositorySource() {
   const configHandlersRef = React.useRef<RepositorySourceConfigHandlers | null>(null);
   const configHook = useRepositorySourceConfig({
     onConfigChangeStart: (name, value) => configHandlersRef.current?.onConfigChangeStart(name, value),
-    onConfigChanged: (nextConfig, name, value) => configHandlersRef.current?.onConfigChanged(nextConfig, name, value),
     onProjectSelected: (project) => configHandlersRef.current?.onProjectSelected(project),
   });
   const { config, configRef, updateConfig, selectProjectConfig, hydrateSecret } = configHook;
-  const activeProvider = React.useMemo(() => getRepositoryProvider(config.provider), [config.provider]);
-  const activeProviderName = getProviderDisplayName(activeProvider);
-  const baseScopeLabel = React.useMemo(
-    () => buildScopeLabel(config, null, null),
-    [config],
+  const activeProviderName = React.useMemo(
+    () => getProviderDisplayName(getRepositoryProvider(config.provider)),
+    [config.provider],
   );
+  const baseScopeLabel = React.useMemo(() => buildScopeLabel(config, null, null), [config]);
 
   const persistSnapshot = React.useCallback((result: ReviewItem[], snapshotTimestamp: Date, _snapshotScopeLabel: string, targetReviewer?: string) => {
-    const effectiveScopeLabel = buildScopeLabel(configRef.current, null, null);
-    persistSavedAzureContext(configRef.current);
-    const snapshotSummary = buildDashboardSummary(result, snapshotTimestamp, effectiveScopeLabel, targetReviewer);
-    persistDashboardSnapshot({
-      id: `${snapshotTimestamp.toISOString()}-${effectiveScopeLabel}`,
-      capturedAt: snapshotTimestamp.toISOString(),
-      scopeLabel: effectiveScopeLabel,
-      activePRs: snapshotSummary.activePRs,
-      highRiskPRs: snapshotSummary.highRiskPRs,
-      blockedPRs: snapshotSummary.blockedPRs,
-      reviewBacklog: snapshotSummary.reviewBacklog,
-      averageAgeHours: snapshotSummary.averageAgeHours,
-      stalePRs: snapshotSummary.stalePRs,
-      repositoryCount: snapshotSummary.repositoryCount,
-      hotfixPRs: snapshotSummary.hotfixPRs,
-    });
+    persistRepositorySourceSnapshot(configRef.current, result, snapshotTimestamp, targetReviewer);
   }, [configRef]);
 
   const {
@@ -76,71 +58,29 @@ export function useRepositorySource() {
     onPersistSnapshot: persistSnapshot,
   });
 
-  const hasCredentialsInSession = Boolean(
-    config.provider && config.organization && config.personalAccessToken,
-  );
-  const isConnectionReady = hasCredentialsInSession && hasSuccessfulConnection;
-
-  const selectedProjectName = React.useMemo(() => {
-    if (!config.project) {
-      return null;
-    }
-
-    return projects.find((project) => project.id === config.project || project.name === config.project)?.name || config.project;
-  }, [config.project, projects]);
-
-  const selectedRepositoryName = React.useMemo(() => {
-    if (!config.repositoryId) {
-      return null;
-    }
-
-    return repositories.find((repository) => repository.id === config.repositoryId || repository.name === config.repositoryId)?.name || config.repositoryId;
-  }, [config.repositoryId, repositories]);
-
-  const scopeLabel = React.useMemo(
-    () => buildScopeLabel(config, selectedProjectName, selectedRepositoryName),
-    [config, selectedProjectName, selectedRepositoryName],
-  );
-
   configHandlersRef.current = {
     onConfigChangeStart: resetForConfigChange,
-    onConfigChanged: () => undefined,
     onProjectSelected: selectProject,
   };
+  const derived = useRepositorySourceDerived({
+    config,
+    projects,
+    repositories,
+    pullRequests,
+    lastUpdatedAt,
+    hasSuccessfulConnection,
+  });
 
-  const summary = React.useMemo(
-    () => buildDashboardSummary(pullRequests, lastUpdatedAt, scopeLabel, config.targetReviewer),
-    [config.targetReviewer, lastUpdatedAt, pullRequests, scopeLabel],
-  );
-
-  React.useEffect(() => {
-    void hydrateSecret().then((personalAccessToken) => {
-      if (!personalAccessToken) {
-        return;
-      }
-
-      updateConfig('personalAccessToken', personalAccessToken);
-
-      const nextConfig = {
-        ...configRef.current,
-        personalAccessToken,
-      };
-      configRef.current = nextConfig;
-
-      const hasMinimumConfig = nextConfig.provider === 'github' || nextConfig.provider === 'gitlab'
-        ? Boolean(nextConfig.organization && nextConfig.personalAccessToken)
-        : Boolean(nextConfig.provider && nextConfig.organization && nextConfig.project && nextConfig.personalAccessToken);
-
-      if (hasMinimumConfig) {
-        void refreshPullRequests();
-      }
-    }).catch(() => undefined);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useRepositorySourceBootstrap({
+    configRef,
+    hydrateSecret,
+    updateConfig,
+    refreshPullRequests,
+  });
 
   return {
-    activeProvider,
-    activeProviderName,
+    activeProvider: derived.activeProvider,
+    activeProviderName: derived.activeProviderName,
     config,
     error,
     isLoading,
@@ -149,13 +89,13 @@ export function useRepositorySource() {
     projectDiscoveryWarning,
     repositories,
     repositoriesLoading,
-    hasCredentialsInSession,
+    hasCredentialsInSession: derived.hasCredentialsInSession,
     hasSuccessfulConnection,
-    isConnectionReady,
+    isConnectionReady: derived.isConnectionReady,
     diagnostics,
-    selectedProjectName,
-    selectedRepositoryName,
-    summary,
+    selectedProjectName: derived.selectedProjectName,
+    selectedRepositoryName: derived.selectedRepositoryName,
+    summary: derived.summary,
     isConnectionPanelOpen,
     updateConfig,
     discoverProjects,

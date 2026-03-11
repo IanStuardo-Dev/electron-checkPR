@@ -2,7 +2,6 @@ type EnvironmentConfig = {
   apiUrl: string;
   azureDevOpsUrl: string;
   enableDebugLogs: boolean;
-  enableDemoRoutes: boolean;
   isProduction: boolean;
 };
 
@@ -21,13 +20,11 @@ export const environment: EnvironmentConfig = production
     apiUrl: 'https://api.yourapp.com',
     azureDevOpsUrl: 'https://dev.azure.com',
     enableDebugLogs: false,
-    enableDemoRoutes: false,
     isProduction: true,
   }
   : {
     apiUrl: 'http://localhost:3000',
     azureDevOpsUrl: 'https://dev.azure.com/your-org',
     enableDebugLogs: true,
-    enableDemoRoutes: true,
     isProduction: false,
   };
