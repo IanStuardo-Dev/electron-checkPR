@@ -1,13 +1,11 @@
 import React from 'react';
-import type { ReviewItem } from '../../../../types/repository';
-import { getRepositoryProvider } from '../../repository-source/providers';
-import { buildScopeLabel, getProviderDisplayName } from '../repositorySourceDiagnostics';
 import type { SavedConnectionConfig } from '../types';
 import { useRepositorySourceBootstrap } from './useRepositorySourceBootstrap';
 import { useRepositorySourceConfig } from './useRepositorySourceConfig';
 import { useRepositorySourceDerived } from './useRepositorySourceDerived';
 import { useRepositorySourceOperations } from './useRepositorySourceOperations';
-import { persistRepositorySourceSnapshot } from '../repositorySourcePersistence';
+import { useRepositorySourceMetadata } from '../useRepositorySourceMetadata';
+import { useRepositorySourceSnapshotPersistence } from '../useRepositorySourceSnapshotPersistence';
 
 interface RepositorySourceConfigHandlers {
   onConfigChangeStart: (name: keyof SavedConnectionConfig, value: string) => void;
@@ -21,15 +19,8 @@ export function useRepositorySource() {
     onProjectSelected: (project) => configHandlersRef.current?.onProjectSelected(project),
   });
   const { config, configRef, updateConfig, selectProjectConfig, hydrateSecret } = configHook;
-  const activeProviderName = React.useMemo(
-    () => getProviderDisplayName(getRepositoryProvider(config.provider)),
-    [config.provider],
-  );
-  const baseScopeLabel = React.useMemo(() => buildScopeLabel(config, null, null), [config]);
-
-  const persistSnapshot = React.useCallback((result: ReviewItem[], snapshotTimestamp: Date, _snapshotScopeLabel: string, targetReviewer?: string) => {
-    persistRepositorySourceSnapshot(configRef.current, result, snapshotTimestamp, targetReviewer);
-  }, [configRef]);
+  const { activeProviderName, baseScopeLabel } = useRepositorySourceMetadata(config);
+  const persistSnapshot = useRepositorySourceSnapshotPersistence(configRef);
 
   const {
     pullRequests,

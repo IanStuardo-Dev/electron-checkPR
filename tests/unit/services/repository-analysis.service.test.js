@@ -3,6 +3,7 @@ const { RepositoryAnalysisService } = require('../../../src/services/analysis/re
 describe('RepositoryAnalysisService', () => {
   afterEach(() => {
     jest.restoreAllMocks();
+    jest.useRealTimers();
   });
 
   function createServiceWithSnapshot(snapshot) {
@@ -140,5 +141,119 @@ describe('RepositoryAnalysisService', () => {
       maxFilesPerRun: 50,
       includeTests: false,
     })).rejects.toThrow('Codex no devolvio salida estructurada.');
+  });
+
+  test('cancela una corrida activa y limpia el estado interno', async () => {
+    const service = new RepositoryAnalysisService(
+      {
+        getSnapshot: jest.fn().mockResolvedValue({
+          provider: 'github',
+          repository: 'repo-a',
+          branch: 'main',
+          files: [{ path: 'src/index.ts', extension: 'ts', size: 32, content: 'export const ok = true;' }],
+          totalFilesDiscovered: 1,
+          truncated: false,
+        }),
+      },
+      {
+        build: jest.fn().mockReturnValue({ systemPrompt: 'system', userPrompt: 'user' }),
+      },
+      {
+        analyze: jest.fn().mockImplementation(({ signal }) => new Promise((_, reject) => {
+          signal.addEventListener('abort', () => reject(new Error('aborted')));
+        })),
+      },
+      {
+        parse: jest.fn(),
+      },
+    );
+
+    const runPromise = service.runAnalysis({
+      requestId: 'req-cancel',
+      source: {
+        provider: 'github',
+        organization: 'acme',
+        project: 'repo-a',
+        repositoryId: 'repo-a',
+        personalAccessToken: 'pat',
+      },
+      repositoryId: 'repo-a',
+      branchName: 'main',
+      model: 'gpt-5.2-codex',
+      apiKey: 'sk-test',
+      analysisDepth: 'standard',
+      maxFilesPerRun: 50,
+      includeTests: false,
+    });
+
+    await Promise.resolve();
+    service.cancelAnalysis('req-cancel');
+
+    const observed = runPromise.then(
+      () => ({ ok: true }),
+      (error) => ({ ok: false, error }),
+    );
+
+    const result = await observed;
+    expect(result.ok).toBe(false);
+    expect(result.error.message).toContain('El analisis fue cancelado antes de completarse.');
+    expect(service.activeRuns.size).toBe(0);
+  });
+
+  test('aborta por timeout y limpia activeRuns', async () => {
+    jest.useFakeTimers();
+    const service = new RepositoryAnalysisService(
+      {
+        getSnapshot: jest.fn().mockResolvedValue({
+          provider: 'github',
+          repository: 'repo-a',
+          branch: 'main',
+          files: [{ path: 'src/index.ts', extension: 'ts', size: 32, content: 'export const ok = true;' }],
+          totalFilesDiscovered: 1,
+          truncated: false,
+        }),
+      },
+      {
+        build: jest.fn().mockReturnValue({ systemPrompt: 'system', userPrompt: 'user' }),
+      },
+      {
+        analyze: jest.fn().mockImplementation(({ signal }) => new Promise((_, reject) => {
+          signal.addEventListener('abort', () => reject(new Error('aborted')));
+        })),
+      },
+      {
+        parse: jest.fn(),
+      },
+    );
+
+    const runPromise = service.runAnalysis({
+      requestId: 'req-timeout',
+      source: {
+        provider: 'github',
+        organization: 'acme',
+        project: 'repo-a',
+        repositoryId: 'repo-a',
+        personalAccessToken: 'pat',
+      },
+      repositoryId: 'repo-a',
+      branchName: 'main',
+      model: 'gpt-5.2-codex',
+      apiKey: 'sk-test',
+      analysisDepth: 'standard',
+      maxFilesPerRun: 50,
+      includeTests: false,
+      timeoutMs: 500,
+    });
+    const observed = runPromise.then(
+      () => ({ ok: true }),
+      (error) => ({ ok: false, error }),
+    );
+
+    await jest.advanceTimersByTimeAsync(500);
+
+    const result = await observed;
+    expect(result.ok).toBe(false);
+    expect(result.error.message).toContain('El analisis remoto excedio el timeout de 1 segundos.');
+    expect(service.activeRuns.size).toBe(0);
   });
 });

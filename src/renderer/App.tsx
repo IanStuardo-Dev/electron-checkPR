@@ -10,7 +10,7 @@ import { RepositorySourceProvider } from './features/dashboard/context/Repositor
 
 const App = () => {
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <RepositorySourceProvider>
         <div className="min-h-screen bg-slate-100">
           <div className="mx-auto flex min-h-screen max-w-[1600px]">

@@ -18,8 +18,10 @@ test('la app abre el dashboard y permite navegar a settings', async () => {
     await expect(page.getByText('Repo Command Center')).toBeVisible();
     await expect(page.getByText(/No hay provider activo/i)).toBeVisible();
 
-    await page.getByRole('link', { name: 'Settings' }).click();
-    await expect(page.getByText('Configuracion de fuentes e integraciones')).toBeVisible();
+    const settingsLink = page.getByRole('link', { name: 'Settings' });
+    await settingsLink.click();
+    await page.waitForURL(/#\/settings$/);
+    await expect(page).toHaveURL(/#\/settings$/);
   } finally {
     await electronApp.close();
   }

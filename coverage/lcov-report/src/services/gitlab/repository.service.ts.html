@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">60% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>6/10</span>
+                <span class='fraction'>10/10</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">20% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/5</span>
+                <span class='fraction'>5/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">60% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>6/10</span>
+                <span class='fraction'>10/10</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -97,28 +97,13 @@
 <a name='L32'></a><a href='#L32'>32</a>
 <a name='L33'></a><a href='#L33'>33</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -126,7 +111,22 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import type { RepositoryBranch, RepositoryConnectionConfig, RepositoryProject, RepositorySnapshotOptions, RepositorySummary, ReviewItem } from '../../types/repository';
 import type { RepositorySnapshot } from '../../types/analysis';
 import { getGitLabBranches, getGitLabProjects, getGitLabRepositories } from './gitlab.repositories';
@@ -134,20 +134,20 @@ import { getGitLabPullRequests } from './gitlab.pull-requests';
 import { getGitLabRepositorySnapshot } from './gitlab.snapshot';
 &nbsp;
 export class GitLabRepositoryService {
-<span class="fstat-no" title="function not covered" >  async </span>getProjects(config: RepositoryConnectionConfig): Promise&lt;RepositoryProject[]&gt; {
-<span class="cstat-no" title="statement not covered" >    return getGitLabProjects(config);</span>
+  async getProjects(config: RepositoryConnectionConfig): Promise&lt;RepositoryProject[]&gt; {
+    return getGitLabProjects(config);
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>getRepositories(config: RepositoryConnectionConfig): Promise&lt;RepositorySummary[]&gt; {
-<span class="cstat-no" title="statement not covered" >    return getGitLabRepositories(config);</span>
+  async getRepositories(config: RepositoryConnectionConfig): Promise&lt;RepositorySummary[]&gt; {
+    return getGitLabRepositories(config);
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>getBranches(config: RepositoryConnectionConfig): Promise&lt;RepositoryBranch[]&gt; {
-<span class="cstat-no" title="statement not covered" >    return getGitLabBranches(config);</span>
+  async getBranches(config: RepositoryConnectionConfig): Promise&lt;RepositoryBranch[]&gt; {
+    return getGitLabBranches(config);
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>getPullRequests(config: RepositoryConnectionConfig): Promise&lt;ReviewItem[]&gt; {
-<span class="cstat-no" title="statement not covered" >    return getGitLabPullRequests(config);</span>
+  async getPullRequests(config: RepositoryConnectionConfig): Promise&lt;ReviewItem[]&gt; {
+    return getGitLabPullRequests(config);
   }
 &nbsp;
   async getRepositorySnapshot(
@@ -166,7 +166,7 @@ export const gitLabRepositoryService = new GitLabRepositoryService();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-11T19:53:17.548Z
+                at 2026-03-11T20:14:35.936Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

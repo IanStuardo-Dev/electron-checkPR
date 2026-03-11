@@ -11,21 +11,40 @@ export async function enumerateGitHubContents(
   repository: string,
   branchName: string,
   personalAccessToken: string,
-): Promise<Array<{ path: string; size?: number }>> {
+  options: {
+    inventoryTarget?: number;
+    concurrency?: number;
+  } = {},
+): Promise<{
+  files: Array<{ path: string; size?: number }>;
+  reachedInventoryTarget: boolean;
+}> {
   const queue = [''];
   const files: Array<{ path: string; size?: number }> = [];
+  const inventoryTarget = options.inventoryTarget ?? Number.POSITIVE_INFINITY;
+  const concurrency = Math.max(1, options.concurrency ?? 4);
+  let cursor = 0;
+  let reachedInventoryTarget = false;
 
-  while (queue.length > 0) {
-    const currentPath = queue.shift() || '';
+  async function processDirectory(currentPath: string): Promise<void> {
+    if (files.length >= inventoryTarget) {
+      reachedInventoryTarget = true;
+      return;
+    }
+
     const pathSuffix = currentPath ? `/${currentPath.split('/').map(encodeURIComponent).join('/')}` : '';
     const payload = await retryWithBackoff(() => requestGitHubContent(
       `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/contents${pathSuffix}?ref=${encodeURIComponent(branchName)}`,
       personalAccessToken,
       `repository contents request (${currentPath || '/'})`,
     ));
-
     if (Array.isArray(payload)) {
       payload.forEach((item) => {
+        if (files.length >= inventoryTarget) {
+          reachedInventoryTarget = true;
+          return;
+        }
+
         if (item.type === 'dir') {
           queue.push(item.path);
           return;
@@ -39,7 +58,22 @@ export async function enumerateGitHubContents(
     }
   }
 
-  return files;
+  async function worker(): Promise<void> {
+    while (cursor < queue.length && !reachedInventoryTarget) {
+      const currentIndex = cursor;
+      cursor += 1;
+      await processDirectory(queue[currentIndex]);
+    }
+  }
+
+  while (cursor < queue.length && !reachedInventoryTarget) {
+    await Promise.all(Array.from({ length: Math.min(concurrency, queue.length - cursor) }, () => worker()));
+  }
+
+  return {
+    files,
+    reachedInventoryTarget,
+  };
 }
 
 export async function getGitHubRepositorySnapshot(
@@ -69,9 +103,14 @@ export async function getGitHubRepositorySnapshot(
       size: item.size,
     }));
 
-  const discoveredFiles = tree.truncated
-    ? await enumerateGitHubContents(organization, repository, options.branchName, personalAccessToken)
-    : treeFiles;
+  const inventoryTarget = Math.max(options.maxFiles * 3, options.maxFiles + 25);
+  const enumerated = tree.truncated
+    ? await enumerateGitHubContents(organization, repository, options.branchName, personalAccessToken, {
+      inventoryTarget,
+      concurrency: 4,
+    })
+    : { files: treeFiles, reachedInventoryTarget: false };
+  const discoveredFiles = enumerated.files;
 
   const candidateFiles = discoveredFiles
     .filter((item) => isSupportedCodeFile(item.path))
@@ -132,7 +171,7 @@ export async function getGitHubRepositorySnapshot(
 
   const partialReason = appendPartialReason(
     tree.truncated
-      ? 'GitHub reporto el tree como truncado; se reconstruyo el inventario via contents y el analisis puede omitir archivos profundos o no textuales.'
+      ? `GitHub reporto el tree como truncado; se reconstruyo el inventario via contents${enumerated.reachedInventoryTarget ? ` con corte temprano al alcanzar ${inventoryTarget} archivos inventariados` : ''} y el analisis puede omitir archivos profundos o no textuales.`
       : candidateFiles.length > options.maxFiles
         ? `El snapshot se recorto a ${options.maxFiles} archivos priorizados de ${candidateFiles.length} descubiertos.`
         : undefined,
