@@ -5,9 +5,16 @@ describe('RepositoryAnalysisService', () => {
     jest.restoreAllMocks();
   });
 
+  function createServiceWithSnapshot(snapshot) {
+    return new RepositoryAnalysisService(
+      {
+        getSnapshot: jest.fn().mockResolvedValue(snapshot),
+      },
+    );
+  }
+
   test('acepta payload JSON en la raiz y lo convierte en resultado estructurado', async () => {
-    const service = new RepositoryAnalysisService();
-    jest.spyOn(service, 'getSnapshot').mockResolvedValue({
+    const service = createServiceWithSnapshot({
       provider: 'github',
       repository: 'repo-a',
       branch: 'main',
@@ -61,8 +68,7 @@ describe('RepositoryAnalysisService', () => {
   });
 
   test('mapea error 500 del proveedor remoto', async () => {
-    const service = new RepositoryAnalysisService();
-    jest.spyOn(service, 'getSnapshot').mockResolvedValue({
+    const service = createServiceWithSnapshot({
       provider: 'github',
       repository: 'repo-a',
       branch: 'main',
@@ -96,8 +102,7 @@ describe('RepositoryAnalysisService', () => {
   });
 
   test('rechaza payload estructurado incompleto', async () => {
-    const service = new RepositoryAnalysisService();
-    jest.spyOn(service, 'getSnapshot').mockResolvedValue({
+    const service = createServiceWithSnapshot({
       provider: 'github',
       repository: 'repo-a',
       branch: 'main',

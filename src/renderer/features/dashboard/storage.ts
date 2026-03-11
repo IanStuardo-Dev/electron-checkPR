@@ -51,12 +51,12 @@ export async function hydrateConnectionSecret(): Promise<string> {
 }
 
 export async function persistConnectionConfig(config: SavedConnectionConfig): Promise<void> {
-  await setSessionSecret(DASHBOARD_SESSION_PAT_KEY, config.personalAccessToken);
   const safeConfig: SavedConnectionConfig = {
     ...config,
     personalAccessToken: '',
   };
   window.sessionStorage.setItem(DASHBOARD_SESSION_CONFIG_KEY, JSON.stringify(safeConfig));
+  await setSessionSecret(DASHBOARD_SESSION_PAT_KEY, config.personalAccessToken);
   window.localStorage.removeItem(DASHBOARD_STORAGE_KEY);
 }
 

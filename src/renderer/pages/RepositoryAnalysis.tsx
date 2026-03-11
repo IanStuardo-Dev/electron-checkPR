@@ -4,7 +4,7 @@ import { ArrowPathIcon, ExclamationTriangleIcon, ShieldExclamationIcon, Sparkles
 import type { RepositoryBranch } from '../../types/repository';
 import ConnectionSummary from '../features/dashboard/components/ConnectionSummary';
 import { fetchBranches } from '../features/dashboard/ipc';
-import { useRepositorySource } from '../features/dashboard/hooks/useAzurePullRequests';
+import { useRepositorySourceContext } from '../features/dashboard/context/RepositorySourceContext';
 import { useRepositoryAnalysis } from '../features/repository-analysis/hooks/useRepositoryAnalysis';
 import { useCodexSettings } from '../features/settings/hooks/useCodexSettings';
 
@@ -18,7 +18,7 @@ const RepositoryAnalysis = () => {
     selectedProjectName,
     selectedRepositoryName,
     summary,
-  } = useRepositorySource();
+  } = useRepositorySourceContext();
   const { config: codexConfig, isReady: isCodexReady } = useCodexSettings();
   const { phase, result, error, isRunning, isCancelling, execute, cancel, reset } = useRepositoryAnalysis();
 

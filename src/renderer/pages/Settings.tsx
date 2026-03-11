@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { BoltIcon, CircleStackIcon, CpuChipIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import ConnectionPanel from '../features/dashboard/components/ConnectionPanel';
 import ConnectionSummary from '../features/dashboard/components/ConnectionSummary';
-import { useRepositorySource } from '../features/dashboard/hooks/useAzurePullRequests';
+import { useRepositorySourceContext } from '../features/dashboard/context/RepositorySourceContext';
 import { repositoryProviders } from '../features/repository-source/providers';
 import CodexIntegrationCard from '../features/settings/components/CodexIntegrationCard';
 import RepositoryProviderCard from '../features/settings/components/RepositoryProviderCard';
@@ -38,7 +38,7 @@ const Settings = () => {
     discoverProjects,
     selectProject,
     refreshPullRequests,
-  } = useRepositorySource();
+  } = useRepositorySourceContext();
   const {
     config: codexConfig,
     isReady: isCodexReady,
@@ -87,89 +87,14 @@ const Settings = () => {
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.45fr_0.95fr]">
-        <div className="space-y-5">
-          <ConnectionSummary
-            providerKind={activeProvider?.kind}
-            providerName={activeProviderName}
-            scopeLabel={summary.scopeLabel}
-            projectName={selectedProjectName}
-            repositoryName={selectedRepositoryName}
-            isConnected={isConnectionReady}
-            compact
-            expandable
-            expanded={Boolean(activeProvider && expandedProviderKind === activeProvider.kind)}
-            onToggleExpand={activeProvider ? () => setExpandedProviderKind((current) => (current === activeProvider.kind ? '' : activeProvider.kind)) : undefined}
-            empty={!config.provider}
-          />
-
-          <SettingsSectionCard
-            eyebrow="Workspace"
-            title="Catalogo de providers"
-            description="El producto ya piensa en proveedores como adaptadores. La UI activa uno, pero el layout y los componentes quedan listos para sumar fuentes sin rehacer la pantalla."
-            badge={<SettingsStatusBadge tone="sky" label={`${repositoryProviders.length} fuentes modeladas`} />}
-          >
-            <div className="grid gap-4">
-          {repositoryProviders.map((provider) => (
-            <RepositoryProviderCard
-              key={provider.kind}
-              provider={provider}
-              isActive={provider.kind === activeProvider?.kind}
-              isConfigured={provider.kind === activeProvider?.kind && isConnectionReady}
-              expanded={provider.kind === activeProvider?.kind && expandedProviderKind === provider.kind}
-              onToggleExpand={provider.status === 'available' && provider.kind === activeProvider?.kind
-                ? () => setExpandedProviderKind((current) => (current === provider.kind ? '' : provider.kind))
-                : undefined}
-              onActivate={provider.status === 'available' && provider.kind !== activeProvider?.kind
-                ? () => {
-                  updateConfig('provider', provider.kind);
-                  setExpandedProviderKind(provider.kind);
-                }
-                : undefined}
-            >
-              {provider.kind === activeProvider?.kind ? (
-                <ConnectionPanel
-                  providerName={activeProviderName}
-                  providerKind={provider.kind}
-                  isConnected={isConnectionReady}
-                  config={config}
-                  error={error}
-                  projectDiscoveryWarning={projectDiscoveryWarning}
-                  isLoading={isLoading}
-                  projects={projects}
-                  projectsLoading={projectsLoading}
-                  repositories={repositories}
-                  repositoriesLoading={repositoriesLoading}
-                  onDiscoverProjects={() => void discoverProjects()}
-                  onSelectProject={(project) => void selectProject(project)}
-                  onConfigChange={updateConfig}
-                  onRefresh={() => void refreshPullRequests()}
-                />
-              ) : null}
-            </RepositoryProviderCard>
-          ))}
-            </div>
-          </SettingsSectionCard>
-        </div>
-
-        <div className="space-y-6 xl:sticky xl:top-6 xl:self-start">
-          <ConnectionSummary
-            providerKind={activeProvider?.kind}
-            providerName={activeProviderName}
-            scopeLabel={summary.scopeLabel}
-            projectName={selectedProjectName}
-            repositoryName={selectedRepositoryName}
-            isConnected={isConnectionReady}
-            empty={!config.provider}
-            actionLabel="Dashboard"
-            actionTo="/"
-          />
-
-          <SettingsSectionCard
-            eyebrow="Estado"
-            title="Resumen operativo"
-            description="Lectura rapida de la configuracion actual para saber si el workspace esta listo antes de entrar al dashboard o lanzar Repo Analysis."
-          >
+      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
+        <SettingsSectionCard
+          eyebrow="Prioridad 1"
+          title="Resumen operativo"
+          description="Empieza aquí: esta card te dice si el workspace está listo o qué pieza falta antes de entrar al dashboard o lanzar un análisis."
+          badge={<SettingsStatusBadge tone={isConnectionReady ? 'emerald' : 'amber'} label={isConnectionReady ? 'Workspace operativo' : 'Faltan pasos'} />}
+        >
+          <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="grid gap-4 sm:grid-cols-2">
               <SettingsStatTile
                 label="Provider activo"
@@ -192,37 +117,47 @@ const Settings = () => {
                 description="Disponibilidad de analisis AI sobre ramas exactas."
               />
             </div>
-          </SettingsSectionCard>
+            <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Siguiente accion</p>
+              <p className="mt-3 text-lg font-semibold text-slate-950">
+                {!config.provider
+                  ? 'Selecciona un provider'
+                  : !isConnectionReady
+                    ? 'Conecta y sincroniza la fuente'
+                    : !isCodexReady
+                      ? 'Completa la integración Codex'
+                      : 'El workspace está listo'}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                {!config.provider
+                  ? 'Elige Azure DevOps, GitHub o GitLab para definir el contexto operativo.'
+                  : !isConnectionReady
+                    ? 'Autentica el provider activo y ejecuta una sincronización inicial.'
+                    : !isCodexReady
+                      ? 'Configura la API key y políticas de Codex para habilitar Repository Analysis.'
+                      : 'Puedes navegar al dashboard o ejecutar un análisis de repositorio con contexto completo.'}
+              </p>
+            </div>
+          </div>
+        </SettingsSectionCard>
 
-          <CodexIntegrationCard
-            config={codexConfig}
-            isReady={isCodexReady}
-            onChange={updateCodexConfig}
+        <div className="space-y-6">
+          <ConnectionSummary
+            providerKind={activeProvider?.kind}
+            providerName={activeProviderName}
+            scopeLabel={summary.scopeLabel}
+            projectName={selectedProjectName}
+            repositoryName={selectedRepositoryName}
+            isConnected={isConnectionReady}
+            empty={!config.provider}
+            actionLabel="Dashboard"
+            actionTo="/"
           />
 
           <SettingsSectionCard
-            eyebrow="Roadmap"
-            title="Integraciones futuras"
-            description="Reservado para features que deben vivir en settings y compartir el mismo contrato visual."
-          >
-            <div className="space-y-4">
-              <IntegrationCard
-                title="Security Providers"
-                description="Conectores a scanners externos, SAST/DAST y fuentes de vulnerabilidades."
-                status="Planned"
-              />
-              <IntegrationCard
-                title="Notifications"
-                description="Canales como Teams, Slack o email con reglas por riesgo y SLA."
-                status="Planned"
-              />
-            </div>
-          </SettingsSectionCard>
-
-          <SettingsSectionCard
-            eyebrow="Persistencia"
-            title="Politica de almacenamiento"
-            description="Los secretos viven en sesion. La configuracion durable conserva solo lo no sensible."
+            eyebrow="Politica"
+            title="Persistencia y sesion"
+            description="Esta app distingue entre configuracion reutilizable y secretos efimeros para no mezclar comodidad con riesgo."
             actions={<BoltIcon className="h-5 w-5 text-sky-600" />}
           >
             <div className="space-y-2 text-sm leading-6 text-slate-600">
@@ -231,11 +166,85 @@ const Settings = () => {
               <p>Este mismo patron se aplica tambien a Codex: configuracion persistida y API key solo en sesion.</p>
             </div>
           </SettingsSectionCard>
+        </div>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
+        <div className="space-y-6">
+          <ConnectionSummary
+            providerKind={activeProvider?.kind}
+            providerName={activeProviderName}
+            scopeLabel={summary.scopeLabel}
+            projectName={selectedProjectName}
+            repositoryName={selectedRepositoryName}
+            isConnected={isConnectionReady}
+            compact
+            expandable
+            expanded={Boolean(activeProvider && expandedProviderKind === activeProvider.kind)}
+            onToggleExpand={activeProvider ? () => setExpandedProviderKind((current) => (current === activeProvider.kind ? '' : activeProvider.kind)) : undefined}
+            empty={!config.provider}
+          />
 
           <SettingsSectionCard
-            eyebrow="Diagnostico"
-            title="Ultima traza del provider"
-            description="Sirve para depurar autenticacion, scope y rutas resueltas sin abrir la consola del proceso principal."
+            eyebrow="Prioridad 2"
+            title="Provider activo y fuentes disponibles"
+            description="Primero configura la fuente principal del workspace. Después puedes cambiar de provider sin salir de Settings."
+            badge={<SettingsStatusBadge tone="sky" label={`${repositoryProviders.length} fuentes modeladas`} />}
+          >
+            <div className="grid gap-4">
+              {repositoryProviders.map((provider) => (
+                <RepositoryProviderCard
+                  key={provider.kind}
+                  provider={provider}
+                  isActive={provider.kind === activeProvider?.kind}
+                  isConfigured={provider.kind === activeProvider?.kind && isConnectionReady}
+                  expanded={provider.kind === activeProvider?.kind && expandedProviderKind === provider.kind}
+                  onToggleExpand={provider.status === 'available' && provider.kind === activeProvider?.kind
+                    ? () => setExpandedProviderKind((current) => (current === provider.kind ? '' : provider.kind))
+                    : undefined}
+                  onActivate={provider.status === 'available' && provider.kind !== activeProvider?.kind
+                    ? () => {
+                      updateConfig('provider', provider.kind);
+                      setExpandedProviderKind(provider.kind);
+                    }
+                    : undefined}
+                >
+                  {provider.kind === activeProvider?.kind ? (
+                    <ConnectionPanel
+                      providerName={activeProviderName}
+                      providerKind={provider.kind}
+                      isConnected={isConnectionReady}
+                      config={config}
+                      error={error}
+                      projectDiscoveryWarning={projectDiscoveryWarning}
+                      isLoading={isLoading}
+                      projects={projects}
+                      projectsLoading={projectsLoading}
+                      repositories={repositories}
+                      repositoriesLoading={repositoriesLoading}
+                      onDiscoverProjects={() => void discoverProjects()}
+                      onSelectProject={(project) => void selectProject(project)}
+                      onConfigChange={updateConfig}
+                      onRefresh={() => void refreshPullRequests()}
+                    />
+                  ) : null}
+                </RepositoryProviderCard>
+              ))}
+            </div>
+          </SettingsSectionCard>
+
+          <CodexIntegrationCard
+            config={codexConfig}
+            isReady={isCodexReady}
+            onChange={updateCodexConfig}
+          />
+        </div>
+
+        <div className="space-y-6 xl:sticky xl:top-6 xl:self-start">
+          <SettingsSectionCard
+            eyebrow="Prioridad 3"
+            title="Diagnostico del provider"
+            description="Revisa aquí errores de autenticación, scope o resolución de rutas antes de ir a consola."
             badge={<SettingsStatusBadge tone={diagnostics.lastError ? 'rose' : 'slate'} label={diagnostics.lastError ? 'Con error' : 'Sin error activo'} />}
           >
             <div className="space-y-2 text-sm leading-6 text-slate-600">
@@ -253,6 +262,25 @@ const Settings = () => {
                 {diagnostics.lastError}
               </div>
             ) : null}
+          </SettingsSectionCard>
+
+          <SettingsSectionCard
+            eyebrow="Roadmap"
+            title="Integraciones futuras"
+            description="Lo que venga después debe caer aquí, con la misma jerarquía visual y sin competir con la configuración operativa."
+          >
+            <div className="space-y-4">
+              <IntegrationCard
+                title="Security Providers"
+                description="Conectores a scanners externos, SAST/DAST y fuentes de vulnerabilidades."
+                status="Planned"
+              />
+              <IntegrationCard
+                title="Notifications"
+                description="Canales como Teams, Slack o email con reglas por riesgo y SLA."
+                status="Planned"
+              />
+            </div>
           </SettingsSectionCard>
         </div>
       </section>

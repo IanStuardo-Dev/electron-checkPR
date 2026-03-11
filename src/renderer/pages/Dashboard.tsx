@@ -7,7 +7,7 @@ import HealthSection from '../features/dashboard/components/HealthSection';
 import InsightsPanel from '../features/dashboard/components/InsightsPanel';
 import MetricsGrid from '../features/dashboard/components/MetricsGrid';
 import PriorityList from '../features/dashboard/components/PriorityList';
-import { useRepositorySource } from '../features/dashboard/hooks/useAzurePullRequests';
+import { useRepositorySourceContext } from '../features/dashboard/context/RepositorySourceContext';
 
 const Dashboard = () => {
   const {
@@ -19,7 +19,7 @@ const Dashboard = () => {
     summary,
     openPullRequest,
     selectedRepositoryName,
-  } = useRepositorySource();
+  } = useRepositorySourceContext();
 
   return (
     <motion.div
