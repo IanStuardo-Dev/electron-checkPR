@@ -1,6 +1,6 @@
 const dashboardIpc = require('../dist/renderer/features/dashboard/ipc.js');
 
-describe('dashboard ipc provider mapping', () => {
+describe('dashboard ipc provider gateway', () => {
   beforeEach(() => {
     global.window = {
       electronApi: {
@@ -9,27 +9,10 @@ describe('dashboard ipc provider mapping', () => {
     };
   });
 
-  test('resuelve canales de Azure, GitHub y GitLab', () => {
-    expect(dashboardIpc.getProviderChannel({
-      provider: 'azure-devops',
-      organization: '',
-      project: '',
-      personalAccessToken: '',
-    }, 'pullRequests')).toBe('azure:fetchPullRequests');
-
-    expect(dashboardIpc.getProviderChannel({
-      provider: 'github',
-      organization: '',
-      project: '',
-      personalAccessToken: '',
-    }, 'repositories')).toBe('github:fetchRepositories');
-
-    expect(dashboardIpc.getProviderChannel({
-      provider: 'gitlab',
-      organization: '',
-      project: '',
-      personalAccessToken: '',
-    }, 'openExternal')).toBe('gitlab:openExternal');
+  test('resuelve canales genericos del gateway de repository source', () => {
+    expect(dashboardIpc.getRepositorySourceChannel('pullRequests')).toBe('repository-source:fetchPullRequests');
+    expect(dashboardIpc.getRepositorySourceChannel('repositories')).toBe('repository-source:fetchRepositories');
+    expect(dashboardIpc.getRepositorySourceChannel('openExternal')).toBe('repository-source:openExternal');
   });
 
   test('fetchPullRequests usa electronApi.invoke y retorna data', async () => {
@@ -46,11 +29,21 @@ describe('dashboard ipc provider mapping', () => {
       personalAccessToken: 'secret',
     });
 
-    expect(window.electronApi.invoke).toHaveBeenCalledWith('github:fetchPullRequests', expect.objectContaining({
+    expect(window.electronApi.invoke).toHaveBeenCalledWith('repository-source:fetchPullRequests', expect.objectContaining({
       organization: 'acme',
       repositoryId: 'repo-a',
+      provider: 'github',
     }));
     expect(result).toEqual([{ id: 1, title: 'PR', reviewers: [] }]);
+  });
+
+  test('falla si no hay provider seleccionado', async () => {
+    await expect(dashboardIpc.fetchProjects({
+      provider: '',
+      organization: '',
+      project: '',
+      personalAccessToken: '',
+    })).rejects.toThrow('Selecciona un provider');
   });
 
   test('openReviewItem propaga errores del canal IPC', async () => {

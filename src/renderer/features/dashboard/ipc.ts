@@ -23,66 +23,45 @@ async function invokeIpc<T>(channel: string, payload?: unknown): Promise<T> {
   return response.data;
 }
 
-export function getProviderChannel(config: SavedConnectionConfig, operation: 'pullRequests' | 'projects' | 'repositories' | 'branches' | 'openExternal'): string {
+export function getRepositorySourceChannel(operation: 'pullRequests' | 'projects' | 'repositories' | 'branches' | 'openExternal'): string {
+  const channelMap = {
+    pullRequests: 'repository-source:fetchPullRequests',
+    projects: 'repository-source:fetchProjects',
+    repositories: 'repository-source:fetchRepositories',
+    branches: 'repository-source:fetchBranches',
+    openExternal: 'repository-source:openExternal',
+  } satisfies Record<typeof operation, string>;
+
+  return channelMap[operation];
+}
+
+function ensureProviderSelected(config: SavedConnectionConfig): void {
   if (!config.provider) {
     throw new Error('Selecciona un provider antes de ejecutar esta accion.');
   }
-
-  if (config.provider === 'azure-devops') {
-    const channelMap = {
-      pullRequests: 'azure:fetchPullRequests',
-      projects: 'azure:fetchProjects',
-      repositories: 'azure:fetchRepositories',
-      branches: 'azure:fetchBranches',
-      openExternal: 'azure:openExternal',
-    } satisfies Record<typeof operation, string>;
-
-    return channelMap[operation];
-  }
-
-  if (config.provider === 'github') {
-    const channelMap = {
-      pullRequests: 'github:fetchPullRequests',
-      projects: 'github:fetchProjects',
-      repositories: 'github:fetchRepositories',
-      branches: 'github:fetchBranches',
-      openExternal: 'github:openExternal',
-    } satisfies Record<typeof operation, string>;
-
-    return channelMap[operation];
-  }
-
-  if (config.provider === 'gitlab') {
-    const channelMap = {
-      pullRequests: 'gitlab:fetchPullRequests',
-      projects: 'gitlab:fetchProjects',
-      repositories: 'gitlab:fetchRepositories',
-      branches: 'gitlab:fetchBranches',
-      openExternal: 'gitlab:openExternal',
-    } satisfies Record<typeof operation, string>;
-
-    return channelMap[operation];
-  }
-
-  throw new Error(`El provider ${config.provider} aun no tiene IPC implementado.`);
 }
 
 export async function fetchPullRequests(config: SavedConnectionConfig): Promise<ReviewItem[]> {
-  return invokeIpc<ReviewItem[]>(getProviderChannel(config, 'pullRequests'), config);
+  ensureProviderSelected(config);
+  return invokeIpc<ReviewItem[]>(getRepositorySourceChannel('pullRequests'), config);
 }
 
 export async function fetchProjects(config: SavedConnectionConfig): Promise<RepositoryProject[]> {
-  return invokeIpc<RepositoryProject[]>(getProviderChannel(config, 'projects'), config);
+  ensureProviderSelected(config);
+  return invokeIpc<RepositoryProject[]>(getRepositorySourceChannel('projects'), config);
 }
 
 export async function fetchRepositories(config: SavedConnectionConfig): Promise<RepositorySummary[]> {
-  return invokeIpc<RepositorySummary[]>(getProviderChannel(config, 'repositories'), config);
+  ensureProviderSelected(config);
+  return invokeIpc<RepositorySummary[]>(getRepositorySourceChannel('repositories'), config);
 }
 
 export async function fetchBranches(config: SavedConnectionConfig): Promise<RepositoryBranch[]> {
-  return invokeIpc<RepositoryBranch[]>(getProviderChannel(config, 'branches'), config);
+  ensureProviderSelected(config);
+  return invokeIpc<RepositoryBranch[]>(getRepositorySourceChannel('branches'), config);
 }
 
 export async function openReviewItem(url: string, config: SavedConnectionConfig): Promise<void> {
-  await invokeIpc<void>(getProviderChannel(config, 'openExternal'), url);
+  ensureProviderSelected(config);
+  await invokeIpc<void>(getRepositorySourceChannel('openExternal'), url);
 }

@@ -1,12 +1,10 @@
-import { pullRequestService } from '../azure/pr.service';
-import { gitHubRepositoryService } from '../github/repository.service';
-import { gitLabRepositoryService } from '../gitlab/repository.service';
 import type {
   RepositoryAnalysisFinding,
   RepositoryAnalysisPromptDirectives,
   RepositoryAnalysisRequest,
   RepositoryAnalysisResult,
 } from '../../types/analysis';
+import { getRepositoryProviderPort } from '../providers/repository-provider.registry';
 
 const ANALYSIS_SCHEMA = {
   type: 'object',
@@ -216,6 +214,10 @@ function buildPromptDirectiveSection(promptDirectives?: RepositoryAnalysisPrompt
 export class RepositoryAnalysisService {
   private activeRuns = new Map<string, ActiveAnalysisRun>();
 
+  constructor(
+    private readonly providerResolver: typeof getRepositoryProviderPort = getRepositoryProviderPort,
+  ) {}
+
   async runAnalysis(request: RepositoryAnalysisRequest): Promise<RepositoryAnalysisResult> {
     if (!request.apiKey.trim()) {
       throw new Error('La API key de Codex es obligatoria para ejecutar el analisis.');
@@ -386,6 +388,7 @@ export class RepositoryAnalysisService {
   }
 
   private async getSnapshot(request: RepositoryAnalysisRequest) {
+    const provider = this.providerResolver(request.source.provider);
     const sourceConfig = {
       ...request.source,
       repositoryId: request.repositoryId,
@@ -400,16 +403,7 @@ export class RepositoryAnalysisService {
       includeTests: request.includeTests,
     };
 
-    switch (request.source.provider) {
-      case 'azure-devops':
-        return pullRequestService.getRepositorySnapshot(sourceConfig, options);
-      case 'github':
-        return gitHubRepositoryService.getRepositorySnapshot(sourceConfig, options);
-      case 'gitlab':
-        return gitLabRepositoryService.getRepositorySnapshot(sourceConfig, options);
-      default:
-        throw new Error(`El provider ${request.source.provider} aun no soporta Repository Analysis.`);
-    }
+    return provider.getRepositorySnapshot(sourceConfig, options);
   }
 
   private assertRunNotCancelled(requestId: string): void {
