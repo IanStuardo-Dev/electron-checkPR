@@ -1,4 +1,4 @@
-const { RepositoryAnalysisService } = require('../dist/services/analysis/repository-analysis.service.js');
+const { RepositoryAnalysisService } = require('../src/services/analysis/repository-analysis.service');
 
 describe('RepositoryAnalysisService', () => {
   afterEach(() => {

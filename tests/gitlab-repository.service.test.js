@@ -1,4 +1,4 @@
-const { GitLabRepositoryService } = require('../dist/services/gitlab/repository.service.js');
+const { GitLabRepositoryService } = require('../src/services/gitlab/repository.service');
 
 describe('GitLabRepositoryService', () => {
   afterEach(() => {

@@ -1,4 +1,4 @@
-const dashboardIpc = require('../dist/renderer/features/dashboard/ipc.js');
+const dashboardIpc = require('../src/renderer/features/dashboard/ipc');
 
 describe('dashboard ipc provider gateway', () => {
   beforeEach(() => {

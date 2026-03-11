@@ -1,4 +1,4 @@
-const { PullRequestService, pullRequestServiceInternals } = require('../dist/services/azure/pr.service.js');
+const { PullRequestService, pullRequestServiceInternals } = require('../src/services/azure/pr.service');
 
 describe('PullRequestService', () => {
   afterEach(() => {

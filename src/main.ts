@@ -18,9 +18,12 @@ function createWindow() {
     }
   });
 
-  const isDevelopment = !app.isPackaged || process.env.NODE_ENV === 'development';
+  const rendererUrl = process.env.ELECTRON_RENDERER_URL;
+  const isDevelopment = Boolean(rendererUrl) || process.env.NODE_ENV === 'development';
 
-  if (isDevelopment) {
+  if (rendererUrl) {
+    mainWindow.loadURL(rendererUrl);
+  } else if (isDevelopment) {
     mainWindow.loadURL('http://localhost:8080');
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));

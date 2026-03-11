@@ -1,4 +1,4 @@
-const { PullRequestService } = require('../dist/services/azure/pr.service.js');
+const { PullRequestService } = require('../src/services/azure/pr.service');
 
 describe('Azure snapshot retries', () => {
   afterEach(() => {

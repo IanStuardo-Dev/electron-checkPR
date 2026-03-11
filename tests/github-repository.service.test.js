@@ -1,4 +1,4 @@
-const { GitHubRepositoryService, gitHubRepositoryServiceInternals } = require('../dist/services/github/repository.service.js');
+const { GitHubRepositoryService, gitHubRepositoryServiceInternals } = require('../src/services/github/repository.service');
 
 describe('GitHubRepositoryService', () => {
   afterEach(() => {
