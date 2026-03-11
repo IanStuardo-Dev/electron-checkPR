@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { BoltIcon, CircleStackIcon, CpuChipIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import ConnectionPanel from '../features/dashboard/components/ConnectionPanel';
 import ConnectionSummary from '../features/dashboard/components/ConnectionSummary';
 import { useRepositorySource } from '../features/dashboard/hooks/useAzurePullRequests';
@@ -8,6 +9,11 @@ import CodexIntegrationCard from '../features/settings/components/CodexIntegrati
 import RepositoryProviderCard from '../features/settings/components/RepositoryProviderCard';
 import { useCodexSettings } from '../features/settings/hooks/useCodexSettings';
 import type { RepositoryProviderKind } from '../../types/repository';
+import {
+  SettingsSectionCard,
+  SettingsStatTile,
+  SettingsStatusBadge,
+} from '../features/settings/components/SettingsPrimitives';
 
 const Settings = () => {
   const {
@@ -38,24 +44,50 @@ const Settings = () => {
     updateConfig: updateCodexConfig,
   } = useCodexSettings();
   const [expandedProviderKind, setExpandedProviderKind] = React.useState<RepositoryProviderKind | ''>(config.provider);
+  const availableProviders = repositoryProviders.filter((provider) => provider.status === 'available').length;
+  const configuredIntegrations = Number(isConnectionReady) + Number(isCodexReady);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
+      className="space-y-8"
     >
-      <section className="rounded-3xl bg-slate-950 p-8 text-white shadow-2xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-300">Settings</p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight">Configuracion de fuentes e integraciones</h1>
-        <p className="mt-3 max-w-3xl text-sm text-slate-300">
+      <section className="overflow-hidden rounded-[32px] bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.24),_transparent_28%),linear-gradient(135deg,_#020617,_#0f172a_55%,_#111827)] p-8 text-white shadow-[0_35px_100px_-45px_rgba(2,6,23,0.95)]">
+        <div className="grid gap-8 xl:grid-cols-[1.4fr_0.9fr]">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-300">Settings</p>
+            <h1 className="mt-3 text-4xl font-semibold tracking-tight">Configuracion de fuentes e integraciones</h1>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
           Este es el hub para providers de repositorios e integraciones transversales. Azure DevOps, GitHub y GitLab quedan operativos;
           Bitbucket entra al backlog futuro.
-        </p>
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+            <HeroMetric
+              icon={<CircleStackIcon className="h-5 w-5" />}
+              label="Providers operativos"
+              value={`${availableProviders}`}
+              detail="Azure DevOps, GitHub y GitLab"
+            />
+            <HeroMetric
+              icon={<CpuChipIcon className="h-5 w-5" />}
+              label="Integraciones listas"
+              value={`${configuredIntegrations}/2`}
+              detail="Provider activo + Codex"
+            />
+            <HeroMetric
+              icon={<ShieldCheckIcon className="h-5 w-5" />}
+              label="Persistencia segura"
+              value="Sesion"
+              detail="Secrets fuera de disco"
+            />
+          </div>
+        </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-        <div className="space-y-4">
+      <section className="grid gap-6 xl:grid-cols-[1.45fr_0.95fr]">
+        <div className="space-y-5">
           <ConnectionSummary
             providerKind={activeProvider.kind}
             providerName={activeProvider.name}
@@ -69,6 +101,13 @@ const Settings = () => {
             onToggleExpand={() => setExpandedProviderKind((current) => (current === activeProvider.kind ? '' : activeProvider.kind))}
           />
 
+          <SettingsSectionCard
+            eyebrow="Workspace"
+            title="Catalogo de providers"
+            description="El producto ya piensa en proveedores como adaptadores. La UI activa uno, pero el layout y los componentes quedan listos para sumar fuentes sin rehacer la pantalla."
+            badge={<SettingsStatusBadge tone="sky" label={`${repositoryProviders.length} fuentes modeladas`} />}
+          >
+            <div className="grid gap-4">
           {repositoryProviders.map((provider) => (
             <RepositoryProviderCard
               key={provider.kind}
@@ -107,9 +146,11 @@ const Settings = () => {
               ) : null}
             </RepositoryProviderCard>
           ))}
+            </div>
+          </SettingsSectionCard>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 xl:sticky xl:top-6 xl:self-start">
           <ConnectionSummary
             providerKind={activeProvider.kind}
             providerName={activeProvider.name}
@@ -121,15 +162,47 @@ const Settings = () => {
             actionTo="/"
           />
 
+          <SettingsSectionCard
+            eyebrow="Estado"
+            title="Resumen operativo"
+            description="Lectura rapida de la configuracion actual para saber si el workspace esta listo antes de entrar al dashboard o lanzar Repo Analysis."
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <SettingsStatTile
+                label="Provider activo"
+                value={activeProvider.name}
+                description="Fuente primaria de repositorios y PRs para esta sesion."
+              />
+              <SettingsStatTile
+                label="Conexion"
+                value={isConnectionReady ? 'OK' : 'Pendiente'}
+                description={isConnectionReady ? 'Sesion autenticada y sincronizacion exitosa.' : 'Falta autenticar o sincronizar el provider activo.'}
+              />
+              <SettingsStatTile
+                label="Scope actual"
+                value={selectedRepositoryName || selectedProjectName || 'Global'}
+                description={summary.scopeLabel}
+              />
+              <SettingsStatTile
+                label="Codex"
+                value={isCodexReady ? 'Listo' : 'Pendiente'}
+                description="Disponibilidad de analisis AI sobre ramas exactas."
+              />
+            </div>
+          </SettingsSectionCard>
+
           <CodexIntegrationCard
             config={codexConfig}
             isReady={isCodexReady}
             onChange={updateCodexConfig}
           />
 
-          <section className="rounded-3xl bg-white p-6 shadow-lg ring-1 ring-slate-200">
-            <h2 className="text-xl font-semibold text-slate-900">Integraciones futuras</h2>
-            <div className="mt-4 space-y-4">
+          <SettingsSectionCard
+            eyebrow="Roadmap"
+            title="Integraciones futuras"
+            description="Reservado para features que deben vivir en settings y compartir el mismo contrato visual."
+          >
+            <div className="space-y-4">
               <IntegrationCard
                 title="Security Providers"
                 description="Conectores a scanners externos, SAST/DAST y fuentes de vulnerabilidades."
@@ -141,20 +214,28 @@ const Settings = () => {
                 status="Planned"
               />
             </div>
-          </section>
+          </SettingsSectionCard>
 
-          <section className="rounded-3xl bg-white p-6 shadow-lg ring-1 ring-slate-200">
-            <h2 className="text-xl font-semibold text-slate-900">Persistencia</h2>
-            <div className="mt-4 space-y-2 text-sm text-slate-600">
+          <SettingsSectionCard
+            eyebrow="Persistencia"
+            title="Politica de almacenamiento"
+            description="Los secretos viven en sesion. La configuracion durable conserva solo lo no sensible."
+            actions={<BoltIcon className="h-5 w-5 text-sky-600" />}
+          >
+            <div className="space-y-2 text-sm leading-6 text-slate-600">
               <p>Las fuentes de repositorios no persisten organizacion, proyecto ni repositorio al cerrar la app.</p>
               <p>Se guarda solo en sesion: el token del provider activo, para no persistir secretos ni contexto sensible en disco.</p>
               <p>Este mismo patron se aplica tambien a Codex: configuracion persistida y API key solo en sesion.</p>
             </div>
-          </section>
+          </SettingsSectionCard>
 
-          <section className="rounded-3xl bg-white p-6 shadow-lg ring-1 ring-slate-200">
-            <h2 className="text-xl font-semibold text-slate-900">Diagnostico del provider</h2>
-            <div className="mt-4 space-y-2 text-sm text-slate-600">
+          <SettingsSectionCard
+            eyebrow="Diagnostico"
+            title="Ultima traza del provider"
+            description="Sirve para depurar autenticacion, scope y rutas resueltas sin abrir la consola del proceso principal."
+            badge={<SettingsStatusBadge tone={diagnostics.lastError ? 'rose' : 'slate'} label={diagnostics.lastError ? 'Con error' : 'Sin error activo'} />}
+          >
+            <div className="space-y-2 text-sm leading-6 text-slate-600">
               <p><span className="font-medium text-slate-900">Provider:</span> {activeProvider.name}</p>
               <p><span className="font-medium text-slate-900">Operacion:</span> {diagnostics.operation || 'sin ejecucion'}</p>
               <p><span className="font-medium text-slate-900">Organization:</span> {diagnostics.organization || '-'}</p>
@@ -165,16 +246,34 @@ const Settings = () => {
               <p><span className="font-medium text-slate-900">Conexion exitosa:</span> {hasSuccessfulConnection ? 'si' : 'no'}</p>
             </div>
             {diagnostics.lastError ? (
-              <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700">
                 {diagnostics.lastError}
               </div>
             ) : null}
-          </section>
+          </SettingsSectionCard>
         </div>
       </section>
     </motion.div>
   );
 };
+
+interface HeroMetricProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  detail: string;
+}
+
+const HeroMetric = ({ icon, label, value, detail }: HeroMetricProps) => (
+  <article className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
+    <div className="flex items-center gap-2 text-sky-300">
+      {icon}
+      <p className="text-[11px] font-semibold uppercase tracking-[0.24em]">{label}</p>
+    </div>
+    <p className="mt-3 text-2xl font-semibold text-white">{value}</p>
+    <p className="mt-2 text-sm leading-6 text-slate-300">{detail}</p>
+  </article>
+);
 
 interface IntegrationCardProps {
   title: string;

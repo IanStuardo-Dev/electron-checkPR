@@ -21,3 +21,11 @@ export async function runRepositoryAnalysis(payload: RepositoryAnalysisRequest):
 
   return response.data;
 }
+
+export async function cancelRepositoryAnalysis(requestId: string): Promise<void> {
+  const response = await window.electronApi.invoke('analysis:cancelRepositoryAnalysis', requestId) as IpcResponse<void>;
+
+  if (!response.ok) {
+    throw new Error(response.error);
+  }
+}

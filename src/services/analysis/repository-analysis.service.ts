@@ -64,6 +64,14 @@ interface OpenAIResponsesResult {
   };
 }
 
+interface ActiveAnalysisRun {
+  cancelled: boolean;
+  controller: AbortController | null;
+  timeoutId: NodeJS.Timeout | null;
+}
+
+const DEFAULT_ANALYSIS_TIMEOUT_MS = 90_000;
+
 type ParsedAnalysisPayload = Omit<
   RepositoryAnalysisResult,
   'provider' | 'repository' | 'branch' | 'model' | 'analyzedAt' | 'snapshot'
@@ -163,13 +171,23 @@ function isStructuredAnalysisPayload(value: unknown): value is ParsedAnalysisPay
 }
 
 export class RepositoryAnalysisService {
+  private activeRuns = new Map<string, ActiveAnalysisRun>();
+
   async runAnalysis(request: RepositoryAnalysisRequest): Promise<RepositoryAnalysisResult> {
     if (!request.apiKey.trim()) {
       throw new Error('La API key de Codex es obligatoria para ejecutar el analisis.');
     }
 
+    this.activeRuns.set(request.requestId, {
+      cancelled: false,
+      controller: null,
+      timeoutId: null,
+    });
+
     const snapshot = await this.getSnapshot(request);
+    this.assertRunNotCancelled(request.requestId);
     if (snapshot.files.length === 0) {
+      this.cleanupRun(request.requestId);
       throw new Error('No se encontraron archivos de codigo legibles para analizar en el scope seleccionado.');
     }
 
@@ -195,91 +213,127 @@ export class RepositoryAnalysisService {
       )).join('\n\n---\n\n'),
     ].join('\n');
 
-    const response = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${request.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: request.model,
-        store: false,
-        input: [
-          {
-            role: 'system',
-            content: [{ type: 'input_text', text: systemPrompt }],
-          },
-          {
-            role: 'user',
-            content: [{ type: 'input_text', text: userPrompt }],
-          },
-        ],
-        text: {
-          format: {
-            type: 'json_schema',
-            name: 'repository_analysis',
-            schema: ANALYSIS_SCHEMA,
-            strict: true,
-          },
+    const timeoutMs = request.timeoutMs ?? DEFAULT_ANALYSIS_TIMEOUT_MS;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort('timeout'), timeoutMs);
+    const activeRun = this.activeRuns.get(request.requestId);
+    if (activeRun) {
+      activeRun.controller = controller;
+      activeRun.timeoutId = timeoutId;
+    }
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${request.apiKey}`,
         },
-      }),
-    });
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: request.model,
+          store: false,
+          input: [
+            {
+              role: 'system',
+              content: [{ type: 'input_text', text: systemPrompt }],
+            },
+            {
+              role: 'user',
+              content: [{ type: 'input_text', text: userPrompt }],
+            },
+          ],
+          text: {
+            format: {
+              type: 'json_schema',
+              name: 'repository_analysis',
+              schema: ANALYSIS_SCHEMA,
+              strict: true,
+            },
+          },
+        }),
+      });
 
-    const rawText = await response.text();
-    if (!response.ok) {
-      const detail = compactText(rawText, 600) || response.statusText;
+      const rawText = await response.text();
+      if (!response.ok) {
+        const detail = compactText(rawText, 600) || response.statusText;
 
-      if (response.status === 429 && rawText.includes('insufficient_quota')) {
+        if (response.status === 429 && rawText.includes('insufficient_quota')) {
+          throw new Error(
+            'Codex analysis failed (429): insufficient_quota.\nRevisa tu plan, billing o limites de uso en OpenAI antes de reintentar.\n\nResponse:\n'
+            + detail,
+          );
+        }
+
+        throw new Error(`Codex analysis failed (${response.status}): ${detail}`);
+      }
+
+      let parsedResponse: OpenAIResponsesResult;
+      try {
+        parsedResponse = JSON.parse(rawText) as OpenAIResponsesResult;
+      } catch {
+        throw new Error('Codex devolvio una respuesta invalida.');
+      }
+
+      const analysis = extractStructuredPayload(parsedResponse, rawText);
+
+      if (!analysis) {
         throw new Error(
-          'Codex analysis failed (429): insufficient_quota.\nRevisa tu plan, billing o limites de uso en OpenAI antes de reintentar.\n\nResponse:\n'
-          + detail,
+          'Codex no devolvio salida estructurada.\n\nRaw response:\n'
+          + extractResponseDebug(parsedResponse, rawText),
         );
       }
 
-      throw new Error(`Codex analysis failed (${response.status}): ${detail}`);
+      if (!isStructuredAnalysisPayload(analysis)) {
+        throw new Error(
+          'Codex devolvio una estructura incompleta para el reporte.\n\nRaw analysis:\n'
+          + compactText(JSON.stringify(analysis), 2400),
+        );
+      }
+
+      return {
+        provider: request.source.provider,
+        repository: snapshot.repository,
+        branch: request.branchName,
+        model: request.model,
+        analyzedAt: new Date().toISOString(),
+        summary: analysis.summary,
+        score: Math.max(0, Math.min(100, Math.round(analysis.score))),
+        riskLevel: analysis.riskLevel,
+        topConcerns: analysis.topConcerns,
+        recommendations: analysis.recommendations,
+        findings: analysis.findings,
+        snapshot: {
+          totalFilesDiscovered: snapshot.totalFilesDiscovered,
+          filesAnalyzed: snapshot.files.length,
+          truncated: snapshot.truncated,
+          partialReason: snapshot.partialReason,
+        },
+      };
+    } catch (error) {
+      if (controller.signal.aborted) {
+        if (controller.signal.reason === 'timeout') {
+          throw new Error(`El analisis remoto excedio el timeout de ${Math.round(timeoutMs / 1000)} segundos. Reintenta o reduce el scope.`);
+        }
+
+        throw new Error('El analisis fue cancelado antes de completarse.');
+      }
+
+      throw error;
+    } finally {
+      this.cleanupRun(request.requestId);
+    }
+  }
+
+  cancelAnalysis(requestId: string): void {
+    const activeRun = this.activeRuns.get(requestId);
+    if (!activeRun) {
+      return;
     }
 
-    let parsedResponse: OpenAIResponsesResult;
-    try {
-      parsedResponse = JSON.parse(rawText) as OpenAIResponsesResult;
-    } catch {
-      throw new Error('Codex devolvio una respuesta invalida.');
-    }
-
-    const analysis = extractStructuredPayload(parsedResponse, rawText);
-
-    if (!analysis) {
-      throw new Error(
-        'Codex no devolvio salida estructurada.\n\nRaw response:\n'
-        + extractResponseDebug(parsedResponse, rawText),
-      );
-    }
-
-    if (!isStructuredAnalysisPayload(analysis)) {
-      throw new Error(
-        'Codex devolvio una estructura incompleta para el reporte.\n\nRaw analysis:\n'
-        + compactText(JSON.stringify(analysis), 2400),
-      );
-    }
-
-    return {
-      provider: request.source.provider,
-      repository: snapshot.repository,
-      branch: request.branchName,
-      model: request.model,
-      analyzedAt: new Date().toISOString(),
-      summary: analysis.summary,
-      score: Math.max(0, Math.min(100, Math.round(analysis.score))),
-      riskLevel: analysis.riskLevel,
-      topConcerns: analysis.topConcerns,
-      recommendations: analysis.recommendations,
-      findings: analysis.findings,
-      snapshot: {
-        totalFilesDiscovered: snapshot.totalFilesDiscovered,
-        filesAnalyzed: snapshot.files.length,
-        truncated: snapshot.truncated,
-      },
-    };
+    activeRun.cancelled = true;
+    activeRun.controller?.abort('cancelled');
+    this.cleanupRun(requestId);
   }
 
   private async getSnapshot(request: RepositoryAnalysisRequest) {
@@ -307,6 +361,26 @@ export class RepositoryAnalysisService {
       default:
         throw new Error(`El provider ${request.source.provider} aun no soporta Repository Analysis.`);
     }
+  }
+
+  private assertRunNotCancelled(requestId: string): void {
+    if (this.activeRuns.get(requestId)?.cancelled) {
+      this.cleanupRun(requestId);
+      throw new Error('El analisis fue cancelado antes de iniciar la consulta remota.');
+    }
+  }
+
+  private cleanupRun(requestId: string): void {
+    const activeRun = this.activeRuns.get(requestId);
+    if (!activeRun) {
+      return;
+    }
+
+    if (activeRun.timeoutId) {
+      clearTimeout(activeRun.timeoutId);
+    }
+
+    this.activeRuns.delete(requestId);
   }
 }
 

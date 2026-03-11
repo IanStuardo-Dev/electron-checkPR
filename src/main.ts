@@ -155,6 +155,12 @@ ipcMain.handle('analysis:runRepositoryAnalysis', async (_event, payload) => {
   return safeIpcResponse(() => repositoryAnalysisService.runAnalysis(payload));
 });
 
+ipcMain.handle('analysis:cancelRepositoryAnalysis', async (_event, requestId: string) => {
+  return safeIpcResponse(async () => {
+    repositoryAnalysisService.cancelAnalysis(requestId);
+  });
+});
+
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {

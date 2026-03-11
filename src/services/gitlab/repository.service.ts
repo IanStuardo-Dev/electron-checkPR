@@ -1,5 +1,6 @@
 import type { RepositoryBranch, RepositoryConnectionConfig, RepositoryProject, RepositorySnapshotOptions, RepositorySummary, ReviewItem, ReviewItemReviewer } from '../../types/repository';
 import type { RepositorySnapshot } from '../../types/analysis';
+import { mapWithConcurrency, retryWithBackoff } from '../shared/request-control';
 
 interface GitLabProjectResponse {
   id: number;
@@ -119,6 +120,34 @@ async function requestGitLabJson<T>(url: string, personalAccessToken: string, co
   });
 
   return readGitLabResponse<T>(response, context);
+}
+
+async function requestPaginatedGitLabTree(
+  project: string,
+  branchName: string,
+  personalAccessToken: string,
+): Promise<GitLabTreeItemResponse[]> {
+  const items: GitLabTreeItemResponse[] = [];
+  const perPage = 100;
+  let page = 1;
+
+  while (true) {
+    const payload = await requestGitLabJson<GitLabTreeItemResponse[]>(
+      `${GITLAB_API_BASE_URL}/projects/${encodeURIComponent(project)}/repository/tree?ref=${encodeURIComponent(branchName)}&recursive=true&per_page=${perPage}&page=${page}`,
+      personalAccessToken,
+      `repository tree request (page ${page})`,
+    );
+
+    items.push(...payload);
+
+    if (payload.length < perPage) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  return items;
 }
 
 function normalizeNamespace(value: string): string {
@@ -325,11 +354,7 @@ export class GitLabRepositoryService {
       throw new Error('Proyecto y token son obligatorios para GitLab.');
     }
 
-    const tree = await requestGitLabJson<GitLabTreeItemResponse[]>(
-      `${GITLAB_API_BASE_URL}/projects/${encodeURIComponent(project)}/repository/tree?ref=${encodeURIComponent(options.branchName)}&recursive=true&per_page=100`,
-      personalAccessToken,
-      'repository tree request',
-    );
+    const tree = await requestPaginatedGitLabTree(project, options.branchName, personalAccessToken);
 
     const candidateFiles = tree
       .filter((item) => item.type === 'blob')
@@ -338,12 +363,12 @@ export class GitLabRepositoryService {
       .sort((left, right) => rankPath(right.path) - rankPath(left.path) || left.path.localeCompare(right.path));
 
     const selectedFiles = candidateFiles.slice(0, options.maxFiles);
-    const files = await Promise.all(selectedFiles.map(async (file) => {
-      const payload = await requestGitLabJson<GitLabFileResponse>(
+    const files = await mapWithConcurrency(selectedFiles, 5, async (file) => {
+      const payload = await retryWithBackoff(() => requestGitLabJson<GitLabFileResponse>(
         `${GITLAB_API_BASE_URL}/projects/${encodeURIComponent(project)}/repository/files/${encodeURIComponent(file.path)}?ref=${encodeURIComponent(options.branchName)}`,
         personalAccessToken,
         `file request (${file.path})`,
-      );
+      ));
 
       const content = payload.encoding === 'base64'
         ? Buffer.from(payload.content, 'base64').toString('utf8')
@@ -355,7 +380,7 @@ export class GitLabRepositoryService {
         size: payload.size,
         content,
       };
-    }));
+    });
 
     return {
       provider: 'gitlab',
@@ -364,6 +389,9 @@ export class GitLabRepositoryService {
       files,
       totalFilesDiscovered: candidateFiles.length,
       truncated: candidateFiles.length > options.maxFiles,
+      partialReason: candidateFiles.length > options.maxFiles
+        ? `El snapshot se recorto a ${options.maxFiles} archivos priorizados de ${candidateFiles.length} descubiertos en GitLab.`
+        : undefined,
     };
   }
 }

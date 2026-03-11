@@ -1,6 +1,7 @@
 import type { AzureBranch, AzureConnectionConfig, AzureProject, AzureRepository, PullRequest } from '../../types/azure';
 import type { RepositorySnapshot } from '../../types/analysis';
 import type { RepositorySnapshotOptions } from '../../types/repository';
+import { mapWithConcurrency, retryWithBackoff } from '../shared/request-control';
 
 interface AzurePullRequestResponse {
   value: Array<{
@@ -337,9 +338,9 @@ export class PullRequestService {
       .sort((left, right) => rankPath(right.path) - rankPath(left.path) || left.path.localeCompare(right.path));
 
     const selectedFiles = candidateFiles.slice(0, options.maxFiles);
-    const files = await Promise.all(selectedFiles.map(async (file) => {
+    const files = await mapWithConcurrency(selectedFiles, 5, async (file) => {
       const contentUrl = `https://dev.azure.com/${encodeURIComponent(organization)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repositoryId)}/items?path=${encodeURIComponent(file.path)}&versionDescriptor.version=${encodeURIComponent(options.branchName)}&versionDescriptor.versionType=branch&download=false&resolveLfs=true&api-version=${AZURE_API_VERSION}`;
-      const content = await requestAzureText(contentUrl, personalAccessToken, `item content request (${file.path})`);
+      const content = await retryWithBackoff(() => requestAzureText(contentUrl, personalAccessToken, `item content request (${file.path})`));
 
       return {
         path: file.path.replace(/^\//, ''),
@@ -347,7 +348,7 @@ export class PullRequestService {
         size: content.length,
         content,
       };
-    }));
+    });
 
     return {
       provider: 'azure-devops',
@@ -356,6 +357,9 @@ export class PullRequestService {
       files,
       totalFilesDiscovered: candidateFiles.length,
       truncated: candidateFiles.length > options.maxFiles,
+      partialReason: candidateFiles.length > options.maxFiles
+        ? `El snapshot se recorto a ${options.maxFiles} archivos priorizados de ${candidateFiles.length} descubiertos en Azure DevOps.`
+        : undefined,
     };
   }
 }

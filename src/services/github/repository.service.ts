@@ -1,5 +1,6 @@
 import type { RepositoryBranch, RepositoryConnectionConfig, RepositoryProject, RepositorySnapshotOptions, RepositorySummary, ReviewItem, ReviewItemReviewer } from '../../types/repository';
 import type { RepositorySnapshot } from '../../types/analysis';
+import { mapWithConcurrency, retryWithBackoff } from '../shared/request-control';
 
 interface GitHubRepositoryResponse {
   id: number;
@@ -32,6 +33,20 @@ interface GitHubTreeResponse {
 interface GitHubBlobResponse {
   content: string;
   encoding: string;
+  size: number;
+}
+
+interface GitHubContentFileResponse {
+  type: 'file';
+  path: string;
+  size: number;
+  content: string;
+  encoding: string;
+}
+
+interface GitHubContentDirectoryItem {
+  type: 'file' | 'dir';
+  path: string;
   size: number;
 }
 
@@ -137,6 +152,14 @@ async function requestGitHubJson<T>(url: string, personalAccessToken: string, co
   return readGitHubResponse<T>(response, context);
 }
 
+async function requestGitHubContent(
+  url: string,
+  personalAccessToken: string,
+  context: string,
+): Promise<GitHubContentFileResponse | GitHubContentDirectoryItem[]> {
+  return requestGitHubJson<GitHubContentFileResponse | GitHubContentDirectoryItem[]>(url, personalAccessToken, context);
+}
+
 function buildRepositorySummary(repository: GitHubRepositoryResponse): RepositorySummary {
   return {
     id: repository.name,
@@ -179,25 +202,40 @@ function getReviewerVote(state: string): number {
   }
 }
 
-async function mapWithConcurrency<TInput, TOutput>(
-  items: TInput[],
-  limit: number,
-  mapper: (item: TInput, index: number) => Promise<TOutput>,
-): Promise<TOutput[]> {
-  const results: TOutput[] = new Array(items.length);
-  let cursor = 0;
+async function enumerateGitHubContents(
+  owner: string,
+  repository: string,
+  branchName: string,
+  personalAccessToken: string,
+): Promise<Array<{ path: string; size?: number }>> {
+  const queue = [''];
+  const files: Array<{ path: string; size?: number }> = [];
 
-  async function worker(): Promise<void> {
-    while (cursor < items.length) {
-      const currentIndex = cursor;
-      cursor += 1;
-      results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+  while (queue.length > 0) {
+    const currentPath = queue.shift() || '';
+    const pathSuffix = currentPath ? `/${currentPath.split('/').map(encodeURIComponent).join('/')}` : '';
+      const payload = await retryWithBackoff(() => requestGitHubContent(
+        `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/contents${pathSuffix}?ref=${encodeURIComponent(branchName)}`,
+        personalAccessToken,
+        `repository contents request (${currentPath || '/'})`,
+      ));
+
+    if (Array.isArray(payload)) {
+      payload.forEach((item) => {
+        if (item.type === 'dir') {
+          queue.push(item.path);
+          return;
+        }
+
+        files.push({
+          path: item.path,
+          size: item.size,
+        });
+      });
     }
   }
 
-  const workerCount = Math.max(1, Math.min(limit, items.length));
-  await Promise.all(Array.from({ length: workerCount }, () => worker()));
-  return results;
+  return files;
 }
 
 async function getPullRequestReviewers(
@@ -385,8 +423,18 @@ export class GitHubRepositoryService {
       'repository tree request',
     );
 
-    const candidateFiles = tree.tree
+    const treeFiles = tree.tree
       .filter((item) => item.type === 'blob' && item.path)
+      .map((item) => ({
+        path: item.path,
+        size: item.size,
+      }));
+
+    const discoveredFiles = tree.truncated
+      ? await enumerateGitHubContents(organization, repository, options.branchName, personalAccessToken)
+      : treeFiles;
+
+    const candidateFiles = discoveredFiles
       .filter((item) => isSupportedCodeFile(item.path))
       .filter((item) => options.includeTests || !isTestFile(item.path))
       .sort((left, right) => {
@@ -398,24 +446,28 @@ export class GitHubRepositoryService {
       });
 
     const selectedFiles = candidateFiles.slice(0, options.maxFiles);
-    const files = await Promise.all(selectedFiles.map(async (file) => {
-      const blob = await requestGitHubJson<GitHubBlobResponse>(
-        `https://api.github.com/repos/${encodeURIComponent(organization)}/${encodeURIComponent(repository)}/git/blobs/${file.sha}`,
+    const files = await mapWithConcurrency(selectedFiles, 5, async (file) => {
+      const contentPayload = await retryWithBackoff(() => requestGitHubContent(
+        `https://api.github.com/repos/${encodeURIComponent(organization)}/${encodeURIComponent(repository)}/contents/${file.path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(options.branchName)}`,
         personalAccessToken,
-        `blob request (${file.path})`,
-      );
+        `content request (${file.path})`,
+      ));
 
-      const content = blob.encoding === 'base64'
-        ? Buffer.from(blob.content.replace(/\n/g, ''), 'base64').toString('utf8')
-        : blob.content;
+      if (Array.isArray(contentPayload) || contentPayload.type !== 'file') {
+        throw new Error(`GitHub content request (${file.path}) returned a directory payload unexpectedly.`);
+      }
+
+      const content = contentPayload.encoding === 'base64'
+        ? Buffer.from(contentPayload.content.replace(/\n/g, ''), 'base64').toString('utf8')
+        : contentPayload.content;
 
       return {
         path: file.path,
         extension: file.path.split('.').pop()?.toLowerCase() || '',
-        size: blob.size,
+        size: contentPayload.size,
         content,
       };
-    }));
+    });
 
     return {
       provider: 'github',
@@ -424,6 +476,11 @@ export class GitHubRepositoryService {
       files,
       totalFilesDiscovered: candidateFiles.length,
       truncated: candidateFiles.length > options.maxFiles || Boolean(tree.truncated),
+      partialReason: tree.truncated
+        ? 'GitHub reporto el tree como truncado; se reconstruyo el inventario via contents y el analisis puede omitir archivos profundos o no textuales.'
+        : candidateFiles.length > options.maxFiles
+          ? `El snapshot se recorto a ${options.maxFiles} archivos priorizados de ${candidateFiles.length} descubiertos.`
+          : undefined,
     };
   }
 }
@@ -431,6 +488,7 @@ export class GitHubRepositoryService {
 export const gitHubRepositoryServiceInternals = {
   getGitHubConfig,
   readGitHubResponse,
+  enumerateGitHubContents,
 };
 
 export const gitHubRepositoryService = new GitHubRepositoryService();

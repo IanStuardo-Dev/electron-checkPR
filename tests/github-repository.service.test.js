@@ -126,4 +126,79 @@ describe('GitHubRepositoryService', () => {
       gitHubRepositoryServiceInternals.readGitHubResponse(response, 'repositories request'),
     ).rejects.toThrow('GitHub repositories request failed (403): forbidden. Revisa scopes del token. Response: Forbidden');
   });
+
+  test('getRepositorySnapshot usa fallback por contents cuando el tree viene truncado', async () => {
+    const service = new GitHubRepositoryService();
+    global.fetch = jest.fn((url) => {
+      if (url.includes('/git/trees/main?recursive=1')) {
+        return Promise.resolve(new Response(JSON.stringify({
+          tree: [{ path: 'src/ignored.ts', type: 'blob', sha: 'sha-1', size: 10 }],
+          truncated: true,
+        }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }));
+      }
+
+      if (url.endsWith('/contents?ref=main')) {
+        return Promise.resolve(new Response(JSON.stringify([
+          { type: 'dir', path: 'src', size: 0 },
+          { type: 'dir', path: 'tests', size: 0 },
+        ]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }));
+      }
+
+      if (url.includes('/contents/src?ref=main')) {
+        return Promise.resolve(new Response(JSON.stringify([
+          { type: 'file', path: 'src/app.ts', size: 30 },
+        ]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }));
+      }
+
+      if (url.includes('/contents/tests?ref=main')) {
+        return Promise.resolve(new Response(JSON.stringify([
+          { type: 'file', path: 'tests/app.spec.ts', size: 20 },
+        ]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }));
+      }
+
+      if (url.includes('/contents/src/app.ts?ref=main')) {
+        return Promise.resolve(new Response(JSON.stringify({
+          type: 'file',
+          path: 'src/app.ts',
+          size: 30,
+          content: Buffer.from('export const app = true;').toString('base64'),
+          encoding: 'base64',
+        }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }));
+      }
+
+      throw new Error(`Unexpected fetch URL: ${url}`);
+    });
+
+    const snapshot = await service.getRepositorySnapshot({
+      provider: 'github',
+      organization: 'acme',
+      project: 'repo-a',
+      repositoryId: 'repo-a',
+      personalAccessToken: 'token',
+    }, {
+      branchName: 'main',
+      maxFiles: 10,
+      includeTests: false,
+    });
+
+    expect(snapshot.totalFilesDiscovered).toBe(1);
+    expect(snapshot.files).toHaveLength(1);
+    expect(snapshot.files[0].path).toBe('src/app.ts');
+    expect(snapshot.partialReason).toContain('GitHub reporto el tree como truncado');
+  });
 });

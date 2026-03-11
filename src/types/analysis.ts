@@ -14,9 +14,11 @@ export interface RepositorySnapshot {
   files: RepositoryFileSnapshot[];
   totalFilesDiscovered: number;
   truncated: boolean;
+  partialReason?: string;
 }
 
 export interface RepositoryAnalysisRequest {
+  requestId: string;
   source: RepositoryConnectionConfig;
   repositoryId: string;
   branchName: string;
@@ -25,6 +27,7 @@ export interface RepositoryAnalysisRequest {
   analysisDepth: 'standard' | 'deep';
   maxFilesPerRun: number;
   includeTests: boolean;
+  timeoutMs?: number;
 }
 
 export interface RepositoryAnalysisFinding {
@@ -53,5 +56,6 @@ export interface RepositoryAnalysisResult {
     totalFilesDiscovered: number;
     filesAnalyzed: number;
     truncated: boolean;
+    partialReason?: string;
   };
 }

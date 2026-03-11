@@ -19,7 +19,7 @@ const RepositoryAnalysis = () => {
     summary,
   } = useRepositorySource();
   const { config: codexConfig, isReady: isCodexReady } = useCodexSettings();
-  const { phase, result, error, isRunning, execute, reset } = useRepositoryAnalysis();
+  const { phase, result, error, isRunning, isCancelling, execute, cancel, reset } = useRepositoryAnalysis();
 
   const [repositoryId, setRepositoryId] = React.useState(config.repositoryId || '');
   const [branchName, setBranchName] = React.useState('');
@@ -71,6 +71,7 @@ const RepositoryAnalysis = () => {
     }
 
     void execute({
+      requestId: `${Date.now()}-${repositoryId}-${branchName}`,
       source: {
         ...config,
         repositoryId,
@@ -83,6 +84,7 @@ const RepositoryAnalysis = () => {
       analysisDepth: codexConfig.analysisDepth,
       maxFilesPerRun: codexConfig.maxFilesPerRun,
       includeTests: codexConfig.includeTests,
+      timeoutMs: 90_000,
     });
   }, [activeProvider.kind, branchName, canRunAnalysis, codexConfig, config, execute, repositoryId]);
 
@@ -90,6 +92,8 @@ const RepositoryAnalysis = () => {
     ? 'Preparando snapshot del repositorio'
     : phase === 'analyzing'
       ? 'Codex esta analizando la rama seleccionada'
+      : phase === 'cancelling'
+        ? 'Cancelando corrida actual'
       : 'Listo para ejecutar';
 
   return (
@@ -229,6 +233,17 @@ const RepositoryAnalysis = () => {
             {isRunning ? <ArrowPathIcon className="h-5 w-5 animate-spin" /> : <SparklesIcon className="h-5 w-5" />}
             {isRunning ? 'Ejecutando analisis...' : 'Run analysis'}
           </button>
+          {isRunning ? (
+            <button
+              type="button"
+              onClick={() => void cancel()}
+              disabled={isCancelling}
+              className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-white px-5 py-3 text-sm font-medium text-rose-700 transition hover:border-rose-400 hover:text-rose-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isCancelling ? <ArrowPathIcon className="h-5 w-5 animate-spin" /> : <ExclamationTriangleIcon className="h-5 w-5" />}
+              {isCancelling ? 'Cancelando...' : 'Cancelar analisis'}
+            </button>
+          ) : null}
         </div>
       </section>
 
@@ -243,11 +258,13 @@ const RepositoryAnalysis = () => {
               <p className="mt-2 text-sm text-slate-600">
                 {phase === 'preparing'
                   ? 'Estamos reuniendo el snapshot del repositorio y preparando el contexto para Codex.'
-                  : 'Codex esta razonando sobre el estado actual de la rama y generando hallazgos estructurados.'}
+                  : phase === 'cancelling'
+                    ? 'Estamos abortando la solicitud remota y liberando el estado para que puedas reintentar.'
+                    : 'Codex esta razonando sobre el estado actual de la rama y generando hallazgos estructurados.'}
               </p>
               <div className="mt-4 grid gap-3 md:grid-cols-3">
-                <LoaderStep label="Snapshot" active={phase === 'preparing' || phase === 'analyzing'} done={phase === 'analyzing'} />
-                <LoaderStep label="Analisis" active={phase === 'analyzing'} done={false} />
+                <LoaderStep label="Snapshot" active={phase === 'preparing' || phase === 'analyzing' || phase === 'cancelling'} done={phase === 'analyzing' || phase === 'cancelling'} />
+                <LoaderStep label="Analisis" active={phase === 'analyzing' || phase === 'cancelling'} done={phase === 'cancelling'} />
                 <LoaderStep label="Reporte" active={false} done={false} />
               </div>
             </div>
@@ -295,7 +312,7 @@ const RepositoryAnalysis = () => {
                 <p><span className="font-medium text-slate-900">Modelo:</span> {result.model}</p>
                 {result.snapshot.truncated ? (
                   <p className="mt-2 text-amber-700">
-                    El snapshot fue truncado al maximo configurado de archivos para mantener la corrida utilizable.
+                    {result.snapshot.partialReason || 'El snapshot fue truncado al maximo configurado de archivos para mantener la corrida utilizable.'}
                   </p>
                 ) : null}
               </div>

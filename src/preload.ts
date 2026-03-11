@@ -17,6 +17,7 @@ const ALLOWED_CHANNELS = new Set([
   'gitlab:fetchBranches',
   'gitlab:openExternal',
   'analysis:runRepositoryAnalysis',
+  'analysis:cancelRepositoryAnalysis',
 ]);
 
 export type ElectronInvokeChannel = typeof ALLOWED_CHANNELS extends Set<infer T> ? T : never;
