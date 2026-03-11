@@ -21,7 +21,7 @@ const Sidebar = () => {
       </div>
 
       <nav className="mt-10 space-y-2">
-        <NavLink to="/" className={navClassName}>
+        <NavLink to="/" end className={navClassName}>
           <ChartPieIcon className="h-5 w-5" />
           Dashboard
         </NavLink>

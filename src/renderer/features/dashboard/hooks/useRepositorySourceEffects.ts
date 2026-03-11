@@ -15,18 +15,24 @@ export function useRepositorySourceEffects({
   state,
   refreshRepositories,
 }: UseRepositorySourceEffectsOptions) {
+  const {
+    shouldLoadRepositories,
+    resetDisconnectedState,
+    setShouldLoadRepositories,
+  } = state;
+
   React.useEffect(() => {
     const hasMinimumConfig = config.provider === 'github' || config.provider === 'gitlab'
       ? Boolean(config.organization && config.personalAccessToken)
       : Boolean(config.provider && config.organization && config.project && config.personalAccessToken);
 
     if (!hasMinimumConfig) {
-      state.resetDisconnectedState();
+      resetDisconnectedState();
     }
-  }, [config, state]);
+  }, [config.organization, config.personalAccessToken, config.project, config.provider, resetDisconnectedState]);
 
   React.useEffect(() => {
-    if (!state.shouldLoadRepositories) {
+    if (!shouldLoadRepositories) {
       return;
     }
 
@@ -35,11 +41,20 @@ export function useRepositorySourceEffects({
       || (config.provider !== 'github' && config.provider !== 'gitlab' && config.organization && config.project && config.personalAccessToken)
     ) {
       void refreshRepositories(configRef.current).finally(() => {
-        state.setShouldLoadRepositories(false);
+        setShouldLoadRepositories(false);
       });
       return;
     }
 
-    state.setShouldLoadRepositories(false);
-  }, [config, configRef, refreshRepositories, state]);
+    setShouldLoadRepositories(false);
+  }, [
+    config.organization,
+    config.personalAccessToken,
+    config.project,
+    config.provider,
+    configRef,
+    refreshRepositories,
+    setShouldLoadRepositories,
+    shouldLoadRepositories,
+  ]);
 }

@@ -1,5 +1,6 @@
 const React = require('react');
 const { render, screen } = require('@testing-library/react');
+const userEvent = require('@testing-library/user-event').default;
 
 jest.mock('../../../src/renderer/pages/Dashboard', () => () => React.createElement('div', null, 'Dashboard page'));
 jest.mock('../../../src/renderer/pages/History', () => () => React.createElement('div', null, 'History page'));
@@ -19,5 +20,18 @@ describe('App', () => {
 
     expect(screen.getByText('Repo Command Center')).toBeInTheDocument();
     expect(screen.getByText('Dashboard page')).toBeInTheDocument();
+  });
+
+  test('navega desde el sidebar a settings e historico', async () => {
+    const user = userEvent.setup();
+    window.location.hash = '#/';
+
+    render(React.createElement(App));
+
+    await user.click(screen.getByRole('link', { name: 'Settings' }));
+    expect(screen.getByText('Settings page')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('link', { name: 'Historico' }));
+    expect(screen.getByText('History page')).toBeInTheDocument();
   });
 });
