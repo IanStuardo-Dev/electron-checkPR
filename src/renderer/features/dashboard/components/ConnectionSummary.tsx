@@ -16,6 +16,7 @@ interface ConnectionSummaryProps {
   showAction?: boolean;
   actionLabel?: string;
   actionTo?: string;
+  empty?: boolean;
 }
 
 const ConnectionSummary = ({
@@ -32,6 +33,7 @@ const ConnectionSummary = ({
   showAction = true,
   actionLabel = 'Abrir settings',
   actionTo = '/settings',
+  empty = false,
 }: ConnectionSummaryProps) => (
   <div className={`rounded-3xl bg-white shadow-lg ring-1 ring-slate-200 ${compact ? 'p-5' : 'p-6'}`}>
     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -51,11 +53,13 @@ const ConnectionSummary = ({
         </div>
         <h2 className={`mt-2 font-semibold text-slate-900 ${compact ? 'text-lg' : 'text-xl'}`}>{scopeLabel}</h2>
         <p className="mt-2 text-sm text-slate-500">
-          {providerKind === 'github'
+          {empty
+            ? 'Selecciona un provider en Settings para definir el alcance del dashboard y del analisis.'
+            : providerKind === 'github'
             ? `Repositorio: ${repositoryName || projectName || 'Todos los repositorios del owner'}`
             : providerKind === 'gitlab'
               ? `Proyecto: ${repositoryName || projectName || 'Todos los proyectos del namespace'}`
-            : `Proyecto: ${projectName || 'No seleccionado'} · Repositorio: ${repositoryName || 'Todos los repositorios'}`}
+              : `Proyecto: ${projectName || 'No seleccionado'} · Repositorio: ${repositoryName || 'Todos los repositorios'}`}
         </p>
       </div>
 

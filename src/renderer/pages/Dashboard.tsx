@@ -12,6 +12,8 @@ import { useRepositorySource } from '../features/dashboard/hooks/useAzurePullReq
 const Dashboard = () => {
   const {
     activeProvider,
+    activeProviderName,
+    config,
     isConnectionReady,
     selectedProjectName,
     summary,
@@ -26,31 +28,36 @@ const Dashboard = () => {
       className="space-y-6"
     >
       <DashboardHero
-        providerName={activeProvider.name}
+        providerName={activeProviderName}
         lastUpdatedLabel={summary.lastUpdatedLabel}
         scopeLabel={summary.scopeLabel}
       />
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_1.8fr]">
         <ConnectionSummary
-          providerKind={activeProvider.kind}
-          providerName={activeProvider.name}
+          providerKind={activeProvider?.kind}
+          providerName={activeProviderName}
           scopeLabel={summary.scopeLabel}
           projectName={selectedProjectName}
           repositoryName={selectedRepositoryName}
           isConnected={isConnectionReady}
+          empty={!config.provider}
           showAction={false}
         />
-        {isConnectionReady ? (
+        {!config.provider ? (
+          <section className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-sm text-slate-500 shadow-lg ring-1 ring-slate-200">
+            No hay provider activo. Ve a Settings y elige Azure DevOps, GitHub o GitLab antes de cargar metricas.
+          </section>
+        ) : isConnectionReady ? (
           <MetricsGrid metrics={summary.metrics} />
         ) : (
           <section className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-sm text-slate-500 shadow-lg ring-1 ring-slate-200">
-            Conecta una fuente de repositorios desde Settings para visualizar metricas, backlog y tendencias. Hoy el provider operativo es {activeProvider.name}.
+            Conecta la fuente seleccionada desde Settings para visualizar metricas, backlog y tendencias.
           </section>
         )}
       </section>
 
-      {isConnectionReady ? (
+      {config.provider && isConnectionReady ? (
         <>
           <HealthSection
             title="Salud de entrega"

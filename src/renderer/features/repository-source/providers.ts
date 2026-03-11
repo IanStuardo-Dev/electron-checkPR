@@ -1,4 +1,4 @@
-import type { RepositoryProviderDefinition, RepositoryProviderKind } from '../../../types/repository';
+import type { RepositoryProviderDefinition, RepositoryProviderKind, RepositoryProviderSelection } from '../../../types/repository';
 
 export const repositoryProviders: RepositoryProviderDefinition[] = [
   {
@@ -31,6 +31,10 @@ export const repositoryProviders: RepositoryProviderDefinition[] = [
   },
 ];
 
-export function getRepositoryProvider(kind: RepositoryProviderKind): RepositoryProviderDefinition {
-  return repositoryProviders.find((provider) => provider.kind === kind) || repositoryProviders[0];
+export function getRepositoryProvider(kind: RepositoryProviderSelection): RepositoryProviderDefinition | null {
+  if (!kind) {
+    return null;
+  }
+
+  return repositoryProviders.find((provider) => provider.kind === kind) || null;
 }

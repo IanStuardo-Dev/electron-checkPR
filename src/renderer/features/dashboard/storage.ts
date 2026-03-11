@@ -6,7 +6,7 @@ export const DASHBOARD_SESSION_PAT_KEY = 'checkpr.azure.session.pat';
 export const DASHBOARD_SAVED_CONTEXTS_KEY = 'checkpr.azure.saved-contexts';
 
 export const defaultConnectionConfig: SavedConnectionConfig = {
-  provider: 'azure-devops',
+  provider: '',
   organization: '',
   project: '',
   repositoryId: '',

@@ -24,6 +24,10 @@ async function invokeIpc<T>(channel: string, payload?: unknown): Promise<T> {
 }
 
 export function getProviderChannel(config: SavedConnectionConfig, operation: 'pullRequests' | 'projects' | 'repositories' | 'branches' | 'openExternal'): string {
+  if (!config.provider) {
+    throw new Error('Selecciona un provider antes de ejecutar esta accion.');
+  }
+
   if (config.provider === 'azure-devops') {
     const channelMap = {
       pullRequests: 'azure:fetchPullRequests',

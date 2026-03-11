@@ -70,6 +70,9 @@ function sanitizeAnalysisPayload(payload: unknown): RepositoryAnalysisRequest {
   const maxFilesPerRun = Math.min(200, Math.max(10, Math.floor(Number(request.maxFilesPerRun) || 0)));
   const timeoutMs = Math.min(120_000, Math.max(15_000, Math.floor(Number(request.timeoutMs) || 90_000)));
   const analysisDepth = request.analysisDepth === 'deep' ? 'deep' : 'standard';
+  const rawPromptDirectives = request.promptDirectives && typeof request.promptDirectives === 'object'
+    ? request.promptDirectives
+    : {};
 
   if (!request.source || typeof request.source !== 'object') {
     throw new Error('La fuente del analisis es obligatoria.');
@@ -103,6 +106,24 @@ function sanitizeAnalysisPayload(payload: unknown): RepositoryAnalysisRequest {
     maxFilesPerRun,
     includeTests: Boolean(request.includeTests),
     timeoutMs,
+    promptDirectives: {
+      architectureReviewEnabled: Boolean((rawPromptDirectives as Record<string, unknown>).architectureReviewEnabled),
+      architecturePattern: typeof (rawPromptDirectives as Record<string, unknown>).architecturePattern === 'string'
+        ? (rawPromptDirectives as Record<string, string>).architecturePattern.trim().slice(0, 500)
+        : '',
+      requiredPractices: typeof (rawPromptDirectives as Record<string, unknown>).requiredPractices === 'string'
+        ? (rawPromptDirectives as Record<string, string>).requiredPractices.trim().slice(0, 2000)
+        : '',
+      forbiddenPractices: typeof (rawPromptDirectives as Record<string, unknown>).forbiddenPractices === 'string'
+        ? (rawPromptDirectives as Record<string, string>).forbiddenPractices.trim().slice(0, 2000)
+        : '',
+      domainContext: typeof (rawPromptDirectives as Record<string, unknown>).domainContext === 'string'
+        ? (rawPromptDirectives as Record<string, string>).domainContext.trim().slice(0, 1500)
+        : '',
+      customInstructions: typeof (rawPromptDirectives as Record<string, unknown>).customInstructions === 'string'
+        ? (rawPromptDirectives as Record<string, string>).customInstructions.trim().slice(0, 2500)
+        : '',
+    },
   };
 }
 
@@ -118,9 +139,10 @@ function createWindow() {
     }
   });
 
-  if (process.env.NODE_ENV === 'development') {
+  const isDevelopment = !app.isPackaged || process.env.NODE_ENV === 'development';
+
+  if (isDevelopment) {
     mainWindow.loadURL('http://localhost:8080');
-    mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }

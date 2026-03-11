@@ -27,6 +27,14 @@ export const defaultCodexConfig: CodexIntegrationConfig = {
   includeTests: true,
   repositoryScope: 'selected',
   apiKey: '',
+  promptDirectives: {
+    architectureReviewEnabled: false,
+    architecturePattern: '',
+    requiredPractices: '',
+    forbiddenPractices: '',
+    domainContext: '',
+    customInstructions: '',
+  },
 };
 
 export function loadCodexConfig(): CodexIntegrationConfig {

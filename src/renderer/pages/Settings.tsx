@@ -18,6 +18,7 @@ import {
 const Settings = () => {
   const {
     activeProvider,
+    activeProviderName,
     config,
     error,
     hasCredentialsInSession,
@@ -89,16 +90,17 @@ const Settings = () => {
       <section className="grid gap-6 xl:grid-cols-[1.45fr_0.95fr]">
         <div className="space-y-5">
           <ConnectionSummary
-            providerKind={activeProvider.kind}
-            providerName={activeProvider.name}
+            providerKind={activeProvider?.kind}
+            providerName={activeProviderName}
             scopeLabel={summary.scopeLabel}
             projectName={selectedProjectName}
             repositoryName={selectedRepositoryName}
             isConnected={isConnectionReady}
             compact
             expandable
-            expanded={expandedProviderKind === activeProvider.kind}
-            onToggleExpand={() => setExpandedProviderKind((current) => (current === activeProvider.kind ? '' : activeProvider.kind))}
+            expanded={Boolean(activeProvider && expandedProviderKind === activeProvider.kind)}
+            onToggleExpand={activeProvider ? () => setExpandedProviderKind((current) => (current === activeProvider.kind ? '' : activeProvider.kind)) : undefined}
+            empty={!config.provider}
           />
 
           <SettingsSectionCard
@@ -112,23 +114,23 @@ const Settings = () => {
             <RepositoryProviderCard
               key={provider.kind}
               provider={provider}
-              isActive={provider.kind === activeProvider.kind}
-              isConfigured={provider.kind === activeProvider.kind && isConnectionReady}
-              expanded={provider.kind === activeProvider.kind && expandedProviderKind === provider.kind}
-              onToggleExpand={provider.status === 'available' && provider.kind === activeProvider.kind
+              isActive={provider.kind === activeProvider?.kind}
+              isConfigured={provider.kind === activeProvider?.kind && isConnectionReady}
+              expanded={provider.kind === activeProvider?.kind && expandedProviderKind === provider.kind}
+              onToggleExpand={provider.status === 'available' && provider.kind === activeProvider?.kind
                 ? () => setExpandedProviderKind((current) => (current === provider.kind ? '' : provider.kind))
                 : undefined}
-              onActivate={provider.status === 'available' && provider.kind !== activeProvider.kind
+              onActivate={provider.status === 'available' && provider.kind !== activeProvider?.kind
                 ? () => {
                   updateConfig('provider', provider.kind);
                   setExpandedProviderKind(provider.kind);
                 }
                 : undefined}
             >
-              {provider.kind === activeProvider.kind ? (
+              {provider.kind === activeProvider?.kind ? (
                 <ConnectionPanel
-                  providerName={activeProvider.name}
-                  providerKind={activeProvider.kind}
+                  providerName={activeProviderName}
+                  providerKind={provider.kind}
                   isConnected={isConnectionReady}
                   config={config}
                   error={error}
@@ -152,12 +154,13 @@ const Settings = () => {
 
         <div className="space-y-6 xl:sticky xl:top-6 xl:self-start">
           <ConnectionSummary
-            providerKind={activeProvider.kind}
-            providerName={activeProvider.name}
+            providerKind={activeProvider?.kind}
+            providerName={activeProviderName}
             scopeLabel={summary.scopeLabel}
             projectName={selectedProjectName}
             repositoryName={selectedRepositoryName}
             isConnected={isConnectionReady}
+            empty={!config.provider}
             actionLabel="Dashboard"
             actionTo="/"
           />
@@ -170,7 +173,7 @@ const Settings = () => {
             <div className="grid gap-4 sm:grid-cols-2">
               <SettingsStatTile
                 label="Provider activo"
-                value={activeProvider.name}
+                value={config.provider ? activeProviderName : 'No seleccionado'}
                 description="Fuente primaria de repositorios y PRs para esta sesion."
               />
               <SettingsStatTile
@@ -236,7 +239,7 @@ const Settings = () => {
             badge={<SettingsStatusBadge tone={diagnostics.lastError ? 'rose' : 'slate'} label={diagnostics.lastError ? 'Con error' : 'Sin error activo'} />}
           >
             <div className="space-y-2 text-sm leading-6 text-slate-600">
-              <p><span className="font-medium text-slate-900">Provider:</span> {activeProvider.name}</p>
+              <p><span className="font-medium text-slate-900">Provider:</span> {config.provider ? activeProviderName : '-'}</p>
               <p><span className="font-medium text-slate-900">Operacion:</span> {diagnostics.operation || 'sin ejecucion'}</p>
               <p><span className="font-medium text-slate-900">Organization:</span> {diagnostics.organization || '-'}</p>
               <p><span className="font-medium text-slate-900">Project:</span> {diagnostics.project || '-'}</p>

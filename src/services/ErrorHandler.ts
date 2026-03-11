@@ -20,7 +20,7 @@ class ErrorHandler {
     }
 
     // En producción, podríamos enviar a un servicio de monitoreo
-    if (process.env.NODE_ENV === 'production') {
+    if (environment.isProduction) {
       // Aquí iría la integración con Sentry, LogRocket, etc.
     }
   }

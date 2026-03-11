@@ -3,8 +3,8 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
   mode: 'development',
-  entry: './src/renderer/index.tsx',
-  target: 'electron-renderer',
+  entry: ['./src/renderer/shims/global.ts', './src/renderer/index.tsx'],
+  target: 'web',
   devtool: 'source-map',
   module: {
     rules: [

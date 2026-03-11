@@ -11,6 +11,7 @@ import { useCodexSettings } from '../features/settings/hooks/useCodexSettings';
 const RepositoryAnalysis = () => {
   const {
     activeProvider,
+    activeProviderName,
     config,
     isConnectionReady,
     repositories,
@@ -32,7 +33,7 @@ const RepositoryAnalysis = () => {
   }, [config.repositoryId]);
 
   React.useEffect(() => {
-    if (!isConnectionReady || !repositoryId) {
+    if (!config.provider || !isConnectionReady || !repositoryId) {
       setBranches([]);
       setBranchName('');
       return;
@@ -63,7 +64,7 @@ const RepositoryAnalysis = () => {
   }, [config, isConnectionReady, repositoryId]);
 
   const selectedRepository = repositories.find((repository) => repository.id === repositoryId);
-  const canRunAnalysis = Boolean(isConnectionReady && isCodexReady && repositoryId && branchName && !isRunning);
+  const canRunAnalysis = Boolean(config.provider && activeProvider && isConnectionReady && isCodexReady && repositoryId && branchName && !isRunning);
 
   const handleRun = React.useCallback(() => {
     if (!canRunAnalysis) {
@@ -74,8 +75,9 @@ const RepositoryAnalysis = () => {
       requestId: `${Date.now()}-${repositoryId}-${branchName}`,
       source: {
         ...config,
+        provider: activeProvider!.kind,
         repositoryId,
-        project: activeProvider.kind === 'azure-devops' ? config.project : repositoryId,
+        project: activeProvider!.kind === 'azure-devops' ? config.project : repositoryId,
       },
       repositoryId,
       branchName,
@@ -85,8 +87,9 @@ const RepositoryAnalysis = () => {
       maxFilesPerRun: codexConfig.maxFilesPerRun,
       includeTests: codexConfig.includeTests,
       timeoutMs: 90_000,
+      promptDirectives: codexConfig.promptDirectives,
     });
-  }, [activeProvider.kind, branchName, canRunAnalysis, codexConfig, config, execute, repositoryId]);
+  }, [activeProvider, branchName, canRunAnalysis, codexConfig, config, execute, repositoryId]);
 
   const phaseLabel = phase === 'preparing'
     ? 'Preparando snapshot del repositorio'
@@ -113,21 +116,22 @@ const RepositoryAnalysis = () => {
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_1.8fr]">
         <ConnectionSummary
-          providerKind={activeProvider.kind}
-          providerName={activeProvider.name}
+          providerKind={activeProvider?.kind}
+          providerName={activeProviderName}
           scopeLabel={summary.scopeLabel}
           projectName={selectedProjectName}
           repositoryName={selectedRepositoryName}
           isConnected={isConnectionReady}
+          empty={!config.provider}
         />
 
         <section className="rounded-3xl bg-white p-6 shadow-lg ring-1 ring-slate-200">
           <h2 className="text-xl font-semibold text-slate-900">Prerequisitos</h2>
           <div className="mt-4 space-y-3 text-sm text-slate-600">
             <StatusRow
-              label={activeProvider.name}
-              value={isConnectionReady ? 'Listo' : 'Pendiente'}
-              ok={isConnectionReady}
+              label="Provider"
+              value={config.provider ? activeProviderName : 'No seleccionado'}
+              ok={Boolean(config.provider && isConnectionReady)}
             />
             <StatusRow
               label="Codex Integration"
@@ -221,8 +225,10 @@ const RepositoryAnalysis = () => {
           <div className="text-sm text-slate-600">
             <p><span className="font-medium text-slate-900">Repositorio:</span> {selectedRepository?.name || 'No seleccionado'}</p>
             <p><span className="font-medium text-slate-900">Rama:</span> {branchName || 'No seleccionada'}</p>
+            <p><span className="font-medium text-slate-900">Provider:</span> {config.provider ? activeProviderName : 'No seleccionado'}</p>
             <p><span className="font-medium text-slate-900">Modelo:</span> {codexConfig.model}</p>
             <p><span className="font-medium text-slate-900">Max files:</span> {codexConfig.maxFilesPerRun}</p>
+            <p><span className="font-medium text-slate-900">Politicas activas:</span> {countActiveDirectives(codexConfig)} configuradas</p>
           </div>
           <button
             type="button"
@@ -312,7 +318,7 @@ const RepositoryAnalysis = () => {
                 <MetricCard label="Descartados peso/binario" value={`${(result.snapshot.discardedBySize ?? 0) + (result.snapshot.discardedByBinaryDetection ?? 0)}`} />
               </div>
               <div className="mt-5 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                <p><span className="font-medium text-slate-900">Provider:</span> {activeProvider.name}</p>
+                <p><span className="font-medium text-slate-900">Provider:</span> {activeProviderName}</p>
                 <p><span className="font-medium text-slate-900">Repositorio:</span> {result.repository}</p>
                 <p><span className="font-medium text-slate-900">Rama:</span> {result.branch}</p>
                 <p><span className="font-medium text-slate-900">Modelo:</span> {result.model}</p>
@@ -457,3 +463,25 @@ function riskBadgeClass(value: 'low' | 'medium' | 'high' | 'critical'): string {
 }
 
 export default RepositoryAnalysis;
+
+function countActiveDirectives(config: {
+  promptDirectives: {
+    architectureReviewEnabled: boolean;
+    architecturePattern: string;
+    requiredPractices: string;
+    forbiddenPractices: string;
+    domainContext: string;
+    customInstructions: string;
+  };
+}): number {
+  const directives = config.promptDirectives;
+
+  return [
+    directives.architectureReviewEnabled,
+    Boolean(directives.architecturePattern.trim()),
+    Boolean(directives.requiredPractices.trim()),
+    Boolean(directives.forbiddenPractices.trim()),
+    Boolean(directives.domainContext.trim()),
+    Boolean(directives.customInstructions.trim()),
+  ].filter(Boolean).length;
+}

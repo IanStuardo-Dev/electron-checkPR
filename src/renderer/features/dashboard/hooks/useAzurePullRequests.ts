@@ -41,10 +41,11 @@ export function useRepositorySource() {
   );
 
   const hasCredentialsInSession = Boolean(
-    config.organization && config.personalAccessToken,
+    config.provider && config.organization && config.personalAccessToken,
   );
   const isConnectionReady = hasCredentialsInSession && hasSuccessfulConnection;
   const activeProvider = React.useMemo(() => getRepositoryProvider(config.provider), [config.provider]);
+  const activeProviderName = activeProvider?.name || 'Sin provider seleccionado';
 
   const selectedProjectName = React.useMemo(() => {
     if (!config.project) {
@@ -66,10 +67,12 @@ export function useRepositorySource() {
     const organization = config.organization || 'No organization';
     const project = config.provider === 'github' || config.provider === 'gitlab'
       ? (selectedRepositoryName || config.project || 'Todos los repositorios')
-      : (selectedProjectName || config.project || 'No project');
+      : (selectedProjectName || config.project || 'Sin proyecto');
     const repository = selectedRepositoryName || 'Todos los repositorios';
 
-    return config.provider === 'github' || config.provider === 'gitlab'
+    return !config.provider
+      ? 'Selecciona un provider en Settings'
+      : config.provider === 'github' || config.provider === 'gitlab'
       ? `${organization} / ${project}`
       : `${organization} / ${project} / ${repository}`;
   }, [config.organization, config.project, config.provider, selectedProjectName, selectedRepositoryName]);
@@ -128,6 +131,11 @@ export function useRepositorySource() {
       return [];
     }
 
+    if (!nextConfig.provider) {
+      setProjects([]);
+      return [];
+    }
+
     setProjectsLoading(true);
     updateDiagnostics('projects', nextConfig, null);
 
@@ -143,7 +151,7 @@ export function useRepositorySource() {
       setProjectDiscoveryWarning(null);
       return result;
     } catch (fetchError) {
-      const message = fetchError instanceof Error ? fetchError.message : `Unknown ${activeProvider.name} error.`;
+      const message = fetchError instanceof Error ? fetchError.message : `Unknown ${activeProviderName} error.`;
       setProjects([]);
       updateDiagnostics('projects', nextConfig, message);
       setProjectDiscoveryWarning(
@@ -155,9 +163,14 @@ export function useRepositorySource() {
     } finally {
       setProjectsLoading(false);
     }
-  }, [activeProvider.name, updateDiagnostics]);
+  }, [activeProviderName, updateDiagnostics]);
 
   const refreshRepositories = React.useCallback(async (nextConfig = configRef.current) => {
+    if (!nextConfig.provider) {
+      setRepositories([]);
+      return [];
+    }
+
     if (nextConfig.provider === 'github' || nextConfig.provider === 'gitlab') {
       if (!nextConfig.organization || !nextConfig.personalAccessToken) {
         setRepositories([]);
@@ -172,7 +185,7 @@ export function useRepositorySource() {
         setRepositories(result);
         return result;
       } catch (fetchError) {
-        const message = fetchError instanceof Error ? fetchError.message : `Unknown ${activeProvider.name} error.`;
+        const message = fetchError instanceof Error ? fetchError.message : `Unknown ${activeProviderName} error.`;
         updateDiagnostics('repositories', nextConfig, message);
         setError(message);
         setHasSuccessfulConnection(false);
@@ -195,7 +208,7 @@ export function useRepositorySource() {
       setRepositories(result);
       return result;
     } catch (fetchError) {
-      const message = fetchError instanceof Error ? fetchError.message : `Unknown ${activeProvider.name} error.`;
+      const message = fetchError instanceof Error ? fetchError.message : `Unknown ${activeProviderName} error.`;
       updateDiagnostics('repositories', nextConfig, message);
       setError(message);
       setHasSuccessfulConnection(false);
@@ -203,10 +216,15 @@ export function useRepositorySource() {
     } finally {
       setRepositoriesLoading(false);
     }
-  }, [activeProvider.name, updateDiagnostics]);
+  }, [activeProviderName, updateDiagnostics]);
 
   const refreshPullRequests = React.useCallback(async () => {
     const activeConfig = configRef.current;
+    if (!activeConfig.provider) {
+      setError('Selecciona un provider antes de sincronizar.');
+      setHasSuccessfulConnection(false);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     updateDiagnostics('pullRequests', activeConfig, null);
@@ -236,7 +254,7 @@ export function useRepositorySource() {
         hotfixPRs: snapshotSummary.hotfixPRs,
       });
     } catch (fetchError) {
-      const message = fetchError instanceof Error ? fetchError.message : `Unknown ${activeProvider.name} error.`;
+      const message = fetchError instanceof Error ? fetchError.message : `Unknown ${activeProviderName} error.`;
       updateDiagnostics('pullRequests', activeConfig, message);
       setPullRequests([]);
       setLastUpdatedAt(null);
@@ -245,7 +263,7 @@ export function useRepositorySource() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeProvider.name, refreshProjects, refreshRepositories, scopeLabel, updateDiagnostics]);
+  }, [activeProviderName, refreshProjects, refreshRepositories, scopeLabel, updateDiagnostics]);
 
   React.useEffect(() => {
     void hydrateConnectionSecret().then((personalAccessToken) => {
@@ -270,7 +288,7 @@ export function useRepositorySource() {
 
       const hasMinimumConfig = nextConfig.provider === 'github' || nextConfig.provider === 'gitlab'
         ? Boolean(nextConfig.organization && nextConfig.personalAccessToken)
-        : Boolean(nextConfig.organization && nextConfig.project && nextConfig.personalAccessToken);
+        : Boolean(nextConfig.provider && nextConfig.organization && nextConfig.project && nextConfig.personalAccessToken);
 
       if (hasMinimumConfig) {
         void refreshPullRequests();
@@ -282,7 +300,7 @@ export function useRepositorySource() {
   React.useEffect(() => {
     const hasMinimumConfig = config.provider === 'github' || config.provider === 'gitlab'
       ? Boolean(config.organization && config.personalAccessToken)
-      : Boolean(config.organization && config.project && config.personalAccessToken);
+      : Boolean(config.provider && config.organization && config.project && config.personalAccessToken);
 
     if (!hasMinimumConfig) {
       setProjects([]);
@@ -302,7 +320,7 @@ export function useRepositorySource() {
     }
 
     if (
-      ((config.provider === 'github' || config.provider === 'gitlab') && config.organization && config.personalAccessToken)
+      (config.provider && (config.provider === 'github' || config.provider === 'gitlab') && config.organization && config.personalAccessToken)
       || (config.provider !== 'github' && config.provider !== 'gitlab' && config.organization && config.project && config.personalAccessToken)
     ) {
       void refreshRepositories(configRef.current).finally(() => {
@@ -363,6 +381,9 @@ export function useRepositorySource() {
 
   const openPullRequest = React.useCallback(async (url: string) => {
     try {
+      if (!configRef.current.provider) {
+        throw new Error('Selecciona un provider antes de abrir un PR.');
+      }
       await openReviewItem(url, configRef.current);
     } catch (openError) {
       const message = openError instanceof Error ? openError.message : 'Unable to open pull request.';
@@ -376,8 +397,14 @@ export function useRepositorySource() {
 
   const discoverProjects = React.useCallback(async () => {
     const activeConfig = configRef.current;
+    if (!activeConfig.provider) {
+      const message = 'Selecciona un provider antes de cargar proyectos.';
+      setError(message);
+      updateDiagnostics('projects', activeConfig, message);
+      return;
+    }
     if (!activeConfig.organization.trim() || !activeConfig.personalAccessToken.trim()) {
-      const message = `El alcance principal y el token son obligatorios para cargar ${activeProvider.name}.`;
+      const message = `El alcance principal y el token son obligatorios para cargar ${activeProviderName}.`;
       setError(message);
       updateDiagnostics('projects', activeConfig, message);
       return;
@@ -385,7 +412,7 @@ export function useRepositorySource() {
 
     setError(null);
     await refreshProjects(activeConfig);
-  }, [activeProvider.name, refreshProjects, updateDiagnostics]);
+  }, [activeProviderName, refreshProjects, updateDiagnostics]);
 
   const selectProject = React.useCallback((project: string) => {
     setPullRequests([]);
@@ -413,6 +440,7 @@ export function useRepositorySource() {
 
   return {
     activeProvider,
+    activeProviderName,
     config,
     error,
     isLoading,

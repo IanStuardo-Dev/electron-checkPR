@@ -1,5 +1,6 @@
 import React from 'react';
 import type { AzureProject, AzureRepository } from '../../../../types/azure';
+import type { RepositoryProviderKind } from '../../../../types/repository';
 import ConnectionHelp from './ConnectionHelp';
 import type { SavedConnectionConfig } from '../types';
 import {
@@ -13,7 +14,7 @@ import {
 
 interface ConnectionPanelProps {
   providerName: string;
-  providerKind: SavedConnectionConfig['provider'];
+  providerKind: RepositoryProviderKind;
   isConnected: boolean;
   config: SavedConnectionConfig;
   error: string | null;

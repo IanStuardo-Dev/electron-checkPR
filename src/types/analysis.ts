@@ -1,5 +1,14 @@
 import type { RepositoryConnectionConfig } from './repository';
 
+export interface RepositoryAnalysisPromptDirectives {
+  architectureReviewEnabled: boolean;
+  architecturePattern: string;
+  requiredPractices: string;
+  forbiddenPractices: string;
+  domainContext: string;
+  customInstructions: string;
+}
+
 export interface RepositoryFileSnapshot {
   path: string;
   extension: string;
@@ -35,6 +44,7 @@ export interface RepositoryAnalysisRequest {
   maxFilesPerRun: number;
   includeTests: boolean;
   timeoutMs?: number;
+  promptDirectives?: RepositoryAnalysisPromptDirectives;
 }
 
 export interface RepositoryAnalysisFinding {

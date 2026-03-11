@@ -4,10 +4,10 @@
   "description": "Azure PR Review Desktop App",
   "main": "dist/main.js",
   "scripts": {
-    "start": "concurrently \"webpack serve --mode development\" \"wait-on http://localhost:8080 && env -u ELECTRON_RUN_AS_NODE electron .\"",
+    "start": "NODE_ENV=development npm run build && concurrently \"NODE_ENV=development tsc -w --preserveWatchOutput\" \"webpack serve --mode development\" \"wait-on dist/main.js http://localhost:8080 && env -u ELECTRON_RUN_AS_NODE NODE_ENV=development electron .\"",
     "build": "webpack --mode production && tsc",
     "watch": "tsc -w",
-    "dev": "NODE_ENV=development npm run start",
+    "dev": "npm run start",
     "build:prod": "NODE_ENV=production electron-builder build",
     "test": "npm run build && jest --runInBand",
     "test:prod": "npm run build && jest --coverage --runInBand",

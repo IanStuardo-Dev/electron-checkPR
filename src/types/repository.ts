@@ -1,4 +1,5 @@
 export type RepositoryProviderKind = 'azure-devops' | 'github' | 'gitlab' | 'bitbucket';
+export type RepositoryProviderSelection = RepositoryProviderKind | '';
 
 export interface RepositoryConnectionConfig {
   provider: RepositoryProviderKind;

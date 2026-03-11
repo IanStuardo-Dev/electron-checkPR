@@ -99,6 +99,38 @@ export const SettingsField = ({
   </label>
 );
 
+interface SettingsTextAreaFieldProps {
+  label: string;
+  value: string;
+  placeholder?: string;
+  onChange: (value: string) => void;
+  hint?: string;
+  rows?: number;
+  span?: string;
+}
+
+export const SettingsTextAreaField = ({
+  label,
+  value,
+  placeholder,
+  onChange,
+  hint,
+  rows = 4,
+  span = '',
+}: SettingsTextAreaFieldProps) => (
+  <label className={`space-y-2 text-sm text-slate-600 ${span}`}>
+    <span className="font-medium text-slate-700">{label}</span>
+    <textarea
+      value={value}
+      rows={rows}
+      onChange={(event) => onChange(event.target.value)}
+      className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:bg-white"
+      placeholder={placeholder}
+    />
+    {hint ? <p className="text-xs leading-5 text-slate-400">{hint}</p> : null}
+  </label>
+);
+
 interface SettingsSelectFieldProps {
   label: string;
   value: string;

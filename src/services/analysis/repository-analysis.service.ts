@@ -1,7 +1,12 @@
 import { pullRequestService } from '../azure/pr.service';
 import { gitHubRepositoryService } from '../github/repository.service';
 import { gitLabRepositoryService } from '../gitlab/repository.service';
-import type { RepositoryAnalysisFinding, RepositoryAnalysisRequest, RepositoryAnalysisResult } from '../../types/analysis';
+import type {
+  RepositoryAnalysisFinding,
+  RepositoryAnalysisPromptDirectives,
+  RepositoryAnalysisRequest,
+  RepositoryAnalysisResult,
+} from '../../types/analysis';
 
 const ANALYSIS_SCHEMA = {
   type: 'object',
@@ -170,6 +175,44 @@ function isStructuredAnalysisPayload(value: unknown): value is ParsedAnalysisPay
     && payload.findings.every(isValidFinding);
 }
 
+function buildPromptDirectiveSection(promptDirectives?: RepositoryAnalysisPromptDirectives): string {
+  if (!promptDirectives) {
+    return '';
+  }
+
+  const sections: string[] = [];
+
+  if (promptDirectives.architectureReviewEnabled) {
+    sections.push('Architecture review is explicitly required.');
+  }
+
+  if (promptDirectives.architecturePattern) {
+    sections.push(`The repository should be evaluated against this architecture or design style: ${promptDirectives.architecturePattern}.`);
+  }
+
+  if (promptDirectives.requiredPractices) {
+    sections.push(`Required practices to verify:\n${promptDirectives.requiredPractices}`);
+  }
+
+  if (promptDirectives.forbiddenPractices) {
+    sections.push(`Practices or anti-patterns that must be flagged:\n${promptDirectives.forbiddenPractices}`);
+  }
+
+  if (promptDirectives.domainContext) {
+    sections.push(`Domain context for the analysis:\n${promptDirectives.domainContext}`);
+  }
+
+  if (promptDirectives.customInstructions) {
+    sections.push(`Additional reviewer instructions:\n${promptDirectives.customInstructions}`);
+  }
+
+  if (sections.length === 0) {
+    return '';
+  }
+
+  return `Analysis policies configured by the user:\n${sections.join('\n\n')}`;
+}
+
 export class RepositoryAnalysisService {
   private activeRuns = new Map<string, ActiveAnalysisRun>();
 
@@ -206,6 +249,7 @@ export class RepositoryAnalysisService {
       `Branch: ${snapshot.branch}`,
       `Files analyzed: ${snapshot.files.length}/${snapshot.totalFilesDiscovered}`,
       `Analysis depth: ${request.analysisDepth}`,
+      buildPromptDirectiveSection(request.promptDirectives),
       '',
       'Repository snapshot:',
       snapshot.files.map((file) => (

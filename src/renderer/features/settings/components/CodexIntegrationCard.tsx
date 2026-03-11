@@ -7,6 +7,7 @@ import {
   SettingsSelectField,
   SettingsStatTile,
   SettingsStatusBadge,
+  SettingsTextAreaField,
   SettingsToggleCard,
 } from './SettingsPrimitives';
 
@@ -114,7 +115,103 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
         onChange={(checked) => onChange('includeTests', checked)}
       />
     </div>
+
+    <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+      <div className="flex flex-wrap items-center gap-3">
+        <h3 className="text-lg font-semibold text-slate-900">Politicas de analisis</h3>
+        <SettingsStatusBadge
+          tone="sky"
+          label={`${countConfiguredPolicies(config)} activas`}
+        />
+      </div>
+      <p className="mt-2 text-sm leading-6 text-slate-500">
+        Define reglas del negocio o arquitectura que quieras que Codex examine en cada corrida.
+        Esto agrega contexto real y vuelve el analisis mucho mas valioso que un review generico.
+      </p>
+
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <SettingsToggleCard
+          title="Forzar revision de arquitectura"
+          description="Hace que Codex priorice estructura de capas, boundaries y cumplimiento de estilo arquitectonico."
+          checked={config.promptDirectives.architectureReviewEnabled}
+          onChange={(checked) => onChange('promptDirectives', {
+            ...config.promptDirectives,
+            architectureReviewEnabled: checked,
+          })}
+        />
+
+        <SettingsField
+          label="Patron o estilo a validar"
+          value={config.promptDirectives.architecturePattern}
+          placeholder="hexagonal, clean architecture, modular monolith, vertical slices..."
+          onChange={(value) => onChange('promptDirectives', {
+            ...config.promptDirectives,
+            architecturePattern: value,
+          })}
+          hint="Opcional. Úsalo cuando quieras que evalúe explícitamente un patrón."
+        />
+
+        <SettingsTextAreaField
+          label="Practicas obligatorias"
+          value={config.promptDirectives.requiredPractices}
+          placeholder={'Ejemplo:\n- Los casos de uso no deben depender de infraestructura\n- Todo acceso a datos debe pasar por repositorios\n- Debe existir validacion de input en borde'}
+          onChange={(value) => onChange('promptDirectives', {
+            ...config.promptDirectives,
+            requiredPractices: value,
+          })}
+          span="md:col-span-2"
+          hint="Lista de chequeos que quieres exigir siempre."
+        />
+
+        <SettingsTextAreaField
+          label="Anti-patrones o practicas prohibidas"
+          value={config.promptDirectives.forbiddenPractices}
+          placeholder={'Ejemplo:\n- Logica de negocio en controllers\n- Acceso directo a base de datos desde UI\n- Singletons globales para estado critico'}
+          onChange={(value) => onChange('promptDirectives', {
+            ...config.promptDirectives,
+            forbiddenPractices: value,
+          })}
+          hint="Todo lo que Codex debe marcar como problema aunque el código funcione."
+        />
+
+        <SettingsTextAreaField
+          label="Contexto del dominio"
+          value={config.promptDirectives.domainContext}
+          placeholder="Qué hace el sistema, criticidad del dominio, restricciones regulatorias, contexto técnico..."
+          onChange={(value) => onChange('promptDirectives', {
+            ...config.promptDirectives,
+            domainContext: value,
+          })}
+          hint="Ayuda a que Codex entienda por qué ciertas decisiones importan."
+        />
+
+        <SettingsTextAreaField
+          label="Instrucciones personalizadas"
+          value={config.promptDirectives.customInstructions}
+          placeholder="Cualquier instruccion extra para el analisis: prioridades, foco especial, estilo del reporte..."
+          onChange={(value) => onChange('promptDirectives', {
+            ...config.promptDirectives,
+            customInstructions: value,
+          })}
+          span="md:col-span-2"
+          hint="Texto libre para reglas adicionales de tu equipo o arquitectura."
+        />
+      </div>
+    </div>
   </SettingsSectionCard>
 );
+
+function countConfiguredPolicies(config: CodexIntegrationConfig): number {
+  const directives = config.promptDirectives;
+
+  return [
+    directives.architectureReviewEnabled,
+    Boolean(directives.architecturePattern.trim()),
+    Boolean(directives.requiredPractices.trim()),
+    Boolean(directives.forbiddenPractices.trim()),
+    Boolean(directives.domainContext.trim()),
+    Boolean(directives.customInstructions.trim()),
+  ].filter(Boolean).length;
+}
 
 export default CodexIntegrationCard;

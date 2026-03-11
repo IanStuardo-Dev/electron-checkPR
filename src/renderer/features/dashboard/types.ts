@@ -2,17 +2,19 @@ import type {
   RepositoryConnectionConfig,
   RepositoryProject,
   RepositoryProviderKind,
+  RepositoryProviderSelection,
   RepositorySummary,
   ReviewItem,
 } from '../../../types/repository';
 
-export type SavedConnectionConfig = Omit<RepositoryConnectionConfig, 'personalAccessToken'> & {
+export type SavedConnectionConfig = Omit<RepositoryConnectionConfig, 'provider' | 'personalAccessToken'> & {
+  provider: RepositoryProviderSelection;
   personalAccessToken: string;
 };
 
 export interface AzureDiagnostics {
   operation: 'projects' | 'repositories' | 'pullRequests' | null;
-  provider: RepositoryProviderKind;
+  provider: RepositoryProviderSelection;
   organization: string;
   project: string;
   repositoryId: string;
@@ -28,6 +30,14 @@ export interface CodexIntegrationConfig {
   includeTests: boolean;
   repositoryScope: 'selected' | 'all';
   apiKey: string;
+  promptDirectives: {
+    architectureReviewEnabled: boolean;
+    architecturePattern: string;
+    requiredPractices: string;
+    forbiddenPractices: string;
+    domainContext: string;
+    customInstructions: string;
+  };
 }
 
 export interface DashboardMetric {
