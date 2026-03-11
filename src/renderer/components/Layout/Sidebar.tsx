@@ -44,7 +44,7 @@ const Sidebar = () => {
         <div className="rounded-3xl bg-slate-950 p-5 text-sm text-slate-300">
           <p className="font-medium text-white">Core del producto</p>
           <p className="mt-2">
-            Dashboard y Historico quedan para operacion. Settings centraliza Azure hoy, GitHub y GitLab despues, con Bitbucket en backlog.
+            Dashboard y Historico quedan para operacion. Settings centraliza Azure, GitHub y GitLab, con Bitbucket en backlog.
           </p>
         </div>
       </div>

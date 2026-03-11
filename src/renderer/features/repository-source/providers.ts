@@ -18,9 +18,9 @@ export const repositoryProviders: RepositoryProviderDefinition[] = [
   {
     kind: 'gitlab',
     name: 'GitLab',
-    status: 'planned',
-    description: 'Provider futuro para grupos, proyectos, ramas y Merge Requests.',
-    helperText: 'Pendiente: soporte a grupos, proyectos y tokens de acceso de solo lectura.',
+    status: 'available',
+    description: 'Tercer provider operativo. Soporta namespace, proyectos, ramas y Merge Requests abiertos.',
+    helperText: 'Usa group/namespace y un personal access token con scopes de lectura sobre API y repositorios.',
   },
   {
     kind: 'bitbucket',

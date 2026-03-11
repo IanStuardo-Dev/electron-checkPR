@@ -49,8 +49,8 @@ const Settings = () => {
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-300">Settings</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight">Configuracion de fuentes e integraciones</h1>
         <p className="mt-3 max-w-3xl text-sm text-slate-300">
-          Este es el hub para providers de repositorios e integraciones transversales. Azure DevOps y GitHub quedan operativos;
-          GitLab queda preparado para la siguiente fase, y Bitbucket entra al backlog futuro.
+          Este es el hub para providers de repositorios e integraciones transversales. Azure DevOps, GitHub y GitLab quedan operativos;
+          Bitbucket entra al backlog futuro.
         </p>
       </section>
 

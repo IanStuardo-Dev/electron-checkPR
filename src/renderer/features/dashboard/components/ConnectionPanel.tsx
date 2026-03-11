@@ -47,11 +47,21 @@ const ConnectionPanel = ({
   }, [projects.length]);
 
   const isGitHub = providerKind === 'github';
-  const organizationLabel = isGitHub ? 'Owner / Organization' : 'Organization';
-  const projectLabel = isGitHub ? 'Repositorio' : 'Proyecto';
+  const isGitLab = providerKind === 'gitlab';
+  const isNamespaceProvider = isGitHub || isGitLab;
+  const organizationLabel = isGitHub
+    ? 'Owner / Organization'
+    : isGitLab
+      ? 'Group / Namespace'
+      : 'Organization';
+  const projectLabel = isNamespaceProvider ? 'Repositorio / Proyecto' : 'Proyecto';
   const tokenLabel = isGitHub ? 'Personal Access Token / Fine-grained token' : 'Personal Access Token';
-  const loadLabel = isGitHub ? 'Cargar repositorios' : 'Cargar proyectos';
-  const projectPlaceholder = isGitHub ? 'nombre-del-repo' : 'escribe el nombre del proyecto';
+  const loadLabel = isNamespaceProvider ? 'Cargar proyectos' : 'Cargar proyectos';
+  const projectPlaceholder = isGitHub
+    ? 'nombre-del-repo'
+    : isGitLab
+      ? 'grupo/proyecto'
+      : 'escribe el nombre del proyecto';
 
   return (
   <div className="rounded-3xl bg-white p-6 shadow-lg ring-1 ring-slate-200">
@@ -60,6 +70,8 @@ const ConnectionPanel = ({
       <p className="mt-1 text-sm text-slate-500">
         {isGitHub
           ? `Define el alcance exacto para ${providerName}: owner/organización y repositorio.`
+          : isGitLab
+            ? `Define el alcance exacto para ${providerName}: namespace y proyecto.`
           : `Define el alcance exacto para ${providerName}: organización, proyecto y repositorio.`}
       </p>
     </div>
@@ -68,7 +80,7 @@ const ConnectionPanel = ({
       <Field
         label={organizationLabel}
         value={config.organization}
-        placeholder={isGitHub ? 'mi-org-o-user' : 'mi-organizacion'}
+        placeholder={isGitHub ? 'mi-org-o-user' : isGitLab ? 'mi-grupo-o-namespace' : 'mi-organizacion'}
         onChange={(value) => onConfigChange('organization', value)}
       />
       <div className="space-y-2">
@@ -97,7 +109,13 @@ const ConnectionPanel = ({
             className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-sky-400 focus:bg-white"
             disabled={projectsLoading || projects.length === 0}
           >
-            <option value="">{isGitHub ? 'Todos los repositorios del owner' : 'Selecciona un proyecto'}</option>
+            <option value="">
+              {isGitHub
+                ? 'Todos los repositorios del owner'
+                : isGitLab
+                  ? 'Todos los proyectos del namespace'
+                  : 'Selecciona un proyecto'}
+            </option>
             {projects.map((project) => (
               <option key={project.id} value={project.name}>
                 {project.name}
@@ -107,7 +125,7 @@ const ConnectionPanel = ({
           <p className="text-xs text-slate-400">
             {projectsLoading
               ? `${loadLabel}...`
-              : `${projects.length} ${isGitHub ? 'repositorios' : 'proyectos'} disponibles`}
+              : `${projects.length} ${isNamespaceProvider ? 'proyectos' : 'proyectos'} disponibles`}
           </p>
         </label>
       ) : (
@@ -115,7 +133,11 @@ const ConnectionPanel = ({
           <Field
             label={projectLabel}
             value={config.project || ''}
-            placeholder={isGitHub ? 'deja vacio para todos los repositorios' : projectPlaceholder}
+            placeholder={isGitHub
+              ? 'deja vacio para todos los repositorios'
+              : isGitLab
+                ? 'deja vacio para todos los proyectos'
+                : projectPlaceholder}
             onChange={(value) => void onSelectProject(value)}
           />
           {projects.length > 0 ? (
@@ -129,9 +151,11 @@ const ConnectionPanel = ({
           ) : null}
         </div>
       )}
-      {isGitHub ? (
+      {isNamespaceProvider ? (
         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          En GitHub el repositorio seleccionado define el scope del dashboard y del analisis por rama.
+          {isGitHub
+            ? 'En GitHub el repositorio seleccionado define el scope del dashboard y del analisis por rama.'
+            : 'En GitLab el proyecto seleccionado define el scope del dashboard y del analisis por rama.'}
         </div>
       ) : (
         <label className="space-y-2 text-sm text-slate-600">
@@ -201,7 +225,7 @@ const ConnectionPanel = ({
           onClick={() => setManualProjectEntry(true)}
           className="text-xs font-medium text-slate-500 hover:text-slate-700"
         >
-          {isGitHub ? 'Ingresar repositorio manualmente' : 'Ingresar proyecto manualmente'}
+          {isNamespaceProvider ? 'Ingresar proyecto manualmente' : 'Ingresar proyecto manualmente'}
         </button>
       </div>
     ) : null}

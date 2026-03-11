@@ -9,6 +9,7 @@
     "watch": "tsc -w",
     "dev": "NODE_ENV=development npm run start",
     "build:prod": "NODE_ENV=production electron-builder build",
+    "test": "npm run build && jest --runInBand",
     "test:prod": "jest --coverage",
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",

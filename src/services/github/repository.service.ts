@@ -1,4 +1,5 @@
-import type { RepositoryBranch, RepositoryConnectionConfig, RepositoryProject, RepositorySummary, ReviewItem, ReviewItemReviewer } from '../../types/repository';
+import type { RepositoryBranch, RepositoryConnectionConfig, RepositoryProject, RepositorySnapshotOptions, RepositorySummary, ReviewItem, ReviewItemReviewer } from '../../types/repository';
+import type { RepositorySnapshot } from '../../types/analysis';
 
 interface GitHubRepositoryResponse {
   id: number;
@@ -16,6 +17,22 @@ interface GitHubBranchResponse {
   commit: {
     sha: string;
   };
+}
+
+interface GitHubTreeResponse {
+  tree: Array<{
+    path: string;
+    type: 'blob' | 'tree';
+    sha: string;
+    size?: number;
+  }>;
+  truncated?: boolean;
+}
+
+interface GitHubBlobResponse {
+  content: string;
+  encoding: string;
+  size: number;
 }
 
 interface GitHubPullRequestListResponseItem {
@@ -46,10 +63,6 @@ interface GitHubPullRequestListResponseItem {
   };
 }
 
-interface GitHubPullRequestDetailResponse {
-  mergeable_state?: string;
-}
-
 interface GitHubReviewResponseItem {
   user?: {
     login: string;
@@ -59,6 +72,11 @@ interface GitHubReviewResponseItem {
 }
 
 const GITHUB_API_VERSION = '2022-11-28';
+const SUPPORTED_CODE_EXTENSIONS = new Set([
+  'ts', 'tsx', 'js', 'jsx', 'json', 'py', 'java', 'kt', 'go', 'rb', 'php', 'cs', 'swift',
+  'scala', 'rs', 'c', 'cc', 'cpp', 'h', 'hpp', 'm', 'mm', 'sql', 'yml', 'yaml', 'toml',
+  'sh', 'bash', 'zsh', 'md',
+]);
 
 function getGitHubConfig(config: RepositoryConnectionConfig): Required<Pick<RepositoryConnectionConfig, 'organization' | 'personalAccessToken'>> & { repository: string } {
   const organization = config.organization.trim().replace(/^https?:\/\/github\.com\//, '').replace(/\/+$/, '');
@@ -128,6 +146,28 @@ function buildRepositorySummary(repository: GitHubRepositoryResponse): Repositor
   };
 }
 
+function isTestFile(path: string): boolean {
+  return /(^|\/)(test|tests|__tests__|spec|specs)(\/|$)|\.(spec|test)\./i.test(path);
+}
+
+function isSupportedCodeFile(path: string): boolean {
+  const extension = path.split('.').pop()?.toLowerCase() || '';
+  return SUPPORTED_CODE_EXTENSIONS.has(extension);
+}
+
+function rankPath(path: string): number {
+  if (/auth|security|permission|payment|billing|token|secret/i.test(path)) {
+    return 4;
+  }
+  if (/src|app|server|api|core/i.test(path)) {
+    return 3;
+  }
+  if (/config|infra|deploy/i.test(path)) {
+    return 2;
+  }
+  return 1;
+}
+
 function getReviewerVote(state: string): number {
   switch (state.toUpperCase()) {
     case 'APPROVED':
@@ -137,6 +177,27 @@ function getReviewerVote(state: string): number {
     default:
       return 0;
   }
+}
+
+async function mapWithConcurrency<TInput, TOutput>(
+  items: TInput[],
+  limit: number,
+  mapper: (item: TInput, index: number) => Promise<TOutput>,
+): Promise<TOutput[]> {
+  const results: TOutput[] = new Array(items.length);
+  let cursor = 0;
+
+  async function worker(): Promise<void> {
+    while (cursor < items.length) {
+      const currentIndex = cursor;
+      cursor += 1;
+      results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+    }
+  }
+
+  const workerCount = Math.max(1, Math.min(limit, items.length));
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return results;
 }
 
 async function getPullRequestReviewers(
@@ -267,22 +328,15 @@ export class GitHubRepositoryService {
           `pull requests request (${targetRepository.name})`,
         );
 
-        return Promise.all(pullRequests.map(async (pullRequest) => {
-          const [detail, reviewers] = await Promise.all([
-            requestGitHubJson<GitHubPullRequestDetailResponse>(
-              `https://api.github.com/repos/${encodeURIComponent(organization)}/${encodeURIComponent(targetRepository.name)}/pulls/${pullRequest.number}`,
-              personalAccessToken,
-              `pull request detail request (${targetRepository.name}#${pullRequest.number})`,
-            ),
-            getPullRequestReviewers(
+        return mapWithConcurrency(pullRequests, 5, async (pullRequest) => {
+          const reviewers = await getPullRequestReviewers(
               organization,
               targetRepository.name,
               pullRequest.number,
               personalAccessToken,
               pullRequest.requested_reviewers,
               pullRequest.assignees,
-            ),
-          ]);
+            );
 
           return {
             id: pullRequest.number,
@@ -295,7 +349,7 @@ export class GitHubRepositoryService {
             targetBranch: pullRequest.base.ref,
             url: pullRequest.html_url,
             isDraft: Boolean(pullRequest.draft),
-            mergeStatus: detail.mergeable_state || 'unknown',
+            mergeStatus: 'unknown',
             createdBy: {
               displayName: pullRequest.user?.login || 'Unknown author',
               uniqueName: pullRequest.user?.login,
@@ -303,7 +357,7 @@ export class GitHubRepositoryService {
             },
             reviewers,
           } satisfies ReviewItem;
-        }));
+        });
       }),
     );
 
@@ -311,6 +365,72 @@ export class GitHubRepositoryService {
       new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
     );
   }
+
+  async getRepositorySnapshot(
+    config: RepositoryConnectionConfig,
+    options: RepositorySnapshotOptions,
+  ): Promise<RepositorySnapshot> {
+    const { organization, personalAccessToken, repository } = getGitHubConfig({
+      ...config,
+      repositoryId: config.repositoryId || config.project,
+    });
+
+    if (!organization || !repository || !personalAccessToken) {
+      throw new Error('Owner/organization, repository y token son obligatorios para GitHub.');
+    }
+
+    const tree = await requestGitHubJson<GitHubTreeResponse>(
+      `https://api.github.com/repos/${encodeURIComponent(organization)}/${encodeURIComponent(repository)}/git/trees/${encodeURIComponent(options.branchName)}?recursive=1`,
+      personalAccessToken,
+      'repository tree request',
+    );
+
+    const candidateFiles = tree.tree
+      .filter((item) => item.type === 'blob' && item.path)
+      .filter((item) => isSupportedCodeFile(item.path))
+      .filter((item) => options.includeTests || !isTestFile(item.path))
+      .sort((left, right) => {
+        const scoreDelta = rankPath(right.path) - rankPath(left.path);
+        if (scoreDelta !== 0) {
+          return scoreDelta;
+        }
+        return (left.size || 0) - (right.size || 0);
+      });
+
+    const selectedFiles = candidateFiles.slice(0, options.maxFiles);
+    const files = await Promise.all(selectedFiles.map(async (file) => {
+      const blob = await requestGitHubJson<GitHubBlobResponse>(
+        `https://api.github.com/repos/${encodeURIComponent(organization)}/${encodeURIComponent(repository)}/git/blobs/${file.sha}`,
+        personalAccessToken,
+        `blob request (${file.path})`,
+      );
+
+      const content = blob.encoding === 'base64'
+        ? Buffer.from(blob.content.replace(/\n/g, ''), 'base64').toString('utf8')
+        : blob.content;
+
+      return {
+        path: file.path,
+        extension: file.path.split('.').pop()?.toLowerCase() || '',
+        size: blob.size,
+        content,
+      };
+    }));
+
+    return {
+      provider: 'github',
+      repository,
+      branch: options.branchName,
+      files,
+      totalFilesDiscovered: candidateFiles.length,
+      truncated: candidateFiles.length > options.maxFiles || Boolean(tree.truncated),
+    };
+  }
 }
+
+export const gitHubRepositoryServiceInternals = {
+  getGitHubConfig,
+  readGitHubResponse,
+};
 
 export const gitHubRepositoryService = new GitHubRepositoryService();

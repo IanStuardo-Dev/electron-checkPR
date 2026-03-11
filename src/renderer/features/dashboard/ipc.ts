@@ -1,4 +1,3 @@
-import { ipcRenderer } from 'electron';
 import type { RepositoryBranch, RepositoryProject, RepositorySummary, ReviewItem } from '../../../types/repository';
 import type { SavedConnectionConfig } from './types';
 
@@ -15,7 +14,7 @@ interface IpcErrorResponse {
 type IpcResponse<T> = IpcSuccessResponse<T> | IpcErrorResponse;
 
 async function invokeIpc<T>(channel: string, payload?: unknown): Promise<T> {
-  const response = await ipcRenderer.invoke(channel, payload) as IpcResponse<T>;
+  const response = await window.electronApi.invoke(channel, payload) as IpcResponse<T>;
 
   if (!response.ok) {
     throw new Error(response.error);
@@ -24,7 +23,7 @@ async function invokeIpc<T>(channel: string, payload?: unknown): Promise<T> {
   return response.data;
 }
 
-function getProviderChannel(config: SavedConnectionConfig, operation: 'pullRequests' | 'projects' | 'repositories' | 'branches' | 'openExternal'): string {
+export function getProviderChannel(config: SavedConnectionConfig, operation: 'pullRequests' | 'projects' | 'repositories' | 'branches' | 'openExternal'): string {
   if (config.provider === 'azure-devops') {
     const channelMap = {
       pullRequests: 'azure:fetchPullRequests',
@@ -44,6 +43,18 @@ function getProviderChannel(config: SavedConnectionConfig, operation: 'pullReque
       repositories: 'github:fetchRepositories',
       branches: 'github:fetchBranches',
       openExternal: 'github:openExternal',
+    } satisfies Record<typeof operation, string>;
+
+    return channelMap[operation];
+  }
+
+  if (config.provider === 'gitlab') {
+    const channelMap = {
+      pullRequests: 'gitlab:fetchPullRequests',
+      projects: 'gitlab:fetchProjects',
+      repositories: 'gitlab:fetchRepositories',
+      branches: 'gitlab:fetchBranches',
+      openExternal: 'gitlab:openExternal',
     } satisfies Record<typeof operation, string>;
 
     return channelMap[operation];
@@ -69,5 +80,5 @@ export async function fetchBranches(config: SavedConnectionConfig): Promise<Repo
 }
 
 export async function openReviewItem(url: string, config: SavedConnectionConfig): Promise<void> {
-  await ipcRenderer.invoke(getProviderChannel(config, 'openExternal'), url);
+  await invokeIpc<void>(getProviderChannel(config, 'openExternal'), url);
 }

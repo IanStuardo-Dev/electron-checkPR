@@ -53,6 +53,8 @@ const ConnectionSummary = ({
         <p className="mt-2 text-sm text-slate-500">
           {providerKind === 'github'
             ? `Repositorio: ${repositoryName || projectName || 'Todos los repositorios del owner'}`
+            : providerKind === 'gitlab'
+              ? `Proyecto: ${repositoryName || projectName || 'Todos los proyectos del namespace'}`
             : `Proyecto: ${projectName || 'No seleccionado'} · Repositorio: ${repositoryName || 'Todos los repositorios'}`}
         </p>
       </div>

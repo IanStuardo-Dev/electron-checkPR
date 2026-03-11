@@ -1,4 +1,6 @@
 import type { AzureBranch, AzureConnectionConfig, AzureProject, AzureRepository, PullRequest } from '../../types/azure';
+import type { RepositorySnapshot } from '../../types/analysis';
+import type { RepositorySnapshotOptions } from '../../types/repository';
 
 interface AzurePullRequestResponse {
   value: Array<{
@@ -55,10 +57,47 @@ interface AzureRefsResponse {
   }>;
 }
 
+interface AzureItemsResponse {
+  value: Array<{
+    path: string;
+    isFolder?: boolean;
+    contentMetadata?: {
+      fileName?: string;
+    };
+  }>;
+}
+
 const AZURE_API_VERSION = '7.1';
+const SUPPORTED_CODE_EXTENSIONS = new Set([
+  'ts', 'tsx', 'js', 'jsx', 'json', 'py', 'java', 'kt', 'go', 'rb', 'php', 'cs', 'swift',
+  'scala', 'rs', 'c', 'cc', 'cpp', 'h', 'hpp', 'm', 'mm', 'sql', 'yml', 'yaml', 'toml',
+  'sh', 'bash', 'zsh', 'md',
+]);
 
 function normalizeBranchName(branchRef: string): string {
   return branchRef.replace('refs/heads/', '');
+}
+
+function isTestFile(path: string): boolean {
+  return /(^|\/)(test|tests|__tests__|spec|specs)(\/|$)|\.(spec|test)\./i.test(path);
+}
+
+function isSupportedCodeFile(path: string): boolean {
+  const extension = path.split('.').pop()?.toLowerCase() || '';
+  return SUPPORTED_CODE_EXTENSIONS.has(extension);
+}
+
+function rankPath(path: string): number {
+  if (/auth|security|permission|payment|billing|token|secret/i.test(path)) {
+    return 4;
+  }
+  if (/src|app|server|api|core/i.test(path)) {
+    return 3;
+  }
+  if (/config|infra|deploy/i.test(path)) {
+    return 2;
+  }
+  return 1;
 }
 
 function encodePat(personalAccessToken: string): string {
@@ -151,6 +190,28 @@ async function requestAzureJson<T>(url: string, personalAccessToken: string, con
   });
 
   return readAzureResponse<T>(response, context);
+}
+
+async function requestAzureText(url: string, personalAccessToken: string, context: string): Promise<string> {
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Basic ${encodePat(personalAccessToken)}`,
+      Accept: 'text/plain, application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const responseText = await response.text();
+    const detail = responseText.replace(/\s+/g, ' ').trim().slice(0, 280) || response.statusText;
+
+    if (response.status === 401) {
+      throw new Error(`Azure DevOps ${context} failed (401): unauthorized. Response: ${detail || 'empty body'}`);
+    }
+
+    throw new Error(`Azure DevOps ${context} failed (${response.status}): ${detail}`);
+  }
+
+  return response.text();
 }
 
 export class PullRequestService {
@@ -254,6 +315,55 @@ export class PullRequestService {
       })),
     }));
   }
+
+  async getRepositorySnapshot(
+    config: AzureConnectionConfig,
+    options: RepositorySnapshotOptions,
+  ): Promise<RepositorySnapshot> {
+    const { organization, project, personalAccessToken } = getAzureConfig(config);
+    const repositoryId = config.repositoryId?.trim();
+
+    if (!organization || !project || !personalAccessToken || !repositoryId) {
+      throw new Error('Organization, project, repository, and personal access token are required.');
+    }
+
+    const itemsUrl = `https://dev.azure.com/${encodeURIComponent(organization)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repositoryId)}/items?scopePath=/&recursionLevel=Full&includeContentMetadata=true&versionDescriptor.version=${encodeURIComponent(options.branchName)}&versionDescriptor.versionType=branch&api-version=${AZURE_API_VERSION}`;
+    const payload = await requestAzureJson<AzureItemsResponse>(itemsUrl, personalAccessToken, 'repository items request');
+
+    const candidateFiles = payload.value
+      .filter((item) => !item.isFolder && item.path)
+      .filter((item) => isSupportedCodeFile(item.path))
+      .filter((item) => options.includeTests || !isTestFile(item.path))
+      .sort((left, right) => rankPath(right.path) - rankPath(left.path) || left.path.localeCompare(right.path));
+
+    const selectedFiles = candidateFiles.slice(0, options.maxFiles);
+    const files = await Promise.all(selectedFiles.map(async (file) => {
+      const contentUrl = `https://dev.azure.com/${encodeURIComponent(organization)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repositoryId)}/items?path=${encodeURIComponent(file.path)}&versionDescriptor.version=${encodeURIComponent(options.branchName)}&versionDescriptor.versionType=branch&download=false&resolveLfs=true&api-version=${AZURE_API_VERSION}`;
+      const content = await requestAzureText(contentUrl, personalAccessToken, `item content request (${file.path})`);
+
+      return {
+        path: file.path.replace(/^\//, ''),
+        extension: file.path.split('.').pop()?.toLowerCase() || '',
+        size: content.length,
+        content,
+      };
+    }));
+
+    return {
+      provider: 'azure-devops',
+      repository: repositoryId,
+      branch: options.branchName,
+      files,
+      totalFilesDiscovered: candidateFiles.length,
+      truncated: candidateFiles.length > options.maxFiles,
+    };
+  }
 }
+
+export const pullRequestServiceInternals = {
+  normalizeOrganization,
+  normalizeProject,
+  readAzureResponse,
+};
 
 export const pullRequestService = new PullRequestService();

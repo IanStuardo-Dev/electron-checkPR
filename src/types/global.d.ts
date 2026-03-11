@@ -1,10 +1,8 @@
 declare global {
   interface Window {
-    electron: {
-      sendNotification: (title: string, body: string) => void;
-      runTests: () => Promise<void>;
-      runSecurityScan: () => Promise<void>;
-    }
+    electronApi: {
+      invoke: (channel: string, payload?: unknown) => Promise<unknown>;
+    };
   }
 }
 

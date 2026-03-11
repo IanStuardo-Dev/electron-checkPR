@@ -62,3 +62,9 @@ export interface RepositoryProviderDefinition {
   description: string;
   helperText: string;
 }
+
+export interface RepositorySnapshotOptions {
+  branchName: string;
+  maxFiles: number;
+  includeTests: boolean;
+}

@@ -63,12 +63,12 @@ export function useRepositorySource() {
 
   const scopeLabel = React.useMemo(() => {
     const organization = config.organization || 'No organization';
-    const project = config.provider === 'github'
+    const project = config.provider === 'github' || config.provider === 'gitlab'
       ? (selectedRepositoryName || config.project || 'Todos los repositorios')
       : (selectedProjectName || config.project || 'No project');
     const repository = selectedRepositoryName || 'Todos los repositorios';
 
-    return config.provider === 'github'
+    return config.provider === 'github' || config.provider === 'gitlab'
       ? `${organization} / ${project}`
       : `${organization} / ${project} / ${repository}`;
   }, [config.organization, config.project, config.provider, selectedProjectName, selectedRepositoryName]);
@@ -94,6 +94,14 @@ export function useRepositorySource() {
             ? `https://api.github.com/repos/${organization}/${repositoryId || project}/pulls`
             : 'https://api.github.com/user/repos -> /repos/{owner}/{repo}/pulls')
           : ''
+      : nextConfig.provider === 'gitlab'
+        ? operation === 'projects' || operation === 'repositories'
+          ? 'https://gitlab.com/api/v4/projects'
+          : operation === 'pullRequests'
+            ? (repositoryId || project
+              ? `https://gitlab.com/api/v4/projects/${encodeURIComponent(repositoryId || project)}/merge_requests`
+              : 'https://gitlab.com/api/v4/projects -> /projects/{id}/merge_requests')
+            : ''
       : operation === 'projects'
         ? `https://dev.azure.com/${organization}/_apis/projects`
         : operation === 'repositories'
@@ -125,7 +133,7 @@ export function useRepositorySource() {
     try {
       const result = await fetchProjects(nextConfig);
       setProjects(result);
-      if (nextConfig.provider === 'github') {
+      if (nextConfig.provider === 'github' || nextConfig.provider === 'gitlab') {
         setRepositories(result.map((project) => ({
           id: project.id,
           name: project.name,
@@ -149,7 +157,7 @@ export function useRepositorySource() {
   }, [activeProvider.name, updateDiagnostics]);
 
   const refreshRepositories = React.useCallback(async (nextConfig = configRef.current) => {
-    if (nextConfig.provider === 'github') {
+    if (nextConfig.provider === 'github' || nextConfig.provider === 'gitlab') {
       if (!nextConfig.organization || !nextConfig.personalAccessToken) {
         setRepositories([]);
         return [];
@@ -239,7 +247,7 @@ export function useRepositorySource() {
   }, [activeProvider.name, refreshProjects, refreshRepositories, scopeLabel, updateDiagnostics]);
 
   React.useEffect(() => {
-    const hasMinimumConfig = config.provider === 'github'
+    const hasMinimumConfig = config.provider === 'github' || config.provider === 'gitlab'
       ? Boolean(config.organization && config.personalAccessToken)
       : Boolean(config.organization && config.project && config.personalAccessToken);
 
@@ -263,8 +271,8 @@ export function useRepositorySource() {
     }
 
     if (
-      (config.provider === 'github' && config.organization && config.personalAccessToken)
-      || (config.provider !== 'github' && config.organization && config.project && config.personalAccessToken)
+      ((config.provider === 'github' || config.provider === 'gitlab') && config.organization && config.personalAccessToken)
+      || (config.provider !== 'github' && config.provider !== 'gitlab' && config.organization && config.project && config.personalAccessToken)
     ) {
       void refreshRepositories(configRef.current).finally(() => {
         setShouldLoadRepositories(false);
@@ -338,14 +346,15 @@ export function useRepositorySource() {
   const discoverProjects = React.useCallback(async () => {
     const activeConfig = configRef.current;
     if (!activeConfig.organization.trim() || !activeConfig.personalAccessToken.trim()) {
-      setError('Owner/organization y token son obligatorios para cargar la fuente.');
-      updateDiagnostics('projects', activeConfig, 'Owner/organization y token son obligatorios para cargar la fuente.');
+      const message = `El alcance principal y el token son obligatorios para cargar ${activeProvider.name}.`;
+      setError(message);
+      updateDiagnostics('projects', activeConfig, message);
       return;
     }
 
     setError(null);
     await refreshProjects(activeConfig);
-  }, [refreshProjects, updateDiagnostics]);
+  }, [activeProvider.name, refreshProjects, updateDiagnostics]);
 
   const selectProject = React.useCallback((project: string) => {
     setPullRequests([]);
@@ -355,6 +364,7 @@ export function useRepositorySource() {
     setShouldLoadRepositories(Boolean(project));
     setConfig((current) => {
       const nextConfig = current.provider === 'github'
+        || current.provider === 'gitlab'
         ? {
           ...current,
           project,

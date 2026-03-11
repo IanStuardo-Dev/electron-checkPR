@@ -2,6 +2,8 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import { pullRequestService } from './services/azure/pr.service';
 import { gitHubRepositoryService } from './services/github/repository.service';
+import { gitLabRepositoryService } from './services/gitlab/repository.service';
+import { repositoryAnalysisService } from './services/analysis/repository-analysis.service';
 
 interface IpcSuccessResponse<T> {
   ok: true;
@@ -16,13 +18,48 @@ interface IpcErrorResponse {
 // Asegurarse de que las notificaciones estén habilitadas
 app.setAppUserModelId(process.execPath);
 
+const ALLOWED_EXTERNAL_HOSTS = new Set([
+  'dev.azure.com',
+  'github.com',
+  'gitlab.com',
+]);
+
+function isAllowedExternalHost(hostname: string): boolean {
+  return ALLOWED_EXTERNAL_HOSTS.has(hostname) || hostname.endsWith('.visualstudio.com');
+}
+
+function validateExternalUrl(rawUrl: string): string {
+  if (!rawUrl) {
+    throw new Error('A valid URL is required.');
+  }
+
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw new Error('La URL externa no es valida.');
+  }
+
+  if (url.protocol !== 'https:') {
+    throw new Error('Solo se permiten URLs externas con https.');
+  }
+
+  if (!isAllowedExternalHost(url.hostname)) {
+    throw new Error(`El host ${url.hostname} no esta permitido para abrir enlaces externos.`);
+  }
+
+  return url.toString();
+}
+
 function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
     }
   });
 
@@ -65,11 +102,9 @@ ipcMain.handle('azure:fetchBranches', async (_event, config) => {
 });
 
 ipcMain.handle('azure:openExternal', async (_event, url: string) => {
-  if (!url) {
-    throw new Error('A valid URL is required.');
-  }
-
-  await shell.openExternal(url);
+  return safeIpcResponse(async () => {
+    await shell.openExternal(validateExternalUrl(url));
+  });
 });
 
 ipcMain.handle('github:fetchPullRequests', async (_event, config) => {
@@ -89,11 +124,35 @@ ipcMain.handle('github:fetchBranches', async (_event, config) => {
 });
 
 ipcMain.handle('github:openExternal', async (_event, url: string) => {
-  if (!url) {
-    throw new Error('A valid URL is required.');
-  }
+  return safeIpcResponse(async () => {
+    await shell.openExternal(validateExternalUrl(url));
+  });
+});
 
-  await shell.openExternal(url);
+ipcMain.handle('gitlab:fetchPullRequests', async (_event, config) => {
+  return safeIpcResponse(() => gitLabRepositoryService.getPullRequests(config));
+});
+
+ipcMain.handle('gitlab:fetchProjects', async (_event, config) => {
+  return safeIpcResponse(() => gitLabRepositoryService.getProjects(config));
+});
+
+ipcMain.handle('gitlab:fetchRepositories', async (_event, config) => {
+  return safeIpcResponse(() => gitLabRepositoryService.getRepositories(config));
+});
+
+ipcMain.handle('gitlab:fetchBranches', async (_event, config) => {
+  return safeIpcResponse(() => gitLabRepositoryService.getBranches(config));
+});
+
+ipcMain.handle('gitlab:openExternal', async (_event, url: string) => {
+  return safeIpcResponse(async () => {
+    await shell.openExternal(validateExternalUrl(url));
+  });
+});
+
+ipcMain.handle('analysis:runRepositoryAnalysis', async (_event, payload) => {
+  return safeIpcResponse(() => repositoryAnalysisService.runAnalysis(payload));
 });
 
 app.whenReady().then(createWindow);

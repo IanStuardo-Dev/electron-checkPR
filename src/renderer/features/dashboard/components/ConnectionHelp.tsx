@@ -13,6 +13,8 @@ const ConnectionHelp = ({ provider }: ConnectionHelpProps) => (
         <p className="mt-1 text-slate-600">
           {provider === 'github'
             ? 'Necesitas owner y token para cargar repositorios, ramas y Pull Requests desde GitHub.'
+            : provider === 'gitlab'
+              ? 'Necesitas namespace y token para cargar proyectos, ramas y Merge Requests desde GitLab.'
             : 'Necesitas tres datos para cargar PRs reales desde Azure DevOps.'}
         </p>
       </div>
@@ -22,6 +24,12 @@ const ConnectionHelp = ({ provider }: ConnectionHelpProps) => (
           <p><span className="font-medium text-slate-900">Owner / Organization:</span> es el nombre del owner en la URL <code>https://github.com/tu-owner</code>.</p>
           <p><span className="font-medium text-slate-900">Repository:</span> se carga automáticamente después de ingresar owner y token.</p>
           <p><span className="font-medium text-slate-900">Token:</span> usa un personal access token con permisos para leer repositorio, ramas y pull requests.</p>
+        </div>
+      ) : provider === 'gitlab' ? (
+        <div className="space-y-2">
+          <p><span className="font-medium text-slate-900">Group / Namespace:</span> usa el namespace visible en la URL <code>https://gitlab.com/tu-grupo</code>.</p>
+          <p><span className="font-medium text-slate-900">Project:</span> se carga automáticamente después de ingresar namespace y token.</p>
+          <p><span className="font-medium text-slate-900">Token:</span> usa un personal access token con permisos para leer API y repositorios.</p>
         </div>
       ) : (
         <div className="space-y-2">
