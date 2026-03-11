@@ -3,6 +3,7 @@ import type { ReviewItem } from '../../../../types/repository';
 import { fetchProjects, fetchPullRequests, fetchRepositories, openReviewItem } from '../ipc';
 import type { SavedConnectionConfig } from '../types';
 import { useRepositoryDiagnostics } from './useRepositoryDiagnostics';
+import { useRepositorySourceEffects } from './useRepositorySourceEffects';
 import { useRepositorySourceState } from './useRepositorySourceState';
 
 interface UseRepositorySourceApiOptions {
@@ -162,33 +163,12 @@ export function useRepositorySourceApi({
     }
   }, [configRef, state]);
 
-  React.useEffect(() => {
-    const hasMinimumConfig = config.provider === 'github' || config.provider === 'gitlab'
-      ? Boolean(config.organization && config.personalAccessToken)
-      : Boolean(config.provider && config.organization && config.project && config.personalAccessToken);
-
-    if (!hasMinimumConfig) {
-      state.resetDisconnectedState();
-    }
-  }, [config, state]);
-
-  React.useEffect(() => {
-    if (!state.shouldLoadRepositories) {
-      return;
-    }
-
-    if (
-      (config.provider && (config.provider === 'github' || config.provider === 'gitlab') && config.organization && config.personalAccessToken)
-      || (config.provider !== 'github' && config.provider !== 'gitlab' && config.organization && config.project && config.personalAccessToken)
-    ) {
-      void refreshRepositories(configRef.current).finally(() => {
-        state.setShouldLoadRepositories(false);
-      });
-      return;
-    }
-
-    state.setShouldLoadRepositories(false);
-  }, [config, configRef, refreshRepositories, state]);
+  useRepositorySourceEffects({
+    config,
+    configRef,
+    state,
+    refreshRepositories,
+  });
 
   return {
     refreshProjects,

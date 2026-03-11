@@ -1,6 +1,7 @@
 import { app, BrowserWindow } from 'electron';
 import * as path from 'path';
 import { registerIpcHandlers } from './main/ipc/register';
+import { registerDefaultRepositoryProviders } from './services/providers/repository-provider.bootstrap';
 
 // Asegurarse de que las notificaciones estén habilitadas
 app.setAppUserModelId(process.execPath);
@@ -27,6 +28,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  registerDefaultRepositoryProviders();
   registerIpcHandlers();
   createWindow();
 });

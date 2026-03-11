@@ -1,6 +1,7 @@
 import React from 'react';
 import type { ReviewItem } from '../../../../types/repository';
 import type { SavedConnectionConfig } from '../types';
+import { useRepositorySourceActions } from './useRepositorySourceActions';
 import { useRepositoryDiagnostics } from './useRepositoryDiagnostics';
 import { useRepositorySourceApi } from './useRepositorySourceApi';
 import { useRepositorySourceState } from './useRepositorySourceState';
@@ -22,6 +23,10 @@ export function useRepositorySourceOperations({
 }: UseRepositorySourceOperationsOptions) {
   const state = useRepositorySourceState(config.provider);
   const diagnostics = useRepositoryDiagnostics(config);
+  const actions = useRepositorySourceActions({
+    state,
+    diagnostics,
+  });
   const api = useRepositorySourceApi({
     config,
     configRef,
@@ -31,21 +36,6 @@ export function useRepositorySourceOperations({
     diagnostics,
     onPersistSnapshot,
   });
-
-  const resetForConfigChange = React.useCallback((name: keyof SavedConnectionConfig, value: string) => {
-    state.resetForConfigChange(name, value);
-    diagnostics.resetDiagnosticsError();
-  }, [diagnostics, state]);
-
-  const handleConfigChanged = React.useCallback(() => undefined, []);
-
-  const openConnectionPanel = React.useCallback(() => {
-    state.setIsConnectionPanelOpen(true);
-  }, [state]);
-
-  const selectProject = React.useCallback((project: string) => {
-    state.markProjectSelection(project);
-  }, [state]);
 
   return {
     pullRequests: state.pullRequests,
@@ -60,14 +50,13 @@ export function useRepositorySourceOperations({
     hasSuccessfulConnection: state.hasSuccessfulConnection,
     diagnostics: diagnostics.diagnostics,
     isConnectionPanelOpen: state.isConnectionPanelOpen,
-    resetForConfigChange,
-    handleConfigChanged,
+    resetForConfigChange: actions.resetForConfigChange,
     refreshPullRequests: api.refreshPullRequests,
     refreshProjects: api.refreshProjects,
     refreshRepositories: api.refreshRepositories,
     discoverProjects: api.discoverProjects,
-    selectProject,
+    selectProject: actions.selectProject,
     openPullRequest: api.openPullRequest,
-    openConnectionPanel,
+    openConnectionPanel: actions.openConnectionPanel,
   };
 }

@@ -1,53 +1,53 @@
-import { pullRequestService } from '../azure/pr.service';
-import { gitHubRepositoryService } from '../github/repository.service';
-import { gitLabRepositoryService } from '../gitlab/repository.service';
+import type { RepositoryProviderKind } from '../../types/repository';
 import type { RepositoryProviderPort } from './repository-provider.port';
-import type {
-  RepositoryBranch,
-  RepositoryConnectionConfig,
-  RepositoryProject,
-  RepositoryProviderKind,
-  RepositorySnapshotOptions,
-  RepositorySummary,
-  ReviewItem,
-} from '../../types/repository';
-import type { RepositorySnapshot } from '../../types/analysis';
 
-function createProviderPort(
-  kind: RepositoryProviderKind,
-  service: {
-    getProjects(config: RepositoryConnectionConfig): Promise<RepositoryProject[]>;
-    getRepositories(config: RepositoryConnectionConfig): Promise<RepositorySummary[]>;
-    getBranches(config: RepositoryConnectionConfig): Promise<RepositoryBranch[]>;
-    getPullRequests(config: RepositoryConnectionConfig): Promise<ReviewItem[]>;
-    getRepositorySnapshot(config: RepositoryConnectionConfig, options: RepositorySnapshotOptions): Promise<RepositorySnapshot>;
-  },
-): RepositoryProviderPort {
-  return {
-    kind,
-    getProjects: (config) => service.getProjects(config),
-    getRepositories: (config) => service.getRepositories(config),
-    getBranches: (config) => service.getBranches(config),
-    getPullRequests: (config) => service.getPullRequests(config),
-    getRepositorySnapshot: (config, options) => service.getRepositorySnapshot(config, options),
-  };
-}
+export class RepositoryProviderRegistry {
+  private readonly providers = new Map<RepositoryProviderKind, RepositoryProviderPort>();
 
-const providerRegistry = new Map<RepositoryProviderKind, RepositoryProviderPort>([
-  ['azure-devops', createProviderPort('azure-devops', pullRequestService)],
-  ['github', createProviderPort('github', gitHubRepositoryService)],
-  ['gitlab', createProviderPort('gitlab', gitLabRepositoryService)],
-]);
-
-export function getRepositoryProviderPort(kind: RepositoryProviderKind): RepositoryProviderPort {
-  const provider = providerRegistry.get(kind);
-  if (!provider) {
-    throw new Error(`El provider ${kind} aun no esta registrado.`);
+  register(provider: RepositoryProviderPort): void {
+    this.providers.set(provider.kind, provider);
   }
 
-  return provider;
+  registerMany(providers: RepositoryProviderPort[]): void {
+    providers.forEach((provider) => this.register(provider));
+  }
+
+  get(kind: RepositoryProviderKind): RepositoryProviderPort {
+    const provider = this.providers.get(kind);
+    if (!provider) {
+      throw new Error(`El provider ${kind} aun no esta registrado.`);
+    }
+
+    return provider;
+  }
+
+  list(): RepositoryProviderPort[] {
+    return Array.from(this.providers.values());
+  }
+
+  clear(): void {
+    this.providers.clear();
+  }
+}
+
+const defaultRepositoryProviderRegistry = new RepositoryProviderRegistry();
+
+export function registerRepositoryProviderPort(provider: RepositoryProviderPort): void {
+  defaultRepositoryProviderRegistry.register(provider);
+}
+
+export function registerRepositoryProviderPorts(providers: RepositoryProviderPort[]): void {
+  defaultRepositoryProviderRegistry.registerMany(providers);
+}
+
+export function getRepositoryProviderPort(kind: RepositoryProviderKind): RepositoryProviderPort {
+  return defaultRepositoryProviderRegistry.get(kind);
 }
 
 export function getRepositoryProviderPorts(): RepositoryProviderPort[] {
-  return Array.from(providerRegistry.values());
+  return defaultRepositoryProviderRegistry.list();
+}
+
+export function resetRepositoryProviderRegistry(): void {
+  defaultRepositoryProviderRegistry.clear();
 }
