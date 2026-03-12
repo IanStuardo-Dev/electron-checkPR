@@ -5,8 +5,17 @@ module.exports = {
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
     '!src/renderer/index.tsx',
+    '!src/renderer/**/*.tsx',
     '!src/preload.ts',
+    '!src/renderer/shims/global.ts',
   ],
+  coverageThreshold: {
+    global: {
+      statements: 90,
+      lines: 90,
+      functions: 85,
+    },
+  },
   projects: [
     {
       displayName: 'node',

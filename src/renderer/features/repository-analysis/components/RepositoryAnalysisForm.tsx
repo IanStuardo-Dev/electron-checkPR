@@ -282,7 +282,7 @@ export const RepositoryAnalysisScopeForm = ({
                     </p>
                   ) : null}
                   {finding.codeSnippet ? (
-                    <pre className="mt-2 whitespace-pre-wrap break-words rounded-xl bg-white/70 px-3 py-2 text-xs leading-5 text-slate-900">
+                    <pre className="mt-2 max-h-56 overflow-auto whitespace-pre-wrap break-words rounded-xl bg-white/70 px-3 py-2 text-xs leading-5 text-slate-900">
                       {finding.codeSnippet}
                     </pre>
                   ) : null}
@@ -363,7 +363,7 @@ function PreviewList({
   return (
     <div className={`rounded-2xl border p-4 ${toneClassName[tone]}`}>
       <p className="text-sm font-semibold">{title}</p>
-      <div className="mt-3 space-y-2 text-xs leading-5">
+      <div className="mt-3 max-h-56 space-y-2 overflow-auto pr-1 text-xs leading-5">
         {items.length > 0 ? items.map((item) => (
           <p key={item} className="break-all rounded-xl bg-white/70 px-3 py-2">{item}</p>
         )) : <p>{emptyLabel}</p>}

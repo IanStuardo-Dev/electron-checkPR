@@ -38,6 +38,14 @@ export function parseExcludedPathPatterns(rawPatterns?: string): string[] {
     .slice(0, 100);
 }
 
+export function mergeExcludedPathPatterns(...patternBlocks: Array<string | undefined>): string {
+  const merged = Array.from(new Set(
+    patternBlocks.flatMap((block) => parseExcludedPathPatterns(block)),
+  ));
+
+  return merged.join('\n');
+}
+
 function globToRegExp(pattern: string): RegExp {
   const escaped = pattern
     .replace(/[.+^${}()|[\]\\]/g, '\\$&')

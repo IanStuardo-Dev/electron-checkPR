@@ -6,6 +6,7 @@ import { fetchBranches } from '../features/dashboard/ipc';
 import { useRepositorySourceContext } from '../features/dashboard/context/RepositorySourceContext';
 import { useRepositoryAnalysis } from '../features/repository-analysis/hooks/useRepositoryAnalysis';
 import { useCodexSettings } from '../features/settings/hooks/useCodexSettings';
+import { mergeExcludedPathPatterns } from '../../services/shared/repository-snapshot-helpers';
 import {
   countActiveDirectives,
   RepositoryAnalysisEmptyState,
@@ -117,10 +118,10 @@ const RepositoryAnalysis = () => {
     includeTests: codexConfig.includeTests,
     snapshotPolicy: {
       ...codexConfig.snapshotPolicy,
-      excludedPathPatterns: [
-        codexConfig.snapshotPolicy.excludedPathPatterns.trim(),
-        ...pendingExcludedPaths,
-      ].filter(Boolean).join('\n'),
+      excludedPathPatterns: mergeExcludedPathPatterns(
+        codexConfig.snapshotPolicy.excludedPathPatterns,
+        pendingExcludedPaths.join('\n'),
+      ),
     },
     timeoutMs: 90_000,
     promptDirectives: codexConfig.promptDirectives,

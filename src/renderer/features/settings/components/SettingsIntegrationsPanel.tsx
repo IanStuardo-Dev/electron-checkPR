@@ -5,6 +5,7 @@ import ConnectionPanel from '../../dashboard/components/ConnectionPanel';
 import ConnectionSummary from '../../dashboard/components/ConnectionSummary';
 import { repositoryProviders } from '../../repository-source/providers';
 import CodexIntegrationCard from './CodexIntegrationCard';
+import GlobalSnapshotPolicyCard from './GlobalSnapshotPolicyCard';
 import RepositoryProviderCard from './RepositoryProviderCard';
 import { SettingsSectionCard, SettingsStatusBadge } from './SettingsPrimitives';
 
@@ -122,6 +123,11 @@ export function SettingsIntegrationsSection({
             ))}
           </div>
         </SettingsSectionCard>
+
+        <GlobalSnapshotPolicyCard
+          snapshotPolicy={codexConfig.snapshotPolicy}
+          onChange={(value) => updateCodexConfig('snapshotPolicy', value)}
+        />
 
         <CodexIntegrationCard
           config={codexConfig}

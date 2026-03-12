@@ -37,9 +37,9 @@ const PullRequestAiReviewModal = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-      <div className="max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-[32px] bg-white shadow-2xl ring-1 ring-slate-200">
-        <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/60 p-3 backdrop-blur-sm sm:p-4">
+      <div className="my-3 flex max-h-[min(92vh,980px)] w-full max-w-5xl min-h-0 flex-col overflow-hidden rounded-[32px] bg-white shadow-2xl ring-1 ring-slate-200">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-5 sm:px-6">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sky-600">PR AI Review</p>
             <h2 className="mt-2 text-2xl font-semibold text-slate-950">Revision local del snapshot antes de enviar a Codex</h2>
@@ -56,7 +56,7 @@ const PullRequestAiReviewModal = ({
           </button>
         </div>
 
-        <div className="max-h-[calc(90vh-170px)] overflow-y-auto px-6 py-5">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
           {isPreviewing ? (
             <div className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-10 text-center text-slate-600">
               <ArrowPathIcon className="mx-auto h-8 w-8 animate-spin text-sky-600" />
@@ -135,7 +135,7 @@ const PullRequestAiReviewModal = ({
                                   <p className="mt-1 text-xs text-slate-500">Linea {finding.lineNumber}</p>
                                 ) : null}
                                 {finding.codeSnippet ? (
-                                  <pre className="mt-2 overflow-x-auto rounded-xl bg-slate-950 px-3 py-2 text-xs text-slate-100">{finding.codeSnippet}</pre>
+                                  <pre className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap break-words rounded-xl bg-slate-950 px-3 py-2 text-xs text-slate-100">{finding.codeSnippet}</pre>
                                 ) : null}
                               </div>
                             ))}
@@ -169,7 +169,7 @@ const PullRequestAiReviewModal = ({
           )}
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-slate-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-slate-200 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div className="text-sm text-slate-500">
             {selectedPullRequests.length} PRs preparados para revision manual.
           </div>

@@ -88,5 +88,7 @@ describe('Settings page', () => {
     expect(screen.getByText('Workspace operativo')).toBeInTheDocument();
     expect(screen.getAllByText('GitHub').length).toBeGreaterThan(0);
     expect(screen.getByText('Provider activo y fuentes disponibles')).toBeInTheDocument();
+    expect(screen.getByText('Reglas globales de snapshot')).toBeInTheDocument();
+    expect(screen.getAllByText(/cualquier snapshot del producto/i).length).toBeGreaterThan(0);
   });
 });

@@ -121,16 +121,6 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
       />
 
       <SettingsToggleCard
-        title="Modo estricto de snapshot"
-        description="Bloquea el envio a Codex si el preflight detecta posibles secretos o archivos sensibles dentro del snapshot."
-        checked={config.snapshotPolicy.strictMode}
-        onChange={(checked) => onChange('snapshotPolicy', {
-          ...config.snapshotPolicy,
-          strictMode: checked,
-        })}
-      />
-
-      <SettingsToggleCard
         title="Habilitar PR AI Review"
         description="Activa el analisis IA sobre la cola priorizada de Pull Requests en el dashboard."
         checked={config.prReview.enabled}
@@ -192,18 +182,6 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
       </p>
 
       <div className="mt-5 grid gap-4 xl:grid-cols-2">
-        <SettingsTextAreaField
-          label="Patrones de paths excluidos del snapshot"
-          value={config.snapshotPolicy.excludedPathPatterns}
-          placeholder={'Ejemplo:\n.env\n.env.*\nnode_modules/**\ndist/**\n*.pem\n*.key'}
-          onChange={(value) => onChange('snapshotPolicy', {
-            ...config.snapshotPolicy,
-            excludedPathPatterns: value,
-          })}
-          span="xl:col-span-2"
-          hint="Uno por linea. Se aplican antes del preflight y del envio a Codex."
-        />
-
         <SettingsTextAreaField
           label="Focus areas para PR AI Review"
           value={config.prReview.promptDirectives.focusAreas}
