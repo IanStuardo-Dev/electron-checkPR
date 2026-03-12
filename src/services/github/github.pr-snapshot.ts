@@ -3,6 +3,7 @@ import type { PullRequestSnapshotOptions, RepositoryConnectionConfig, ReviewItem
 import { getGitHubConfig, requestGitHubPaginated } from './github.api';
 import type { GitHubPullRequestFileResponseItem } from './github.types';
 import { shouldExcludeSnapshotPath } from '../shared/repository-snapshot-helpers';
+import { appendPartialReason } from '../shared/snapshot-content';
 
 export async function getGitHubPullRequestSnapshot(
   config: RepositoryConnectionConfig,
@@ -30,6 +31,8 @@ export async function getGitHubPullRequestSnapshot(
       deletions: file.deletions,
       patch: file.patch,
     }));
+  const excludedCount = files.length - visibleFiles.length;
+  const filesWithoutPatch = visibleFiles.filter((file) => !file.patch).length;
 
   return {
     provider: 'github',
@@ -48,8 +51,13 @@ export async function getGitHubPullRequestSnapshot(
     files: visibleFiles,
     totalFilesChanged: files.length,
     truncated: files.length !== visibleFiles.length,
-    partialReason: files.length !== visibleFiles.length
-      ? `Se excluyeron ${files.length - visibleFiles.length} archivos del PR por las reglas de snapshot configuradas.`
-      : undefined,
+    partialReason: appendPartialReason(undefined, [
+      excludedCount > 0
+        ? `Se excluyeron ${excludedCount} archivos del PR por las reglas de snapshot configuradas.`
+        : '',
+      filesWithoutPatch > 0
+        ? `${filesWithoutPatch} archivos del PR no incluyen patch textual en la respuesta del provider.`
+        : '',
+    ]),
   };
 }

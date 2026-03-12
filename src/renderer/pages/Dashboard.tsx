@@ -26,7 +26,14 @@ const Dashboard = () => {
     selectedRepositoryName,
   } = useRepositorySourceContext();
   const { config: codexConfig } = useCodexSettings();
-  const { reviews, isConfigured: isAiConfigured } = usePullRequestAiReviews({
+  const {
+    reviews,
+    isConfigured: isAiConfigured,
+    runPriorityQueue,
+    runPullRequest,
+    isRunningQueue,
+    activePullRequestId,
+  } = usePullRequestAiReviews({
     config,
     pullRequests: summary.prioritizedPullRequests,
     isConnectionReady,
@@ -84,6 +91,11 @@ const Dashboard = () => {
             <PriorityList
               pullRequests={dashboardSummary.operationalPullRequests}
               onOpenPullRequest={(url) => void openPullRequest(url)}
+              onRunQueueAi={() => void runPriorityQueue()}
+              onRunPullRequestAi={(pullRequestId) => void runPullRequest(pullRequestId)}
+              isAiConfigured={isAiConfigured}
+              isQueueRunning={isRunningQueue}
+              activePullRequestId={activePullRequestId}
             />
             <ReviewerWorkloadPanel reviewers={dashboardSummary.reviewerWorkload} />
           </section>

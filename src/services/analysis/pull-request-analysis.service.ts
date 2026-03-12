@@ -28,25 +28,56 @@ export class PullRequestAnalysisService {
     const results: PullRequestAiReview[] = [];
     for (const item of request.items) {
       const snapshot = await this.snapshotProvider.getSnapshot(request.source, item.pullRequest, request.snapshotPolicy);
-      const sensitivity = buildSnapshotSensitivitySummary(
-        snapshot.files
-          .filter((file) => file.patch)
-          .map((file) => ({
-            path: file.path,
-            extension: file.path.split('.').pop()?.toLowerCase() || '',
-            size: file.patch?.length || 0,
-            content: file.patch || '',
-          })),
+      const textFiles = snapshot.files
+        .filter((file) => file.patch)
+        .map((file) => ({
+          path: file.path,
+          extension: file.path.split('.').pop()?.toLowerCase() || '',
+          size: file.patch?.length || 0,
+          content: file.patch || '',
+        }));
+      const metadataSensitivity = buildSnapshotSensitivitySummary(
+        snapshot.files.map((file) => ({
+          path: file.path,
+          extension: file.path.split('.').pop()?.toLowerCase() || '',
+          size: file.patch?.length || 0,
+          content: '',
+        })),
       );
+      const sensitivity = buildSnapshotSensitivitySummary(textFiles);
+      const filesWithoutPatch = snapshot.files.length - textFiles.length;
+      const lacksPatchCoverage = textFiles.length === 0;
+      const hasIncompletePatchCoverage = filesWithoutPatch > 0;
 
-      if (request.snapshotPolicy?.strictMode && (sensitivity.hasSecretPatterns || sensitivity.hasSensitiveConfigFiles)) {
+      if (lacksPatchCoverage) {
         results.push({
           pullRequestId: item.pullRequest.id,
           repository: item.pullRequest.repository,
           status: 'omitted',
           topConcerns: [],
           reviewChecklist: [],
-          coverageNote: 'PR omitido por modo estricto y señales sensibles en el diff.',
+          coverageNote: snapshot.partialReason || 'No se envio el PR a Codex porque el snapshot no incluye diff textual suficiente para evaluar sensibilidad y riesgo con seguridad.',
+        });
+        continue;
+      }
+
+      if (request.snapshotPolicy?.strictMode && (
+        sensitivity.hasSecretPatterns
+        || sensitivity.hasSensitiveConfigFiles
+        || metadataSensitivity.hasSensitiveConfigFiles
+        || hasIncompletePatchCoverage
+      )) {
+        results.push({
+          pullRequestId: item.pullRequest.id,
+          repository: item.pullRequest.repository,
+          status: 'omitted',
+          topConcerns: [],
+          reviewChecklist: [],
+          coverageNote: metadataSensitivity.hasSensitiveConfigFiles && !sensitivity.hasSensitiveConfigFiles && !sensitivity.hasSecretPatterns
+            ? 'PR omitido por modo estricto: se detectaron archivos potencialmente sensibles y el snapshot no cubre todo el diff textual.'
+            : hasIncompletePatchCoverage
+              ? 'PR omitido por modo estricto: el snapshot no cubre todos los archivos con diff textual suficiente.'
+              : 'PR omitido por modo estricto y señales sensibles en el diff.',
         });
         continue;
       }

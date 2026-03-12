@@ -4,6 +4,7 @@ import type { AzureConnectionConfig } from '../../types/azure';
 import { AZURE_API_VERSION, getAzureConfig, requestAzureJson } from './azure.api';
 import type { AzurePullRequestChangesResponse, AzurePullRequestIterationsResponse } from './azure.types';
 import { shouldExcludeSnapshotPath } from '../shared/repository-snapshot-helpers';
+import { appendPartialReason } from '../shared/snapshot-content';
 
 export async function getAzurePullRequestSnapshot(
   config: AzureConnectionConfig,
@@ -39,6 +40,7 @@ export async function getAzurePullRequestSnapshot(
     }));
 
   const totalFilesChanged = changes.changeEntries.filter((entry) => entry.item?.path).length;
+  const excludedCount = totalFilesChanged - visibleFiles.length;
 
   return {
     provider: 'azure-devops',
@@ -57,8 +59,13 @@ export async function getAzurePullRequestSnapshot(
     files: visibleFiles,
     totalFilesChanged,
     truncated: totalFilesChanged !== visibleFiles.length,
-    partialReason: totalFilesChanged !== visibleFiles.length
-      ? `Se excluyeron ${totalFilesChanged - visibleFiles.length} archivos del Pull Request por las reglas de snapshot configuradas.`
-      : undefined,
+    partialReason: appendPartialReason(undefined, [
+      excludedCount > 0
+        ? `Se excluyeron ${excludedCount} archivos del Pull Request por las reglas de snapshot configuradas.`
+        : '',
+      visibleFiles.length > 0
+        ? 'Azure DevOps no entrego patch textual para este PR; el snapshot contiene solo metadata de archivos cambiados.'
+        : '',
+    ]),
   };
 }

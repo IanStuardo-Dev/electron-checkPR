@@ -6,16 +6,39 @@ import { getRiskBadgeClass } from '../metrics';
 interface PriorityListProps {
   pullRequests: OperationalPullRequest[];
   onOpenPullRequest: (url: string) => void;
+  onRunQueueAi: () => void;
+  onRunPullRequestAi: (pullRequestId: number) => void;
+  isAiConfigured: boolean;
+  isQueueRunning: boolean;
+  activePullRequestId: number | null;
 }
 
-const PriorityList = ({ pullRequests, onOpenPullRequest }: PriorityListProps) => (
+const PriorityList = ({
+  pullRequests,
+  onOpenPullRequest,
+  onRunQueueAi,
+  onRunPullRequestAi,
+  isAiConfigured,
+  isQueueRunning,
+  activePullRequestId,
+}: PriorityListProps) => (
   <div className="rounded-3xl bg-white p-6 shadow-lg ring-1 ring-slate-200">
-    <div className="mb-5 flex items-center justify-between">
+    <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div>
         <h2 className="text-xl font-semibold text-slate-900">PRs priorizados</h2>
         <p className="text-sm text-slate-500">Ordenados por riesgo operativo, contexto y antigüedad.</p>
       </div>
-      <div className="text-sm text-slate-500">{pullRequests.length} elementos</div>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="text-sm text-slate-500">{pullRequests.length} elementos</div>
+        <button
+          type="button"
+          onClick={onRunQueueAi}
+          disabled={!isAiConfigured || isQueueRunning || pullRequests.length === 0}
+          className="inline-flex items-center justify-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
+        >
+          {isQueueRunning ? 'Ejecutando IA...' : 'Ejecutar revision IA ahora'}
+        </button>
+      </div>
     </div>
 
     <div className="space-y-4">
@@ -109,6 +132,18 @@ const PriorityList = ({ pullRequests, onOpenPullRequest }: PriorityListProps) =>
               >
                 Abrir PR
                 <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onRunPullRequestAi(pr.id)}
+                disabled={!isAiConfigured || isQueueRunning || activePullRequestId === pr.id}
+                className="inline-flex items-center justify-center self-start rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
+              >
+                {activePullRequestId === pr.id
+                  ? 'Analizando...'
+                  : pr.aiReview.status === 'analyzed'
+                    ? 'Reanalizar con IA'
+                    : 'Analizar con IA'}
               </button>
             </div>
           </article>

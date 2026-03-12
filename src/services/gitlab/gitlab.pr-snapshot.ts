@@ -3,6 +3,7 @@ import type { PullRequestSnapshotOptions, RepositoryConnectionConfig, ReviewItem
 import { GITLAB_API_BASE_URL, getGitLabConfig, requestGitLabJson } from './gitlab.api';
 import type { GitLabMergeRequestChangesResponse } from './gitlab.types';
 import { shouldExcludeSnapshotPath } from '../shared/repository-snapshot-helpers';
+import { appendPartialReason } from '../shared/snapshot-content';
 
 function getChangeStatus(change: GitLabMergeRequestChangesResponse['changes'][number]): string {
   if (change.new_file) {
@@ -41,6 +42,8 @@ export async function getGitLabPullRequestSnapshot(
       status: getChangeStatus(change),
       patch: change.diff,
     }));
+  const excludedCount = payload.changes.length - visibleFiles.length;
+  const filesWithoutPatch = visibleFiles.filter((file) => !file.patch).length;
 
   return {
     provider: 'gitlab',
@@ -59,8 +62,13 @@ export async function getGitLabPullRequestSnapshot(
     files: visibleFiles,
     totalFilesChanged: payload.changes.length,
     truncated: payload.changes.length !== visibleFiles.length,
-    partialReason: payload.changes.length !== visibleFiles.length
-      ? `Se excluyeron ${payload.changes.length - visibleFiles.length} archivos del merge request por las reglas de snapshot configuradas.`
-      : undefined,
+    partialReason: appendPartialReason(undefined, [
+      excludedCount > 0
+        ? `Se excluyeron ${excludedCount} archivos del merge request por las reglas de snapshot configuradas.`
+        : '',
+      filesWithoutPatch > 0
+        ? `${filesWithoutPatch} archivos del merge request no incluyen diff textual en la respuesta del provider.`
+        : '',
+    ]),
   };
 }

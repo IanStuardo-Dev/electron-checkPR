@@ -1,5 +1,5 @@
 const React = require('react');
-const { render, screen } = require('@testing-library/react');
+const { fireEvent, render, screen } = require('@testing-library/react');
 const { createDashboardSummary, createRepositorySourceContext } = require('../../support/helpers/dashboard-context');
 
 jest.mock('../../../src/renderer/features/dashboard/context/RepositorySourceContext', () => ({
@@ -57,7 +57,11 @@ describe('Dashboard page', () => {
     usePullRequestAiReviews.mockReturnValue({
       reviews: [],
       isLoading: false,
+      isRunningQueue: false,
+      activePullRequestId: null,
       isConfigured: false,
+      runPriorityQueue: jest.fn(),
+      runPullRequest: jest.fn(),
     });
   });
 
@@ -151,7 +155,11 @@ describe('Dashboard page', () => {
         },
       ],
       isLoading: false,
+      isRunningQueue: false,
+      activePullRequestId: null,
       isConfigured: true,
+      runPriorityQueue: jest.fn(),
+      runPullRequest: jest.fn(),
     });
     useRepositorySourceContext.mockReturnValue(createRepositorySourceContext({
       activeProvider: { kind: 'github' },
@@ -225,5 +233,107 @@ describe('Dashboard page', () => {
     expect(screen.getByText(/Toca autenticacion y requiere revisar permisos/i)).toBeInTheDocument();
     expect(screen.getByText('Reviewer workload')).toBeInTheDocument();
     expect(screen.getByText('Ana')).toBeInTheDocument();
+  });
+
+  test('permite ejecutar revision IA global y por PR desde la cola', () => {
+    const runPriorityQueue = jest.fn();
+    const runPullRequest = jest.fn();
+
+    useCodexSettings.mockReturnValue({
+      config: {
+        enabled: true,
+        model: 'gpt-5.2-codex',
+        analysisDepth: 'standard',
+        maxFilesPerRun: 80,
+        includeTests: true,
+        repositoryScope: 'selected',
+        apiKey: 'sk-live',
+        snapshotPolicy: {
+          excludedPathPatterns: '',
+          strictMode: false,
+        },
+        prReview: {
+          enabled: true,
+          maxPullRequests: 2,
+          selectionMode: 'top-risk',
+          analysisDepth: 'standard',
+          promptDirectives: {
+            focusAreas: '',
+            customInstructions: '',
+          },
+        },
+        promptDirectives: {
+          architectureReviewEnabled: false,
+          architecturePattern: '',
+          requiredPractices: '',
+          forbiddenPractices: '',
+          domainContext: '',
+          customInstructions: '',
+        },
+      },
+    });
+    usePullRequestAiReviews.mockReturnValue({
+      reviews: [],
+      isLoading: false,
+      isRunningQueue: false,
+      activePullRequestId: null,
+      isConfigured: true,
+      runPriorityQueue,
+      runPullRequest,
+    });
+    useRepositorySourceContext.mockReturnValue(createRepositorySourceContext({
+      activeProvider: { kind: 'github' },
+      activeProviderName: 'GitHub',
+      config: {
+        provider: 'github',
+        organization: 'acme',
+        project: '',
+        repositoryId: '',
+        personalAccessToken: 'token',
+        targetReviewer: '',
+      },
+      isConnectionReady: true,
+      summary: createDashboardSummary({
+        queueMetrics: [
+          {
+            id: 'active-prs',
+            title: 'PR activos',
+            value: 1,
+            detail: 'Backlog abierto',
+            tone: 'sky',
+          },
+        ],
+        prioritizedPullRequests: [
+          {
+            id: 44,
+            title: 'Endurecer permisos',
+            description: 'Ajustes de auth',
+            repository: 'repo-a',
+            url: 'https://example.com/pr/44',
+            status: 'active',
+            createdAt: '2026-03-10T10:00:00.000Z',
+            updatedAt: '2026-03-10T12:00:00.000Z',
+            createdBy: { displayName: 'Ian' },
+            sourceBranch: 'feature/auth',
+            targetBranch: 'main',
+            mergeStatus: 'succeeded',
+            isDraft: false,
+            reviewers: [],
+            ageHours: 20,
+            riskScore: 4,
+            approvals: 0,
+            pendingReviewers: 2,
+          },
+        ],
+      }),
+    }));
+
+    render(React.createElement(Dashboard));
+
+    fireEvent.click(screen.getByRole('button', { name: /Ejecutar revision IA ahora/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Analizar con IA/i }));
+
+    expect(runPriorityQueue).toHaveBeenCalledTimes(1);
+    expect(runPullRequest).toHaveBeenCalledWith(44);
   });
 });
