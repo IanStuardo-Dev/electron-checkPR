@@ -132,6 +132,21 @@ export interface PullRequestSnapshot {
   partialReason?: string;
 }
 
+export interface PullRequestAnalysisPreview {
+  pullRequestId: number;
+  repository: string;
+  title: string;
+  filesPrepared: number;
+  totalFilesChanged: number;
+  includedFiles: string[];
+  truncated: boolean;
+  partialReason?: string;
+  sensitivity: RepositorySnapshotSensitivitySummary;
+  disclaimer: string;
+  lacksPatchCoverage: boolean;
+  strictModeWouldBlock: boolean;
+}
+
 export interface PullRequestAnalysisItemRequest {
   pullRequest: ReviewItem;
 }

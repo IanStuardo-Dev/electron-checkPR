@@ -1,9 +1,12 @@
 import React from 'react';
-import type { PullRequestAiReview, PullRequestAnalysisBatchRequest } from '../../../../types/analysis';
+import type {
+  PullRequestAiReview,
+  PullRequestAnalysisBatchRequest,
+  PullRequestAnalysisPreview,
+} from '../../../../types/analysis';
 import type { RepositoryProviderKind } from '../../../../types/repository';
-import type { SavedConnectionConfig } from '../types';
-import type { PrioritizedPullRequest } from '../types';
-import { runPullRequestAiReviews } from '../pullRequestAiIpc';
+import type { SavedConnectionConfig, PrioritizedPullRequest } from '../types';
+import { previewPullRequestAiReviews, runPullRequestAiReviews } from '../pullRequestAiIpc';
 import { selectPullRequestsForAiReview } from '../../../../services/analysis/pull-request-analysis.selection';
 
 interface UsePullRequestAiReviewsOptions {
@@ -76,11 +79,14 @@ export function usePullRequestAiReviews({
   codexConfig,
 }: UsePullRequestAiReviewsOptions) {
   const [reviews, setReviews] = React.useState<PullRequestAiReview[]>([]);
-  const [isRunningQueue, setIsRunningQueue] = React.useState(false);
-  const [activePullRequestId, setActivePullRequestId] = React.useState<number | null>(null);
+  const [isPreviewing, setIsPreviewing] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [modalError, setModalError] = React.useState<string | null>(null);
+  const [modalPreviews, setModalPreviews] = React.useState<PullRequestAnalysisPreview[]>([]);
+  const [selectedPullRequests, setSelectedPullRequests] = React.useState<PrioritizedPullRequest[]>([]);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [snapshotAcknowledged, setSnapshotAcknowledged] = React.useState(false);
   const cacheRef = React.useRef(new Map<string, PullRequestAiReview[]>());
-  const activeRequestIdRef = React.useRef(0);
-  const autoRunTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isConfigured = Boolean(
     isConnectionReady
@@ -89,16 +95,7 @@ export function usePullRequestAiReviews({
     && codexConfig.apiKey.trim(),
   );
 
-  const autoSelection = React.useMemo(
-    () => selectPullRequestsForAiReview(
-      pullRequests,
-      codexConfig.prReview.selectionMode,
-      codexConfig.prReview.maxPullRequests,
-    ),
-    [codexConfig.prReview.maxPullRequests, codexConfig.prReview.selectionMode, pullRequests],
-  );
-
-  const buildCacheKey = React.useCallback((selectedPullRequests: PrioritizedPullRequest[]) => JSON.stringify({
+  const buildCacheKey = React.useCallback((items: PrioritizedPullRequest[]) => JSON.stringify({
     provider: config.provider,
     organization: config.organization,
     project: config.project,
@@ -108,7 +105,7 @@ export function usePullRequestAiReviews({
     strictMode: codexConfig.snapshotPolicy.strictMode,
     excludedPathPatterns: codexConfig.snapshotPolicy.excludedPathPatterns,
     promptDirectives: codexConfig.prReview.promptDirectives,
-    items: selectedPullRequests.map((pullRequest) => ({
+    items: items.map((pullRequest) => ({
       id: pullRequest.id,
       createdAt: pullRequest.createdAt,
       riskScore: pullRequest.riskScore,
@@ -126,126 +123,124 @@ export function usePullRequestAiReviews({
     config.repositoryId,
   ]);
 
-  const runBatch = React.useCallback(async (
-    selectedPullRequests: PrioritizedPullRequest[],
-    options: { mode: 'queue' | 'single'; replace?: boolean; force?: boolean },
-  ) => {
-    if (!isConfigured || selectedPullRequests.length === 0) {
+  const openPreview = React.useCallback(async (nextPullRequests: PrioritizedPullRequest[]) => {
+    if (!isConfigured || nextPullRequests.length === 0) {
       return;
     }
 
-    const cacheKey = buildCacheKey(selectedPullRequests);
-    if (!options.force && cacheRef.current.has(cacheKey)) {
+    setModalError(null);
+    setSnapshotAcknowledged(false);
+    setSelectedPullRequests(nextPullRequests);
+    setModalPreviews([]);
+    setIsModalOpen(true);
+    setIsPreviewing(true);
+
+    try {
+      const previews = await previewPullRequestAiReviews(buildAnalysisPayload(config, codexConfig, nextPullRequests));
+      setModalPreviews(previews);
+    } catch (error) {
+      setModalError(error instanceof Error ? error.message : 'No fue posible preparar el snapshot local del PR.');
+    } finally {
+      setIsPreviewing(false);
+    }
+  }, [codexConfig, config, isConfigured]);
+
+  const openPriorityQueueReview = React.useCallback(async () => {
+    const selected = selectPullRequestsForAiReview(
+      pullRequests,
+      codexConfig.prReview.selectionMode,
+      codexConfig.prReview.maxPullRequests,
+    );
+
+    await openPreview(selected);
+  }, [codexConfig.prReview.maxPullRequests, codexConfig.prReview.selectionMode, openPreview, pullRequests]);
+
+  const openPullRequestReview = React.useCallback(async (pullRequestId: number) => {
+    const pullRequest = pullRequests.find((item) => item.id === pullRequestId);
+    if (!pullRequest) {
+      return;
+    }
+
+    await openPreview([pullRequest]);
+  }, [openPreview, pullRequests]);
+
+  const closeModal = React.useCallback(() => {
+    setIsModalOpen(false);
+    setIsPreviewing(false);
+    setIsSubmitting(false);
+    setModalError(null);
+    setModalPreviews([]);
+    setSelectedPullRequests([]);
+    setSnapshotAcknowledged(false);
+  }, []);
+
+  const eligiblePullRequests = React.useMemo(() => {
+    const blockedIds = new Set(
+      modalPreviews
+        .filter((preview) => preview.lacksPatchCoverage || preview.strictModeWouldBlock)
+        .map((preview) => preview.pullRequestId),
+    );
+
+    return selectedPullRequests.filter((pullRequest) => !blockedIds.has(pullRequest.id));
+  }, [modalPreviews, selectedPullRequests]);
+
+  const runSelectedPullRequests = React.useCallback(async () => {
+    if (!isConfigured || eligiblePullRequests.length === 0) {
+      return;
+    }
+
+    const cacheKey = buildCacheKey(eligiblePullRequests);
+    if (cacheRef.current.has(cacheKey)) {
       const cachedReviews = cacheRef.current.get(cacheKey) || [];
-      setReviews((current) => (options.replace ? cachedReviews : upsertReviews(current, cachedReviews)));
+      setReviews((current) => upsertReviews(current, cachedReviews));
+      closeModal();
       return;
     }
 
-    const queuedReviews = selectedPullRequests.map((pullRequest) => ({
+    const queuedReviews = eligiblePullRequests.map((pullRequest) => ({
       pullRequestId: pullRequest.id,
       repository: pullRequest.repository,
       status: 'queued' as const,
       topConcerns: [],
       reviewChecklist: [],
     }));
-
-    setReviews((current) => (options.replace ? queuedReviews : upsertReviews(current, queuedReviews)));
-
-    if (options.mode === 'queue') {
-      setIsRunningQueue(true);
-    } else {
-      setActivePullRequestId(selectedPullRequests[0]?.id ?? null);
-    }
-    const requestId = activeRequestIdRef.current + 1;
-    activeRequestIdRef.current = requestId;
+    setReviews((current) => upsertReviews(current, queuedReviews));
+    setIsSubmitting(true);
+    setModalError(null);
 
     try {
-      const nextReviews = await runPullRequestAiReviews(buildAnalysisPayload(config, codexConfig, selectedPullRequests));
+      const nextReviews = await runPullRequestAiReviews(buildAnalysisPayload(config, codexConfig, eligiblePullRequests));
       cacheRef.current.set(cacheKey, nextReviews);
-      if (activeRequestIdRef.current === requestId) {
-        setReviews((current) => (options.replace ? nextReviews : upsertReviews(current, nextReviews)));
-      }
-    } catch {
-      const errorReviews = buildErrorReviews(selectedPullRequests);
-      if (activeRequestIdRef.current === requestId) {
-        setReviews((current) => (options.replace ? errorReviews : upsertReviews(current, errorReviews)));
-      }
-    } finally {
-      if (activeRequestIdRef.current === requestId) {
-        if (options.mode === 'queue') {
-          setIsRunningQueue(false);
-        } else {
-          setActivePullRequestId(null);
-        }
-      }
+      setReviews((current) => upsertReviews(current, nextReviews));
+      closeModal();
+    } catch (error) {
+      const errorReviews = buildErrorReviews(eligiblePullRequests);
+      setReviews((current) => upsertReviews(current, errorReviews));
+      setModalError(error instanceof Error ? error.message : 'No fue posible ejecutar el analisis IA del PR.');
+      setIsSubmitting(false);
     }
-  }, [buildCacheKey, codexConfig, config, isConfigured]);
-
-  const runPriorityQueue = React.useCallback(async () => {
-    await runBatch(autoSelection, { mode: 'queue', replace: true, force: true });
-  }, [autoSelection, runBatch]);
-
-  const runPullRequest = React.useCallback(async (pullRequestId: number) => {
-    const pullRequest = pullRequests.find((item) => item.id === pullRequestId);
-    if (!pullRequest) {
-      return;
-    }
-
-    await runBatch([pullRequest], { mode: 'single', replace: false, force: true });
-  }, [pullRequests, runBatch]);
+  }, [buildCacheKey, closeModal, codexConfig, config, eligiblePullRequests, isConfigured]);
 
   React.useEffect(() => {
-    if (!isConfigured || pullRequests.length === 0) {
-      setReviews([]);
-      setIsRunningQueue(false);
-      setActivePullRequestId(null);
-      return;
-    }
-    const selectedPullRequests = autoSelection;
-
-    if (selectedPullRequests.length === 0) {
-      setReviews([]);
-      setIsRunningQueue(false);
-      setActivePullRequestId(null);
-      return;
-    }
-
-    const cacheKey = buildCacheKey(selectedPullRequests);
-    if (cacheRef.current.has(cacheKey)) {
-      setReviews(cacheRef.current.get(cacheKey) || []);
-      setIsRunningQueue(false);
-      return undefined;
-    }
-
-    if (autoRunTimerRef.current) {
-      clearTimeout(autoRunTimerRef.current);
-    }
-
-    autoRunTimerRef.current = setTimeout(() => {
-      void runBatch(selectedPullRequests, { mode: 'queue', replace: true, force: false });
-    }, 350);
-
-    return () => {
-      if (autoRunTimerRef.current) {
-        clearTimeout(autoRunTimerRef.current);
-        autoRunTimerRef.current = null;
-      }
-    };
-  }, [autoSelection, buildCacheKey, isConfigured, pullRequests.length, runBatch]);
-
-  React.useEffect(() => () => {
-    if (autoRunTimerRef.current) {
-      clearTimeout(autoRunTimerRef.current);
-    }
-  }, []);
+    setReviews((current) => current.filter((review) => pullRequests.some((pullRequest) => pullRequest.id === review.pullRequestId)));
+  }, [pullRequests]);
 
   return {
     reviews,
-    isLoading: isRunningQueue || activePullRequestId !== null,
-    isRunningQueue,
-    activePullRequestId,
+    isLoading: isPreviewing || isSubmitting,
+    isPreviewing,
+    isSubmitting,
     isConfigured,
-    runPriorityQueue,
-    runPullRequest,
+    isModalOpen,
+    modalError,
+    modalPreviews,
+    selectedPullRequests,
+    snapshotAcknowledged,
+    setSnapshotAcknowledged,
+    eligiblePullRequests,
+    openPriorityQueueReview,
+    openPullRequestReview,
+    runSelectedPullRequests,
+    closeModal,
   };
 }

@@ -1,4 +1,4 @@
-import type { PullRequestAnalysisBatchRequest, PullRequestAnalysisPromptDirectives, RepositoryAnalysisRequest, RepositorySnapshotPreview } from '../../types/analysis';
+import type { PullRequestAnalysisBatchRequest, PullRequestAnalysisPreview, PullRequestAnalysisPromptDirectives, RepositoryAnalysisRequest, RepositorySnapshotPreview } from '../../types/analysis';
 import type { RepositoryProviderKind } from '../../types/repository';
 import { RepositoryAnalysisService } from '../../services/analysis/repository-analysis.service';
 import { PullRequestAnalysisService } from '../../services/analysis/pull-request-analysis.service';
@@ -147,6 +147,9 @@ export function registerAnalysisIpc(
   registerHandle<string, void>('analysis:cancelRepositoryAnalysis', async (requestId) => {
     repositoryAnalysisService.cancelAnalysis(requestId);
   });
+  registerHandle<unknown, PullRequestAnalysisPreview[]>('analysis:previewPullRequestAiReviews', async (payload) => (
+    pullRequestAnalysisService.previewBatch(sanitizePullRequestAnalysisPayload(payload))
+  ));
   registerHandle<unknown, unknown>('analysis:runPullRequestAiReviews', async (payload) => (
     pullRequestAnalysisService.analyzeBatch(sanitizePullRequestAnalysisPayload(payload))
   ));

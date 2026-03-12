@@ -2,10 +2,12 @@ const React = require('react');
 const { renderHook, act, waitFor } = require('@testing-library/react');
 
 jest.mock('../../../src/renderer/features/dashboard/pullRequestAiIpc', () => ({
+  previewPullRequestAiReviews: jest.fn(),
   runPullRequestAiReviews: jest.fn(),
 }));
 
 const { usePullRequestAiReviews } = require('../../../src/renderer/features/dashboard/hooks/usePullRequestAiReviews');
+const { previewPullRequestAiReviews } = require('../../../src/renderer/features/dashboard/pullRequestAiIpc');
 const { runPullRequestAiReviews } = require('../../../src/renderer/features/dashboard/pullRequestAiIpc');
 
 function createPullRequest(id = 1) {
@@ -67,7 +69,29 @@ function createOptions() {
 describe('usePullRequestAiReviews', () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    previewPullRequestAiReviews.mockReset();
     runPullRequestAiReviews.mockReset();
+    previewPullRequestAiReviews.mockResolvedValue([
+      {
+        pullRequestId: 1,
+        repository: 'repo-a',
+        title: 'PR 1',
+        filesPrepared: 1,
+        totalFilesChanged: 1,
+        includedFiles: ['src/auth.ts'],
+        truncated: false,
+        sensitivity: {
+          findings: [],
+          hasSensitiveConfigFiles: false,
+          hasSecretPatterns: false,
+          noSensitiveConfigFilesDetected: true,
+          summary: 'Sin señales sensibles.',
+        },
+        disclaimer: 'Revisa este snapshot local antes de decidir si quieres enviarlo a Codex para analisis IA externo.',
+        lacksPatchCoverage: false,
+        strictModeWouldBlock: false,
+      },
+    ]);
     runPullRequestAiReviews.mockResolvedValue([
       {
         pullRequestId: 1,
@@ -86,9 +110,9 @@ describe('usePullRequestAiReviews', () => {
     jest.useRealTimers();
   });
 
-  test('usa debounce y cache para no re-ejecutar el analisis automatico sin cambios', async () => {
+  test('no ejecuta analisis automatico y requiere preview manual antes del envio', async () => {
     const options = createOptions();
-    const { rerender } = renderHook((props) => usePullRequestAiReviews(props), {
+    const { result } = renderHook((props) => usePullRequestAiReviews(props), {
       initialProps: options,
     });
 
@@ -96,15 +120,21 @@ describe('usePullRequestAiReviews', () => {
       jest.advanceTimersByTime(400);
     });
 
-    await waitFor(() => expect(runPullRequestAiReviews).toHaveBeenCalledTimes(1));
+    expect(runPullRequestAiReviews).not.toHaveBeenCalled();
 
-    rerender({
-      ...options,
-      pullRequests: [createPullRequest(1)],
+    await act(async () => {
+      await result.current.openPriorityQueueReview();
+    });
+
+    await waitFor(() => expect(previewPullRequestAiReviews).toHaveBeenCalledTimes(1));
+    expect(result.current.isModalOpen).toBe(true);
+
+    act(() => {
+      result.current.setSnapshotAcknowledged(true);
     });
 
     await act(async () => {
-      jest.advanceTimersByTime(400);
+      await result.current.runSelectedPullRequests();
     });
 
     expect(runPullRequestAiReviews).toHaveBeenCalledTimes(1);

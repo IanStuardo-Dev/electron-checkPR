@@ -1,4 +1,4 @@
-import type { PullRequestAiReview, PullRequestAnalysisBatchRequest } from '../../../types/analysis';
+import type { PullRequestAiReview, PullRequestAnalysisBatchRequest, PullRequestAnalysisPreview } from '../../../types/analysis';
 
 interface IpcSuccessResponse<T> {
   ok: true;
@@ -11,6 +11,16 @@ interface IpcErrorResponse {
 }
 
 type IpcResponse<T> = IpcSuccessResponse<T> | IpcErrorResponse;
+
+export async function previewPullRequestAiReviews(payload: PullRequestAnalysisBatchRequest): Promise<PullRequestAnalysisPreview[]> {
+  const response = await window.electronApi.invoke('analysis:previewPullRequestAiReviews', payload) as IpcResponse<PullRequestAnalysisPreview[]>;
+
+  if (!response.ok) {
+    throw new Error(response.error);
+  }
+
+  return response.data;
+}
 
 export async function runPullRequestAiReviews(payload: PullRequestAnalysisBatchRequest): Promise<PullRequestAiReview[]> {
   const response = await window.electronApi.invoke('analysis:runPullRequestAiReviews', payload) as IpcResponse<PullRequestAiReview[]>;

@@ -9,6 +9,7 @@ import MetricsGrid from '../features/dashboard/components/MetricsGrid';
 import PriorityList from '../features/dashboard/components/PriorityList';
 import ExecutiveSummaryPanel from '../features/dashboard/components/ExecutiveSummaryPanel';
 import ReviewerWorkloadPanel from '../features/dashboard/components/ReviewerWorkloadPanel';
+import PullRequestAiReviewModal from '../features/dashboard/components/PullRequestAiReviewModal';
 import { useRepositorySourceContext } from '../features/dashboard/context/RepositorySourceContext';
 import { useCodexSettings } from '../features/settings/hooks/useCodexSettings';
 import { usePullRequestAiReviews } from '../features/dashboard/hooks/usePullRequestAiReviews';
@@ -29,10 +30,19 @@ const Dashboard = () => {
   const {
     reviews,
     isConfigured: isAiConfigured,
-    runPriorityQueue,
-    runPullRequest,
-    isRunningQueue,
-    activePullRequestId,
+    openPriorityQueueReview,
+    openPullRequestReview,
+    isPreviewing,
+    isSubmitting,
+    isModalOpen,
+    modalError,
+    modalPreviews,
+    selectedPullRequests,
+    snapshotAcknowledged,
+    setSnapshotAcknowledged,
+    eligiblePullRequests,
+    runSelectedPullRequests,
+    closeModal,
   } = usePullRequestAiReviews({
     config,
     pullRequests: summary.prioritizedPullRequests,
@@ -91,11 +101,11 @@ const Dashboard = () => {
             <PriorityList
               pullRequests={dashboardSummary.operationalPullRequests}
               onOpenPullRequest={(url) => void openPullRequest(url)}
-              onRunQueueAi={() => void runPriorityQueue()}
-              onRunPullRequestAi={(pullRequestId) => void runPullRequest(pullRequestId)}
+              onPreviewQueueAi={() => void openPriorityQueueReview()}
+              onPreviewPullRequestAi={(pullRequestId) => void openPullRequestReview(pullRequestId)}
               isAiConfigured={isAiConfigured}
-              isQueueRunning={isRunningQueue}
-              activePullRequestId={activePullRequestId}
+              isPreviewingAi={isPreviewing}
+              isSubmittingAi={isSubmitting}
             />
             <ReviewerWorkloadPanel reviewers={dashboardSummary.reviewerWorkload} />
           </section>
@@ -123,6 +133,20 @@ const Dashboard = () => {
           </section>
         </>
       ) : null}
+
+      <PullRequestAiReviewModal
+        isOpen={isModalOpen}
+        previews={modalPreviews}
+        selectedPullRequests={selectedPullRequests}
+        snapshotAcknowledged={snapshotAcknowledged}
+        onToggleAcknowledgement={setSnapshotAcknowledged}
+        onClose={closeModal}
+        onConfirm={() => void runSelectedPullRequests()}
+        isPreviewing={isPreviewing}
+        isSubmitting={isSubmitting}
+        error={modalError}
+        canConfirm={snapshotAcknowledged && eligiblePullRequests.length > 0}
+      />
     </motion.div>
   );
 };

@@ -7,6 +7,7 @@ const ALLOWED_CHANNELS = new Set([
   'repository-source:fetchBranches',
   'repository-source:openExternal',
   'analysis:previewRepositorySnapshot',
+  'analysis:previewPullRequestAiReviews',
   'analysis:runRepositoryAnalysis',
   'analysis:cancelRepositoryAnalysis',
   'analysis:runPullRequestAiReviews',

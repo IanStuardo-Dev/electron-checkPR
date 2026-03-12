@@ -57,16 +57,18 @@ describe('analysis ipc', () => {
       cancelAnalysis: jest.fn(),
     };
     const pullRequestAnalysisService = {
+      previewBatch: jest.fn().mockResolvedValue([]),
       analyzeBatch: jest.fn().mockResolvedValue([]),
     };
 
     registerAnalysisIpc(repositoryAnalysisService, pullRequestAnalysisService);
 
-    expect(registerHandle).toHaveBeenCalledTimes(4);
+    expect(registerHandle).toHaveBeenCalledTimes(5);
     const previewHandler = registerHandle.mock.calls[0][1];
     const runHandler = registerHandle.mock.calls[1][1];
     const cancelHandler = registerHandle.mock.calls[2][1];
-    const prAiHandler = registerHandle.mock.calls[3][1];
+    const prAiPreviewHandler = registerHandle.mock.calls[3][1];
+    const prAiHandler = registerHandle.mock.calls[4][1];
 
     await previewHandler({
       requestId: 'req-preview',
@@ -105,6 +107,33 @@ describe('analysis ipc', () => {
       timeoutMs: 90000,
     });
     await cancelHandler('req-1');
+    await prAiPreviewHandler({
+      source: {
+        provider: 'github',
+        organization: 'acme',
+        project: 'repo-a',
+        repositoryId: 'repo-a',
+        personalAccessToken: 'pat',
+      },
+      apiKey: 'sk',
+      model: 'gpt-5.2-codex',
+      analysisDepth: 'standard',
+      snapshotPolicy: {
+        excludedPathPatterns: '.env',
+        strictMode: false,
+      },
+      promptDirectives: {
+        focusAreas: 'seguridad',
+        customInstructions: 'prioriza auth',
+      },
+      items: [
+        {
+          pullRequest: {
+            id: '123',
+          },
+        },
+      ],
+    });
     await prAiHandler({
       source: {
         provider: 'github',
@@ -148,6 +177,7 @@ describe('analysis ipc', () => {
     expect(repositoryAnalysisService.previewSnapshot).toHaveBeenCalled();
     expect(repositoryAnalysisService.runAnalysis).toHaveBeenCalled();
     expect(repositoryAnalysisService.cancelAnalysis).toHaveBeenCalledWith('req-1');
+    expect(pullRequestAnalysisService.previewBatch).toHaveBeenCalled();
     expect(pullRequestAnalysisService.analyzeBatch).toHaveBeenCalled();
   });
 

@@ -1,4 +1,4 @@
-import type { PullRequestAiReview, PullRequestAnalysisBatchRequest } from '../../types/analysis';
+import type { PullRequestAiReview, PullRequestAnalysisBatchRequest, PullRequestAnalysisPreview, PullRequestSnapshot } from '../../types/analysis';
 import { buildSnapshotSensitivitySummary } from '../shared/snapshot-content';
 import { OpenAIPullRequestAnalysisClient } from './pull-request-analysis.openai-client';
 import { PullRequestAnalysisPromptBuilder } from './pull-request-analysis.prompt-builder';
@@ -12,6 +12,75 @@ export class PullRequestAnalysisService {
     private readonly analysisClient: OpenAIPullRequestAnalysisClient = new OpenAIPullRequestAnalysisClient(),
     private readonly responseParser: PullRequestAnalysisResponseParser = new PullRequestAnalysisResponseParser(),
   ) {}
+
+  private buildPreview(snapshot: PullRequestSnapshot, strictMode: boolean): PullRequestAnalysisPreview {
+    const textFiles = snapshot.files
+      .filter((file) => file.patch)
+      .map((file) => ({
+        path: file.path,
+        extension: file.path.split('.').pop()?.toLowerCase() || '',
+        size: file.patch?.length || 0,
+        content: file.patch || '',
+      }));
+    const metadataSensitivity = buildSnapshotSensitivitySummary(
+      snapshot.files.map((file) => ({
+        path: file.path,
+        extension: file.path.split('.').pop()?.toLowerCase() || '',
+        size: file.patch?.length || 0,
+        content: '',
+      })),
+    );
+    const sensitivity = buildSnapshotSensitivitySummary(textFiles);
+    const lacksPatchCoverage = textFiles.length === 0;
+    const hasIncompletePatchCoverage = snapshot.files.length > textFiles.length;
+
+    return {
+      pullRequestId: snapshot.pullRequestId,
+      repository: snapshot.repository,
+      title: snapshot.title,
+      filesPrepared: snapshot.files.length,
+      totalFilesChanged: snapshot.totalFilesChanged,
+      includedFiles: snapshot.files.slice(0, 8).map((file) => file.path),
+      truncated: snapshot.truncated,
+      partialReason: snapshot.partialReason,
+      sensitivity: {
+        findings: [
+          ...metadataSensitivity.findings,
+          ...sensitivity.findings.filter((finding) => !metadataSensitivity.findings.some((metadataFinding) => (
+            metadataFinding.kind === finding.kind && metadataFinding.path === finding.path
+          ))),
+        ].slice(0, 10),
+        hasSensitiveConfigFiles: metadataSensitivity.hasSensitiveConfigFiles || sensitivity.hasSensitiveConfigFiles,
+        hasSecretPatterns: sensitivity.hasSecretPatterns,
+        noSensitiveConfigFilesDetected: metadataSensitivity.noSensitiveConfigFilesDetected && sensitivity.noSensitiveConfigFilesDetected,
+        summary: lacksPatchCoverage
+          ? 'El provider no entrego diff textual suficiente para este PR. No se enviara automaticamente a Codex.'
+          : sensitivity.summary,
+      },
+      disclaimer: strictMode
+        ? 'Revisa este snapshot antes de enviar a Codex. En modo estricto se bloqueara el envio si hay sensibilidad o cobertura incompleta.'
+        : 'Revisa este snapshot local antes de decidir si quieres enviarlo a Codex para analisis IA.',
+      lacksPatchCoverage,
+      strictModeWouldBlock: strictMode && (
+        lacksPatchCoverage
+        || hasIncompletePatchCoverage
+        || sensitivity.hasSecretPatterns
+        || sensitivity.hasSensitiveConfigFiles
+        || metadataSensitivity.hasSensitiveConfigFiles
+      ),
+    };
+  }
+
+  async previewBatch(request: PullRequestAnalysisBatchRequest): Promise<PullRequestAnalysisPreview[]> {
+    const previews: PullRequestAnalysisPreview[] = [];
+
+    for (const item of request.items) {
+      const snapshot = await this.snapshotProvider.getSnapshot(request.source, item.pullRequest, request.snapshotPolicy);
+      previews.push(this.buildPreview(snapshot, Boolean(request.snapshotPolicy?.strictMode)));
+    }
+
+    return previews;
+  }
 
   async analyzeBatch(request: PullRequestAnalysisBatchRequest): Promise<PullRequestAiReview[]> {
     if (!request.apiKey.trim()) {
@@ -28,55 +97,32 @@ export class PullRequestAnalysisService {
     const results: PullRequestAiReview[] = [];
     for (const item of request.items) {
       const snapshot = await this.snapshotProvider.getSnapshot(request.source, item.pullRequest, request.snapshotPolicy);
-      const textFiles = snapshot.files
-        .filter((file) => file.patch)
-        .map((file) => ({
-          path: file.path,
-          extension: file.path.split('.').pop()?.toLowerCase() || '',
-          size: file.patch?.length || 0,
-          content: file.patch || '',
-        }));
-      const metadataSensitivity = buildSnapshotSensitivitySummary(
-        snapshot.files.map((file) => ({
-          path: file.path,
-          extension: file.path.split('.').pop()?.toLowerCase() || '',
-          size: file.patch?.length || 0,
-          content: '',
-        })),
-      );
-      const sensitivity = buildSnapshotSensitivitySummary(textFiles);
-      const filesWithoutPatch = snapshot.files.length - textFiles.length;
-      const lacksPatchCoverage = textFiles.length === 0;
-      const hasIncompletePatchCoverage = filesWithoutPatch > 0;
+      const preview = this.buildPreview(snapshot, Boolean(request.snapshotPolicy?.strictMode));
 
-      if (lacksPatchCoverage) {
+      if (preview.lacksPatchCoverage) {
         results.push({
           pullRequestId: item.pullRequest.id,
           repository: item.pullRequest.repository,
           status: 'omitted',
           topConcerns: [],
           reviewChecklist: [],
-          coverageNote: snapshot.partialReason || 'No se envio el PR a Codex porque el snapshot no incluye diff textual suficiente para evaluar sensibilidad y riesgo con seguridad.',
+          coverageNote: preview.partialReason || preview.sensitivity.summary,
         });
         continue;
       }
 
-      if (request.snapshotPolicy?.strictMode && (
-        sensitivity.hasSecretPatterns
-        || sensitivity.hasSensitiveConfigFiles
-        || metadataSensitivity.hasSensitiveConfigFiles
-        || hasIncompletePatchCoverage
-      )) {
+      if (preview.strictModeWouldBlock) {
+        const blockedBySensitiveConfig = preview.sensitivity.hasSensitiveConfigFiles && !preview.sensitivity.hasSecretPatterns;
         results.push({
           pullRequestId: item.pullRequest.id,
           repository: item.pullRequest.repository,
           status: 'omitted',
           topConcerns: [],
           reviewChecklist: [],
-          coverageNote: metadataSensitivity.hasSensitiveConfigFiles && !sensitivity.hasSensitiveConfigFiles && !sensitivity.hasSecretPatterns
-            ? 'PR omitido por modo estricto: se detectaron archivos potencialmente sensibles y el snapshot no cubre todo el diff textual.'
-            : hasIncompletePatchCoverage
-              ? 'PR omitido por modo estricto: el snapshot no cubre todos los archivos con diff textual suficiente.'
+          coverageNote: preview.lacksPatchCoverage
+            ? 'PR omitido por modo estricto: el snapshot no incluye diff textual suficiente para una revision segura.'
+            : blockedBySensitiveConfig
+              ? 'PR omitido por modo estricto: se detectaron archivos potencialmente sensibles y la cobertura del diff es incompleta.'
               : 'PR omitido por modo estricto y señales sensibles en el diff.',
         });
         continue;

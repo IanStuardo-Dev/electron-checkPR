@@ -57,11 +57,20 @@ describe('Dashboard page', () => {
     usePullRequestAiReviews.mockReturnValue({
       reviews: [],
       isLoading: false,
-      isRunningQueue: false,
-      activePullRequestId: null,
+      isPreviewing: false,
+      isSubmitting: false,
       isConfigured: false,
-      runPriorityQueue: jest.fn(),
-      runPullRequest: jest.fn(),
+      isModalOpen: false,
+      modalError: null,
+      modalPreviews: [],
+      selectedPullRequests: [],
+      snapshotAcknowledged: false,
+      setSnapshotAcknowledged: jest.fn(),
+      eligiblePullRequests: [],
+      openPriorityQueueReview: jest.fn(),
+      openPullRequestReview: jest.fn(),
+      runSelectedPullRequests: jest.fn(),
+      closeModal: jest.fn(),
     });
   });
 
@@ -155,11 +164,20 @@ describe('Dashboard page', () => {
         },
       ],
       isLoading: false,
-      isRunningQueue: false,
-      activePullRequestId: null,
+      isPreviewing: false,
+      isSubmitting: false,
       isConfigured: true,
-      runPriorityQueue: jest.fn(),
-      runPullRequest: jest.fn(),
+      isModalOpen: false,
+      modalError: null,
+      modalPreviews: [],
+      selectedPullRequests: [],
+      snapshotAcknowledged: false,
+      setSnapshotAcknowledged: jest.fn(),
+      eligiblePullRequests: [],
+      openPriorityQueueReview: jest.fn(),
+      openPullRequestReview: jest.fn(),
+      runSelectedPullRequests: jest.fn(),
+      closeModal: jest.fn(),
     });
     useRepositorySourceContext.mockReturnValue(createRepositorySourceContext({
       activeProvider: { kind: 'github' },
@@ -236,8 +254,8 @@ describe('Dashboard page', () => {
   });
 
   test('permite ejecutar revision IA global y por PR desde la cola', () => {
-    const runPriorityQueue = jest.fn();
-    const runPullRequest = jest.fn();
+    const openPriorityQueueReview = jest.fn();
+    const openPullRequestReview = jest.fn();
 
     useCodexSettings.mockReturnValue({
       config: {
@@ -275,11 +293,20 @@ describe('Dashboard page', () => {
     usePullRequestAiReviews.mockReturnValue({
       reviews: [],
       isLoading: false,
-      isRunningQueue: false,
-      activePullRequestId: null,
+      isPreviewing: false,
+      isSubmitting: false,
       isConfigured: true,
-      runPriorityQueue,
-      runPullRequest,
+      isModalOpen: false,
+      modalError: null,
+      modalPreviews: [],
+      selectedPullRequests: [],
+      snapshotAcknowledged: false,
+      setSnapshotAcknowledged: jest.fn(),
+      eligiblePullRequests: [],
+      openPriorityQueueReview,
+      openPullRequestReview,
+      runSelectedPullRequests: jest.fn(),
+      closeModal: jest.fn(),
     });
     useRepositorySourceContext.mockReturnValue(createRepositorySourceContext({
       activeProvider: { kind: 'github' },
@@ -330,10 +357,10 @@ describe('Dashboard page', () => {
 
     render(React.createElement(Dashboard));
 
-    fireEvent.click(screen.getByRole('button', { name: /Ejecutar revision IA ahora/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Analizar con IA/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Preparar revision IA/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Preparar snapshot IA/i }));
 
-    expect(runPriorityQueue).toHaveBeenCalledTimes(1);
-    expect(runPullRequest).toHaveBeenCalledWith(44);
+    expect(openPriorityQueueReview).toHaveBeenCalledTimes(1);
+    expect(openPullRequestReview).toHaveBeenCalledWith(44);
   });
 });
