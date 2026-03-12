@@ -42,6 +42,16 @@ export const defaultCodexConfig: CodexIntegrationConfig = {
     ].join('\n'),
     strictMode: false,
   },
+  prReview: {
+    enabled: false,
+    maxPullRequests: 4,
+    selectionMode: 'top-risk',
+    analysisDepth: 'standard',
+    promptDirectives: {
+      focusAreas: '',
+      customInstructions: '',
+    },
+  },
   promptDirectives: {
     architectureReviewEnabled: false,
     architecturePattern: '',

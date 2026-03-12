@@ -1,8 +1,9 @@
-import type { RepositoryBranch, RepositoryConnectionConfig, RepositoryProject, RepositorySnapshotOptions, RepositorySummary, ReviewItem } from '../../types/repository';
-import type { RepositorySnapshot } from '../../types/analysis';
+import type { PullRequestSnapshotOptions, RepositoryBranch, RepositoryConnectionConfig, RepositoryProject, RepositorySnapshotOptions, RepositorySummary, ReviewItem } from '../../types/repository';
+import type { PullRequestSnapshot, RepositorySnapshot } from '../../types/analysis';
 import { getGitHubConfig, readGitHubResponse } from './github.api';
 import { getGitHubBranches, getGitHubProjects, getGitHubRepositories } from './github.repositories';
 import { getGitHubPullRequests } from './github.pull-requests';
+import { getGitHubPullRequestSnapshot } from './github.pr-snapshot';
 import { enumerateGitHubContents, getGitHubRepositorySnapshot } from './github.snapshot';
 
 export class GitHubRepositoryService {
@@ -20,6 +21,14 @@ export class GitHubRepositoryService {
 
   async getPullRequests(config: RepositoryConnectionConfig): Promise<ReviewItem[]> {
     return getGitHubPullRequests(config);
+  }
+
+  async getPullRequestSnapshot(
+    config: RepositoryConnectionConfig,
+    pullRequest: ReviewItem,
+    options: PullRequestSnapshotOptions,
+  ): Promise<PullRequestSnapshot> {
+    return getGitHubPullRequestSnapshot(config, pullRequest, options);
   }
 
   async getRepositorySnapshot(

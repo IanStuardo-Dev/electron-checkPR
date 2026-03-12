@@ -1,9 +1,10 @@
 import type { AzureBranch, AzureConnectionConfig, AzureProject, AzureRepository, PullRequest } from '../../types/azure';
-import type { RepositorySnapshot } from '../../types/analysis';
-import type { RepositorySnapshotOptions } from '../../types/repository';
+import type { PullRequestSnapshot, RepositorySnapshot } from '../../types/analysis';
+import type { PullRequestSnapshotOptions, RepositorySnapshotOptions } from '../../types/repository';
 import { normalizeOrganization, normalizeProject, readAzureResponse } from './azure.api';
 import { getAzureBranches, getAzureProjects, getAzureRepositories } from './azure.repositories';
 import { getAzurePullRequests } from './azure.pull-requests';
+import { getAzurePullRequestSnapshot } from './azure.pr-snapshot';
 import { getAzureRepositorySnapshot } from './azure.snapshot';
 
 export class PullRequestService {
@@ -21,6 +22,14 @@ export class PullRequestService {
 
   async getPullRequests(config: AzureConnectionConfig): Promise<PullRequest[]> {
     return getAzurePullRequests(config);
+  }
+
+  async getPullRequestSnapshot(
+    config: AzureConnectionConfig,
+    pullRequest: PullRequest,
+    options: PullRequestSnapshotOptions,
+  ): Promise<PullRequestSnapshot> {
+    return getAzurePullRequestSnapshot(config, pullRequest, options);
   }
 
   async getRepositorySnapshot(

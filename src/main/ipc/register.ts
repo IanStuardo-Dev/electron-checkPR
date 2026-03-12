@@ -3,12 +3,14 @@ import { registerRepositoryProviderIpc } from './repository-providers';
 import { registerSessionSecretsIpc, SessionSecretsStore } from './session-secrets';
 import type { RepositoryProviderRegistry } from '../../services/providers/repository-provider.registry';
 import type { RepositoryAnalysisService } from '../../services/analysis/repository-analysis.service';
+import type { PullRequestAnalysisService } from '../../services/analysis/pull-request-analysis.service';
 
 export function registerIpcHandlers(
   providerRegistry: RepositoryProviderRegistry,
   repositoryAnalysisService: RepositoryAnalysisService,
+  pullRequestAnalysisService: PullRequestAnalysisService,
 ): void {
   registerRepositoryProviderIpc(providerRegistry);
-  registerAnalysisIpc(repositoryAnalysisService);
+  registerAnalysisIpc(repositoryAnalysisService, pullRequestAnalysisService);
   registerSessionSecretsIpc(new SessionSecretsStore());
 }

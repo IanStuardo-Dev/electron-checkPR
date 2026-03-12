@@ -54,3 +54,15 @@ export interface GitLabApprovalsResponse {
     user?: GitLabUserRef;
   }>;
 }
+
+export interface GitLabMergeRequestChangesResponse {
+  changes_count?: string;
+  changes: Array<{
+    old_path: string;
+    new_path: string;
+    diff?: string;
+    new_file?: boolean;
+    renamed_file?: boolean;
+    deleted_file?: boolean;
+  }>;
+}

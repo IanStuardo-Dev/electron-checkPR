@@ -49,6 +49,16 @@ describe('RepositoryAnalysis page', () => {
           excludedPathPatterns: '.env\nnode_modules/**',
           strictMode: false,
         },
+        prReview: {
+          enabled: false,
+          maxPullRequests: 4,
+          selectionMode: 'top-risk',
+          analysisDepth: 'standard',
+          promptDirectives: {
+            focusAreas: '',
+            customInstructions: '',
+          },
+        },
         promptDirectives: {
           architectureReviewEnabled: false,
           architecturePattern: '',
@@ -115,6 +125,16 @@ describe('RepositoryAnalysis page', () => {
         snapshotPolicy: {
           excludedPathPatterns: '.env\nnode_modules/**',
           strictMode: false,
+        },
+        prReview: {
+          enabled: true,
+          maxPullRequests: 4,
+          selectionMode: 'top-risk',
+          analysisDepth: 'standard',
+          promptDirectives: {
+            focusAreas: '',
+            customInstructions: '',
+          },
         },
         promptDirectives: {
           architectureReviewEnabled: true,

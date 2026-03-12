@@ -1,10 +1,10 @@
 import React from 'react';
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
-import type { PrioritizedPullRequest } from '../types';
+import type { OperationalPullRequest } from '../types';
 import { getRiskBadgeClass } from '../metrics';
 
 interface PriorityListProps {
-  pullRequests: PrioritizedPullRequest[];
+  pullRequests: OperationalPullRequest[];
   onOpenPullRequest: (url: string) => void;
 }
 
@@ -49,6 +49,52 @@ const PriorityList = ({ pullRequests, onOpenPullRequest }: PriorityListProps) =>
                   </p>
                 </div>
                 <p className="text-sm text-slate-600">{pr.description}</p>
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`rounded-full px-3 py-1 text-xs font-medium ${
+                      pr.aiReview.status === 'analyzed'
+                        ? (pr.aiReview.riskScore ?? 0) >= 75
+                          ? 'bg-rose-100 text-rose-700'
+                          : (pr.aiReview.riskScore ?? 0) >= 50
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-emerald-100 text-emerald-700'
+                        : pr.aiReview.status === 'error'
+                          ? 'bg-rose-100 text-rose-700'
+                          : pr.aiReview.status === 'omitted'
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-slate-100 text-slate-700'
+                    }`}>
+                      {pr.aiReview.status === 'analyzed'
+                        ? `AI ${pr.aiReview.riskScore}/100`
+                        : pr.aiReview.status === 'error'
+                          ? 'AI error'
+                          : pr.aiReview.status === 'omitted'
+                            ? 'AI omitido'
+                            : pr.aiReview.status === 'queued'
+                              ? 'AI pendiente'
+                              : 'Sin analizar'}
+                    </span>
+                    {pr.aiReview.coverageNote ? (
+                      <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700">
+                        Snapshot parcial
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-slate-700">
+                    {pr.aiReview.shortSummary || (pr.aiReview.status === 'not-configured'
+                      ? 'Codex no configurado para enriquecer este PR con IA.'
+                      : pr.aiReview.error || 'La revisión IA todavía no generó un resumen para este PR.')}
+                  </p>
+                  {pr.aiReview.topConcerns.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {pr.aiReview.topConcerns.slice(0, 2).map((concern: string) => (
+                        <span key={concern} className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700">
+                          {concern}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
                 <div className="flex flex-wrap gap-3 text-xs text-slate-500">
                   <span>{pr.sourceBranch} → {pr.targetBranch}</span>
                   <span>{pr.approvals} approvals</span>

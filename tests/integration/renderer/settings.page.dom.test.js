@@ -59,6 +59,16 @@ describe('Settings page', () => {
           excludedPathPatterns: '.env\nnode_modules/**',
           strictMode: true,
         },
+        prReview: {
+          enabled: true,
+          maxPullRequests: 4,
+          selectionMode: 'top-risk',
+          analysisDepth: 'standard',
+          promptDirectives: {
+            focusAreas: '',
+            customInstructions: '',
+          },
+        },
         promptDirectives: {
           architectureReviewEnabled: true,
           architecturePattern: 'hexagonal',

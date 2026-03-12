@@ -7,7 +7,12 @@ import HealthSection from '../features/dashboard/components/HealthSection';
 import InsightsPanel from '../features/dashboard/components/InsightsPanel';
 import MetricsGrid from '../features/dashboard/components/MetricsGrid';
 import PriorityList from '../features/dashboard/components/PriorityList';
+import ExecutiveSummaryPanel from '../features/dashboard/components/ExecutiveSummaryPanel';
+import ReviewerWorkloadPanel from '../features/dashboard/components/ReviewerWorkloadPanel';
 import { useRepositorySourceContext } from '../features/dashboard/context/RepositorySourceContext';
+import { useCodexSettings } from '../features/settings/hooks/useCodexSettings';
+import { usePullRequestAiReviews } from '../features/dashboard/hooks/usePullRequestAiReviews';
+import { enrichDashboardSummaryWithAi } from '../features/dashboard/pullRequestAiSummary';
 
 const Dashboard = () => {
   const {
@@ -20,6 +25,17 @@ const Dashboard = () => {
     openPullRequest,
     selectedRepositoryName,
   } = useRepositorySourceContext();
+  const { config: codexConfig } = useCodexSettings();
+  const { reviews, isConfigured: isAiConfigured } = usePullRequestAiReviews({
+    config,
+    pullRequests: summary.prioritizedPullRequests,
+    isConnectionReady,
+    codexConfig,
+  });
+  const dashboardSummary = React.useMemo(
+    () => enrichDashboardSummaryWithAi(summary, reviews, isAiConfigured),
+    [isAiConfigured, reviews, summary],
+  );
 
   return (
     <motion.div
@@ -37,7 +53,7 @@ const Dashboard = () => {
         <ConnectionSummary
           providerKind={activeProvider?.kind}
           providerName={activeProviderName}
-          scopeLabel={summary.scopeLabel}
+          scopeLabel={dashboardSummary.scopeLabel}
           projectName={selectedProjectName}
           repositoryName={selectedRepositoryName}
           isConnected={isConnectionReady}
@@ -49,7 +65,7 @@ const Dashboard = () => {
             No hay provider activo. Ve a Settings y elige Azure DevOps, GitHub o GitLab antes de cargar metricas.
           </section>
         ) : isConnectionReady ? (
-          <MetricsGrid metrics={summary.metrics} />
+          <MetricsGrid metrics={dashboardSummary.queueMetrics} />
         ) : (
           <section className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-sm text-slate-500 shadow-lg ring-1 ring-slate-200">
             Conecta la fuente seleccionada desde Settings para visualizar metricas, backlog y tendencias.
@@ -59,32 +75,40 @@ const Dashboard = () => {
 
       {config.provider && isConnectionReady ? (
         <>
+          <ExecutiveSummaryPanel
+            metrics={dashboardSummary.executiveMetrics}
+            alerts={dashboardSummary.prAiSignals}
+          />
+
+          <section className="grid gap-6 xl:grid-cols-[1.7fr_1fr]">
+            <PriorityList
+              pullRequests={dashboardSummary.operationalPullRequests}
+              onOpenPullRequest={(url) => void openPullRequest(url)}
+            />
+            <ReviewerWorkloadPanel reviewers={dashboardSummary.reviewerWorkload} />
+          </section>
+
           <HealthSection
             title="Salud de entrega"
             description="Mide si el flujo de PRs está avanzando o se está quedando en cola."
-            indicators={summary.deliveryIndicators}
+            indicators={dashboardSummary.deliveryIndicators}
           />
 
           <HealthSection
             title="Eficiencia de review"
             description="Expone cobertura, carga pendiente y posibles cuellos de botella."
-            indicators={summary.reviewIndicators}
+            indicators={dashboardSummary.reviewIndicators}
           />
 
           <section className="grid gap-6 xl:grid-cols-[1.7fr_1fr]">
-            <PriorityList
-              pullRequests={summary.prioritizedPullRequests}
-              onOpenPullRequest={(url) => void openPullRequest(url)}
-            />
             <InsightsPanel
-              repositoryInsights={summary.repositoryInsights}
-              branchInsights={summary.branchInsights}
-              reviewerInsights={summary.reviewerInsights}
-              noDescriptionCount={summary.noDescriptionCount}
+              repositoryInsights={dashboardSummary.repositoryInsights}
+              branchInsights={dashboardSummary.branchInsights}
+              reviewerInsights={dashboardSummary.reviewerInsights}
+              noDescriptionCount={dashboardSummary.noDescriptionCount}
             />
+            <GovernanceAlerts alerts={dashboardSummary.governanceAlerts} />
           </section>
-
-          <GovernanceAlerts alerts={summary.governanceAlerts} />
         </>
       ) : null}
     </motion.div>
