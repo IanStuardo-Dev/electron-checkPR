@@ -60,8 +60,7 @@ export function SettingsIntegrationsSection({
   }, [config.provider]);
 
   return (
-    <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
-      <div className="space-y-6">
+    <section className="space-y-6">
         <ConnectionSummary
           providerKind={activeProvider?.kind}
           providerName={activeProviderName}
@@ -129,8 +128,6 @@ export function SettingsIntegrationsSection({
           isReady={isCodexReady}
           onChange={updateCodexConfig}
         />
-      </div>
     </section>
   );
 }
-

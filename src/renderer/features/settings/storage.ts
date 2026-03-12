@@ -27,6 +27,21 @@ export const defaultCodexConfig: CodexIntegrationConfig = {
   includeTests: true,
   repositoryScope: 'selected',
   apiKey: '',
+  snapshotPolicy: {
+    excludedPathPatterns: [
+      '.env',
+      '.env.*',
+      'node_modules/**',
+      'dist/**',
+      'build/**',
+      'coverage/**',
+      '*.pem',
+      '*.key',
+      '*.p12',
+      'terraform.tfvars',
+    ].join('\n'),
+    strictMode: false,
+  },
   promptDirectives: {
     architectureReviewEnabled: false,
     architecturePattern: '',

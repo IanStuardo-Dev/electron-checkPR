@@ -83,6 +83,6 @@ export const RepositoryAnalysisError = ({ error }: { error: string }) => (
 
 export const RepositoryAnalysisEmptyState = () => (
   <section className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500 shadow-lg ring-1 ring-slate-200">
-    Selecciona un repositorio y una rama para ejecutar el primer analisis real.
+    Selecciona un repositorio y una rama, prepara el snapshot y confirma el disclaimer antes de enviar el contexto a Codex.
   </section>
 );

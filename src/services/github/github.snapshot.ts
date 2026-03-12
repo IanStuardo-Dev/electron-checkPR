@@ -1,7 +1,7 @@
 import type { RepositoryConnectionConfig, RepositorySnapshotOptions } from '../../types/repository';
 import type { RepositorySnapshot } from '../../types/analysis';
 import { mapWithConcurrency, retryWithBackoff } from '../shared/request-control';
-import { isSupportedCodeFile, isTestFile, rankPath } from '../shared/repository-snapshot-helpers';
+import { isSupportedCodeFile, isTestFile, rankPath, shouldExcludeSnapshotPath } from '../shared/repository-snapshot-helpers';
 import { appendPartialReason, isProbablyBinaryContent, MAX_SNAPSHOT_FILE_BYTES } from '../shared/snapshot-content';
 import { getGitHubConfig, requestGitHubContent, requestGitHubJson } from './github.api';
 import type { GitHubTreeResponse } from './github.types';
@@ -115,6 +115,7 @@ export async function getGitHubRepositorySnapshot(
   const candidateFiles = discoveredFiles
     .filter((item) => isSupportedCodeFile(item.path))
     .filter((item) => options.includeTests || !isTestFile(item.path))
+    .filter((item) => !shouldExcludeSnapshotPath(item.path, options.excludedPathPatterns))
     .sort((left, right) => {
       const scoreDelta = rankPath(right.path) - rankPath(left.path);
       if (scoreDelta !== 0) {
@@ -127,9 +128,14 @@ export async function getGitHubRepositorySnapshot(
   let retryCount = 0;
   let skippedLargeFiles = 0;
   let skippedBinaryFiles = 0;
+  const oversizedPaths: string[] = [];
+  const binaryPaths: string[] = [];
   const files = (await mapWithConcurrency(selectedFiles, 5, async (file) => {
     if ((file.size || 0) > MAX_SNAPSHOT_FILE_BYTES) {
       skippedLargeFiles += 1;
+      if (oversizedPaths.length < 8) {
+        oversizedPaths.push(file.path);
+      }
       return null;
     }
 
@@ -153,11 +159,17 @@ export async function getGitHubRepositorySnapshot(
 
     if (contentPayload.size > MAX_SNAPSHOT_FILE_BYTES) {
       skippedLargeFiles += 1;
+      if (oversizedPaths.length < 8) {
+        oversizedPaths.push(file.path);
+      }
       return null;
     }
 
     if (isProbablyBinaryContent(content)) {
       skippedBinaryFiles += 1;
+      if (binaryPaths.length < 8) {
+        binaryPaths.push(file.path);
+      }
       return null;
     }
 
@@ -189,6 +201,11 @@ export async function getGitHubRepositorySnapshot(
     totalFilesDiscovered: candidateFiles.length,
     truncated: candidateFiles.length > options.maxFiles || Boolean(tree.truncated) || skippedLargeFiles > 0 || skippedBinaryFiles > 0,
     partialReason,
+    exclusions: {
+      omittedByPrioritization: candidateFiles.slice(options.maxFiles, options.maxFiles + 8).map((file) => file.path),
+      omittedBySize: oversizedPaths,
+      omittedByBinaryDetection: binaryPaths,
+    },
     metrics: {
       durationMs: Date.now() - startedAt,
       retryCount,

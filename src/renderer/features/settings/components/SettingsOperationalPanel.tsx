@@ -25,14 +25,14 @@ export function SettingsOperationalSection({
   isCodexReady: boolean;
 }) {
   return (
-    <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
+    <section className="grid gap-6 2xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.95fr)]">
       <SettingsSectionCard
         eyebrow="Prioridad 1"
         title="Resumen operativo"
         description="Empieza aqui: esta card te dice si el workspace esta listo o que pieza falta antes de entrar al dashboard o lanzar un analisis."
         badge={<SettingsStatusBadge tone={isConnectionReady ? 'emerald' : 'amber'} label={isConnectionReady ? 'Workspace operativo' : 'Faltan pasos'} />}
       >
-        <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)]">
           <div className="grid gap-4 sm:grid-cols-2">
             <SettingsStatTile label="Provider activo" value={config.provider ? activeProviderName : 'No seleccionado'} description="Fuente primaria de repositorios y PRs para esta sesion." />
             <SettingsStatTile label="Conexion" value={isConnectionReady ? 'OK' : 'Pendiente'} description={isConnectionReady ? 'Sesion autenticada y sincronizacion exitosa.' : 'Falta autenticar o sincronizar el provider activo.'} />
@@ -92,4 +92,3 @@ export function SettingsOperationalSection({
     </section>
   );
 }
-

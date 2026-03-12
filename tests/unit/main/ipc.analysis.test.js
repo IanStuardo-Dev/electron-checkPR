@@ -27,6 +27,10 @@ describe('analysis ipc', () => {
       analysisDepth: 'deep',
       maxFilesPerRun: 999,
       includeTests: true,
+      snapshotPolicy: {
+        excludedPathPatterns: '.env\n*.pem',
+        strictMode: true,
+      },
       timeoutMs: 999999,
       promptDirectives: {
         architectureReviewEnabled: true,
@@ -37,21 +41,43 @@ describe('analysis ipc', () => {
     expect(payload.maxFilesPerRun).toBe(200);
     expect(payload.timeoutMs).toBe(120000);
     expect(payload.source.organization).toBe('acme');
+    expect(payload.snapshotPolicy.excludedPathPatterns).toContain('.env');
+    expect(payload.snapshotPolicy.strictMode).toBe(true);
     expect(payload.promptDirectives.architecturePattern).toBe('hexagonal');
   });
 
   test('registerAnalysisIpc registra run y cancel', async () => {
     const repositoryAnalysisService = {
+      previewSnapshot: jest.fn().mockResolvedValue({ repository: 'repo-a' }),
       runAnalysis: jest.fn().mockResolvedValue({ summary: 'ok' }),
       cancelAnalysis: jest.fn(),
     };
 
     registerAnalysisIpc(repositoryAnalysisService);
 
-    expect(registerHandle).toHaveBeenCalledTimes(2);
-    const runHandler = registerHandle.mock.calls[0][1];
-    const cancelHandler = registerHandle.mock.calls[1][1];
+    expect(registerHandle).toHaveBeenCalledTimes(3);
+    const previewHandler = registerHandle.mock.calls[0][1];
+    const runHandler = registerHandle.mock.calls[1][1];
+    const cancelHandler = registerHandle.mock.calls[2][1];
 
+    await previewHandler({
+      requestId: 'req-preview',
+      source: {
+        provider: 'github',
+        organization: 'acme',
+        project: 'repo-a',
+        repositoryId: 'repo-a',
+        personalAccessToken: 'pat',
+      },
+      repositoryId: 'repo-a',
+      branchName: 'main',
+      model: 'gpt-5.2-codex',
+      apiKey: 'sk',
+      analysisDepth: 'standard',
+      maxFilesPerRun: 50,
+      includeTests: false,
+      timeoutMs: 90000,
+    });
     await runHandler({
       requestId: 'req-1',
       source: {
@@ -72,6 +98,7 @@ describe('analysis ipc', () => {
     });
     await cancelHandler('req-1');
 
+    expect(repositoryAnalysisService.previewSnapshot).toHaveBeenCalled();
     expect(repositoryAnalysisService.runAnalysis).toHaveBeenCalled();
     expect(repositoryAnalysisService.cancelAnalysis).toHaveBeenCalledWith('req-1');
   });

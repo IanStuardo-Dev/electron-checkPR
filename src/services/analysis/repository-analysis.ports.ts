@@ -1,4 +1,4 @@
-import type { RepositoryAnalysisRequest, RepositoryAnalysisResult, RepositorySnapshot } from '../../types/analysis';
+import type { RepositoryAnalysisRequest, RepositoryAnalysisResult, RepositorySnapshot, RepositorySnapshotPreview } from '../../types/analysis';
 
 export interface AnalysisPromptPayload {
   systemPrompt: string;
@@ -7,6 +7,10 @@ export interface AnalysisPromptPayload {
 
 export interface SnapshotProviderPort {
   getSnapshot(request: RepositoryAnalysisRequest): Promise<RepositorySnapshot>;
+}
+
+export interface SnapshotPreviewPort {
+  previewSnapshot(request: RepositoryAnalysisRequest): Promise<RepositorySnapshotPreview>;
 }
 
 export interface AnalysisPromptBuilderPort {

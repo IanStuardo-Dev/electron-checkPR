@@ -1,4 +1,4 @@
-import type { RepositoryAnalysisRequest, RepositoryAnalysisResult } from '../../../types/analysis';
+import type { RepositoryAnalysisRequest, RepositoryAnalysisResult, RepositorySnapshotPreview } from '../../../types/analysis';
 
 interface IpcSuccessResponse<T> {
   ok: true;
@@ -11,6 +11,16 @@ interface IpcErrorResponse {
 }
 
 type IpcResponse<T> = IpcSuccessResponse<T> | IpcErrorResponse;
+
+export async function previewRepositorySnapshot(payload: RepositoryAnalysisRequest): Promise<RepositorySnapshotPreview> {
+  const response = await window.electronApi.invoke('analysis:previewRepositorySnapshot', payload) as IpcResponse<RepositorySnapshotPreview>;
+
+  if (!response.ok) {
+    throw new Error(response.error);
+  }
+
+  return response.data;
+}
 
 export async function runRepositoryAnalysis(payload: RepositoryAnalysisRequest): Promise<RepositoryAnalysisResult> {
   const response = await window.electronApi.invoke('analysis:runRepositoryAnalysis', payload) as IpcResponse<RepositoryAnalysisResult>;

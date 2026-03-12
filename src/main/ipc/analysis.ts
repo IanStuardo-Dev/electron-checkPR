@@ -1,4 +1,4 @@
-import type { RepositoryAnalysisRequest } from '../../types/analysis';
+import type { RepositoryAnalysisRequest, RepositorySnapshotPreview } from '../../types/analysis';
 import type { RepositoryProviderKind } from '../../types/repository';
 import { RepositoryAnalysisService } from '../../services/analysis/repository-analysis.service';
 import { registerHandle } from './shared';
@@ -55,6 +55,12 @@ export function sanitizeAnalysisPayload(payload: unknown): RepositoryAnalysisReq
     analysisDepth,
     maxFilesPerRun,
     includeTests: Boolean(request.includeTests),
+    snapshotPolicy: {
+      excludedPathPatterns: typeof (request as Partial<RepositoryAnalysisRequest>).snapshotPolicy?.excludedPathPatterns === 'string'
+        ? (request as Partial<RepositoryAnalysisRequest>).snapshotPolicy!.excludedPathPatterns.slice(0, 4000)
+        : '',
+      strictMode: Boolean((request as Partial<RepositoryAnalysisRequest>).snapshotPolicy?.strictMode),
+    },
     timeoutMs,
     promptDirectives: {
       architectureReviewEnabled: Boolean((rawPromptDirectives as Record<string, unknown>).architectureReviewEnabled),
@@ -78,6 +84,9 @@ export function sanitizeAnalysisPayload(payload: unknown): RepositoryAnalysisReq
 }
 
 export function registerAnalysisIpc(repositoryAnalysisService: RepositoryAnalysisService): void {
+  registerHandle<unknown, RepositorySnapshotPreview>('analysis:previewRepositorySnapshot', async (payload) => (
+    repositoryAnalysisService.previewSnapshot(sanitizeAnalysisPayload(payload))
+  ));
   registerHandle<unknown, unknown>('analysis:runRepositoryAnalysis', async (payload) => (
     repositoryAnalysisService.runAnalysis(sanitizeAnalysisPayload(payload))
   ));

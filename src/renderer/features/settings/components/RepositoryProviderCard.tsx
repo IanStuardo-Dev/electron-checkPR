@@ -62,7 +62,7 @@ const RepositoryProviderCard = ({
             <button
               type="button"
               onClick={onActivate}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600 sm:w-auto"
             >
               Usar este provider
               <ArrowRightIcon className="h-4 w-4" />
@@ -72,7 +72,7 @@ const RepositoryProviderCard = ({
             <button
               type="button"
               onClick={onToggleExpand}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600 sm:w-auto"
             >
               {expanded ? 'Ocultar configuracion' : 'Configurar'}
               {expanded ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
@@ -81,7 +81,7 @@ const RepositoryProviderCard = ({
         </>
       )}
     >
-      <div className="flex items-start gap-4 rounded-2xl bg-slate-50/80 p-4">
+      <div className="flex flex-col gap-4 rounded-2xl bg-slate-50/80 p-4 sm:flex-row sm:items-start">
         <div className="rounded-2xl bg-sky-50 p-3 text-sky-700">
           <CircleStackIcon className="h-6 w-6" />
         </div>

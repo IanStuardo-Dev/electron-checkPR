@@ -9,11 +9,37 @@ export interface RepositoryAnalysisPromptDirectives {
   customInstructions: string;
 }
 
+export interface RepositoryAnalysisSnapshotPolicy {
+  excludedPathPatterns: string;
+  strictMode: boolean;
+}
+
 export interface RepositoryFileSnapshot {
   path: string;
   extension: string;
   size: number;
   content: string;
+}
+
+export interface RepositorySnapshotExclusions {
+  omittedByPrioritization: string[];
+  omittedBySize: string[];
+  omittedByBinaryDetection: string[];
+}
+
+export interface RepositorySnapshotSensitivityFinding {
+  kind: 'sensitive-config' | 'secret-pattern';
+  path: string;
+  reason: string;
+  confidence: 'medium' | 'high';
+}
+
+export interface RepositorySnapshotSensitivitySummary {
+  findings: RepositorySnapshotSensitivityFinding[];
+  hasSensitiveConfigFiles: boolean;
+  hasSecretPatterns: boolean;
+  noSensitiveConfigFilesDetected: boolean;
+  summary: string;
 }
 
 export interface RepositorySnapshot {
@@ -24,6 +50,28 @@ export interface RepositorySnapshot {
   totalFilesDiscovered: number;
   truncated: boolean;
   partialReason?: string;
+  exclusions?: RepositorySnapshotExclusions;
+  metrics?: {
+    durationMs: number;
+    retryCount: number;
+    discardedByPrioritization: number;
+    discardedBySize: number;
+    discardedByBinaryDetection: number;
+  };
+}
+
+export interface RepositorySnapshotPreview {
+  provider: RepositoryConnectionConfig['provider'];
+  repository: string;
+  branch: string;
+  includedFiles: string[];
+  filesPrepared: number;
+  totalFilesDiscovered: number;
+  truncated: boolean;
+  partialReason?: string;
+  exclusions: RepositorySnapshotExclusions;
+  sensitivity: RepositorySnapshotSensitivitySummary;
+  disclaimer: string;
   metrics?: {
     durationMs: number;
     retryCount: number;
@@ -43,6 +91,7 @@ export interface RepositoryAnalysisRequest {
   analysisDepth: 'standard' | 'deep';
   maxFilesPerRun: number;
   includeTests: boolean;
+  snapshotPolicy?: RepositoryAnalysisSnapshotPolicy;
   timeoutMs?: number;
   promptDirectives?: RepositoryAnalysisPromptDirectives;
 }

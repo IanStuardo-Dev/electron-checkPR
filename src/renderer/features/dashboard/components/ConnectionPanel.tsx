@@ -92,14 +92,14 @@ const ConnectionPanel = ({
             type="button"
             onClick={onRefresh}
             disabled={isLoading}
-            className="rounded-full bg-sky-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-slate-400"
+            className="w-full rounded-full bg-sky-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-slate-400 sm:w-auto"
           >
             {isLoading ? 'Conectando...' : 'Conectar y sincronizar'}
           </button>
         ) : undefined
       )}
     >
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-2">
         <ConnectionIdentityFields
           organizationLabel={organizationLabel}
           tokenLabel={tokenLabel}
@@ -140,7 +140,7 @@ const ConnectionPanel = ({
           label="Reviewer a priorizar opcional"
           value={config.targetReviewer || ''}
           placeholder="nombre o correo"
-          span="md:col-span-2"
+          span="xl:col-span-2"
           onChange={(value) => onConfigChange('targetReviewer', value)}
         />
       </div>

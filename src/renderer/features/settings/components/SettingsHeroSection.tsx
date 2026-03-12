@@ -13,17 +13,17 @@ export function SettingsHero({
   const configuredIntegrations = Number(isConnectionReady) + Number(isCodexReady);
 
   return (
-    <section className="overflow-hidden rounded-[32px] bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.24),_transparent_28%),linear-gradient(135deg,_#020617,_#0f172a_55%,_#111827)] p-8 text-white shadow-[0_35px_100px_-45px_rgba(2,6,23,0.95)]">
-      <div className="grid gap-8 xl:grid-cols-[1.4fr_0.9fr]">
+    <section className="overflow-hidden rounded-[28px] bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.24),_transparent_28%),linear-gradient(135deg,_#020617,_#0f172a_55%,_#111827)] p-6 text-white shadow-[0_35px_100px_-45px_rgba(2,6,23,0.95)] sm:p-8 lg:p-10">
+      <div className="grid gap-6 lg:gap-8 xl:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.9fr)]">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-300">Settings</p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight">Configuracion de fuentes e integraciones</h1>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl lg:text-[2.75rem]">Configuracion de fuentes e integraciones</h1>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300 sm:text-[15px]">
             Este es el hub para providers de repositorios e integraciones transversales. Azure DevOps, GitHub y GitLab quedan operativos;
             Bitbucket entra al backlog futuro.
           </p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-1">
           <HeroMetric
             icon={<CircleStackIcon className="h-5 w-5" />}
             label="Providers operativos"
@@ -65,4 +65,3 @@ function HeroMetric({ icon, label, value, detail }: {
     </article>
   );
 }
-

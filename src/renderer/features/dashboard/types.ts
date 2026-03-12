@@ -30,6 +30,10 @@ export interface CodexIntegrationConfig {
   includeTests: boolean;
   repositoryScope: 'selected' | 'all';
   apiKey: string;
+  snapshotPolicy: {
+    excludedPathPatterns: string;
+    strictMode: boolean;
+  };
   promptDirectives: {
     architectureReviewEnabled: boolean;
     architecturePattern: string;

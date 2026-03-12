@@ -30,21 +30,21 @@ export const SettingsSectionCard = ({
   children,
   className = '',
 }: SettingsSectionCardProps) => (
-  <section className={`rounded-[28px] border border-slate-200 bg-white/95 p-6 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.45)] backdrop-blur ${className}`}>
+  <section className={`rounded-[24px] border border-slate-200 bg-white/95 p-5 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.45)] backdrop-blur sm:rounded-[28px] sm:p-6 ${className}`}>
     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         {eyebrow ? (
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-sky-600">{eyebrow}</p>
         ) : null}
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <h2 className="text-xl font-semibold tracking-tight text-slate-950">{title}</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-slate-950 sm:text-xl">{title}</h2>
           {badge}
         </div>
         {description ? (
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">{description}</p>
         ) : null}
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+      {actions ? <div className="flex w-full flex-wrap items-stretch gap-2 sm:w-auto sm:items-center">{actions}</div> : null}
     </div>
 
     {children ? <div className="mt-6">{children}</div> : null}
@@ -85,7 +85,7 @@ export const SettingsField = ({
   disabled = false,
   span = '',
 }: SettingsFieldProps) => (
-  <label className={`space-y-2 text-sm text-slate-600 ${span}`}>
+  <label className={`min-w-0 space-y-2 text-sm text-slate-600 ${span}`}>
     <span className="font-medium text-slate-700">{label}</span>
     <input
       type={type}
@@ -118,7 +118,7 @@ export const SettingsTextAreaField = ({
   rows = 4,
   span = '',
 }: SettingsTextAreaFieldProps) => (
-  <label className={`space-y-2 text-sm text-slate-600 ${span}`}>
+  <label className={`min-w-0 space-y-2 text-sm text-slate-600 ${span}`}>
     <span className="font-medium text-slate-700">{label}</span>
     <textarea
       value={value}
@@ -150,7 +150,7 @@ export const SettingsSelectField = ({
   disabled = false,
   span = '',
 }: SettingsSelectFieldProps) => (
-  <label className={`space-y-2 text-sm text-slate-600 ${span}`}>
+  <label className={`min-w-0 space-y-2 text-sm text-slate-600 ${span}`}>
     <span className="font-medium text-slate-700">{label}</span>
     <select
       value={value}
@@ -181,8 +181,8 @@ export const SettingsToggleCard = ({
   checked,
   onChange,
 }: SettingsToggleCardProps) => (
-  <label className="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4">
-    <div className="pr-3">
+  <label className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="min-w-0 pr-0 sm:pr-3">
       <p className="text-sm font-medium text-slate-900">{title}</p>
       <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>
     </div>
@@ -191,7 +191,7 @@ export const SettingsToggleCard = ({
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`relative mt-1 inline-flex h-7 w-12 rounded-full transition ${checked ? 'bg-sky-600' : 'bg-slate-300'}`}
+      className={`relative inline-flex h-7 w-12 shrink-0 rounded-full transition sm:mt-1 ${checked ? 'bg-sky-600' : 'bg-slate-300'}`}
     >
       <span
         className={`inline-block h-5 w-5 translate-y-1 rounded-full bg-white shadow transition ${checked ? 'translate-x-6' : 'translate-x-1'}`}
@@ -207,9 +207,9 @@ interface SettingsStatTileProps {
 }
 
 export const SettingsStatTile = ({ label, value, description }: SettingsStatTileProps) => (
-  <article className="rounded-2xl border border-slate-200 bg-white/70 p-4">
+  <article className="min-w-0 rounded-2xl border border-slate-200 bg-white/70 p-4">
     <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{label}</p>
-    <p className="mt-3 text-2xl font-semibold text-slate-950">{value}</p>
+    <p className="mt-3 break-words text-2xl font-semibold text-slate-950">{value}</p>
     <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
   </article>
 );

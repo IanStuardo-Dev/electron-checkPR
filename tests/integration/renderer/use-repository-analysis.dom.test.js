@@ -3,6 +3,7 @@ const { renderHook, act } = require('@testing-library/react');
 jest.useFakeTimers();
 
 jest.mock('../../../src/renderer/features/repository-analysis/ipc', () => ({
+  previewRepositorySnapshot: jest.fn(),
   runRepositoryAnalysis: jest.fn(),
   cancelRepositoryAnalysis: jest.fn(),
 }));
@@ -12,8 +13,22 @@ const { useRepositoryAnalysis } = require('../../../src/renderer/features/reposi
 
 describe('useRepositoryAnalysis', () => {
   beforeEach(() => {
+    ipc.previewRepositorySnapshot.mockReset();
     ipc.runRepositoryAnalysis.mockReset();
     ipc.cancelRepositoryAnalysis.mockReset();
+  });
+
+  test('prepara preview del snapshot antes de ejecutar', async () => {
+    ipc.previewRepositorySnapshot.mockResolvedValue({ repository: 'repo-a', branch: 'main' });
+    const { result } = renderHook(() => useRepositoryAnalysis());
+
+    await act(async () => {
+      await result.current.preparePreview({ requestId: 'req-preview' });
+    });
+
+    expect(ipc.previewRepositorySnapshot).toHaveBeenCalledWith({ requestId: 'req-preview' });
+    expect(result.current.preview).toEqual({ repository: 'repo-a', branch: 'main' });
+    expect(result.current.phase).toBe('idle');
   });
 
   test('ejecuta analisis y completa resultado', async () => {

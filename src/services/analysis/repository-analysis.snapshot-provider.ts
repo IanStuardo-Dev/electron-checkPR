@@ -21,6 +21,7 @@ export class RepositoryAnalysisSnapshotProvider implements SnapshotProviderPort 
       branchName: request.branchName,
       maxFiles: request.maxFilesPerRun,
       includeTests: request.includeTests,
+      excludedPathPatterns: request.snapshotPolicy?.excludedPathPatterns,
     };
 
     return provider.getRepositorySnapshot(sourceConfig, options);

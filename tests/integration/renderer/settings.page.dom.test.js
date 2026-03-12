@@ -55,6 +55,10 @@ describe('Settings page', () => {
         includeTests: true,
         repositoryScope: 'selected',
         apiKey: 'codex-key',
+        snapshotPolicy: {
+          excludedPathPatterns: '.env\nnode_modules/**',
+          strictMode: true,
+        },
         promptDirectives: {
           architectureReviewEnabled: true,
           architecturePattern: 'hexagonal',

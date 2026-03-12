@@ -35,7 +35,7 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
       </div>
     )}
   >
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       <SettingsStatTile
         label="Modelo"
         value={config.model}
@@ -53,7 +53,7 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
       />
     </div>
 
-    <div className="mt-6 grid gap-4 md:grid-cols-2">
+    <div className="mt-6 grid gap-4 xl:grid-cols-2">
       <SettingsToggleCard
         title="Habilitar integracion"
         description="Permite ejecutar analisis AI cuando implementemos la feature de repositorio/rama."
@@ -114,6 +114,16 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
         checked={config.includeTests}
         onChange={(checked) => onChange('includeTests', checked)}
       />
+
+      <SettingsToggleCard
+        title="Modo estricto de snapshot"
+        description="Bloquea el envio a Codex si el preflight detecta posibles secretos o archivos sensibles dentro del snapshot."
+        checked={config.snapshotPolicy.strictMode}
+        onChange={(checked) => onChange('snapshotPolicy', {
+          ...config.snapshotPolicy,
+          strictMode: checked,
+        })}
+      />
     </div>
 
     <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
@@ -129,7 +139,19 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
         Esto agrega contexto real y vuelve el analisis mucho mas valioso que un review generico.
       </p>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
+      <div className="mt-5 grid gap-4 xl:grid-cols-2">
+        <SettingsTextAreaField
+          label="Patrones de paths excluidos del snapshot"
+          value={config.snapshotPolicy.excludedPathPatterns}
+          placeholder={'Ejemplo:\n.env\n.env.*\nnode_modules/**\ndist/**\n*.pem\n*.key'}
+          onChange={(value) => onChange('snapshotPolicy', {
+            ...config.snapshotPolicy,
+            excludedPathPatterns: value,
+          })}
+          span="xl:col-span-2"
+          hint="Uno por linea. Se aplican antes del preflight y del envio a Codex."
+        />
+
         <SettingsToggleCard
           title="Forzar revision de arquitectura"
           description="Hace que Codex priorice estructura de capas, boundaries y cumplimiento de estilo arquitectonico."
@@ -159,7 +181,7 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
             ...config.promptDirectives,
             requiredPractices: value,
           })}
-          span="md:col-span-2"
+          span="xl:col-span-2"
           hint="Lista de chequeos que quieres exigir siempre."
         />
 
@@ -193,7 +215,7 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
             ...config.promptDirectives,
             customInstructions: value,
           })}
-          span="md:col-span-2"
+          span="xl:col-span-2"
           hint="Texto libre para reglas adicionales de tu equipo o arquitectura."
         />
       </div>

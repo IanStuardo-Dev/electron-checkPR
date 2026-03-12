@@ -29,17 +29,22 @@ const RepositoryAnalysis = () => {
     summary,
   } = useRepositorySourceContext();
   const { config: codexConfig, isReady: isCodexReady } = useCodexSettings();
-  const { phase, result, error, isRunning, isCancelling, execute, cancel, reset } = useRepositoryAnalysis();
+  const { phase, preview, result, error, isPreviewing, isRunning, isCancelling, preparePreview, execute, cancel, reset } = useRepositoryAnalysis();
 
   const [repositoryId, setRepositoryId] = React.useState(config.repositoryId || '');
   const [branchName, setBranchName] = React.useState('');
   const [branches, setBranches] = React.useState<RepositoryBranch[]>([]);
   const [isLoadingBranches, setIsLoadingBranches] = React.useState(false);
   const [branchError, setBranchError] = React.useState<string | null>(null);
+  const [snapshotAcknowledged, setSnapshotAcknowledged] = React.useState(false);
 
   React.useEffect(() => {
     setRepositoryId(config.repositoryId || '');
   }, [config.repositoryId]);
+
+  React.useEffect(() => {
+    setSnapshotAcknowledged(false);
+  }, [repositoryId, branchName, preview?.repository, preview?.branch]);
 
   React.useEffect(() => {
     if (!config.provider || !isConnectionReady || !repositoryId) {
@@ -73,32 +78,59 @@ const RepositoryAnalysis = () => {
   }, [config, isConnectionReady, repositoryId]);
 
   const selectedRepository = repositories.find((repository) => repository.id === repositoryId);
-  const canRunAnalysis = Boolean(config.provider && activeProvider && isConnectionReady && isCodexReady && repositoryId && branchName && !isRunning);
+  const canPreparePreview = Boolean(config.provider && activeProvider && isConnectionReady && isCodexReady && repositoryId && branchName && !isRunning && !isPreviewing);
+  const isStrictModeBlocked = Boolean(preview && codexConfig.snapshotPolicy.strictMode && (preview.sensitivity.hasSecretPatterns || preview.sensitivity.hasSensitiveConfigFiles));
+  const canRunAnalysis = Boolean(
+    config.provider
+    && activeProvider
+    && isConnectionReady
+    && isCodexReady
+    && repositoryId
+    && branchName
+    && preview
+    && preview.provider === activeProvider.kind
+    && preview.branch === branchName
+    && snapshotAcknowledged
+    && !isStrictModeBlocked
+    && !isRunning,
+  );
+
+  const buildAnalysisPayload = React.useCallback(() => ({
+    requestId: `${Date.now()}-${repositoryId}-${branchName}`,
+    source: {
+      ...config,
+      provider: activeProvider!.kind,
+      repositoryId,
+      project: activeProvider!.kind === 'azure-devops' ? config.project : repositoryId,
+    },
+    repositoryId,
+    branchName,
+    model: codexConfig.model,
+    apiKey: codexConfig.apiKey,
+    analysisDepth: codexConfig.analysisDepth,
+    maxFilesPerRun: codexConfig.maxFilesPerRun,
+    includeTests: codexConfig.includeTests,
+    snapshotPolicy: codexConfig.snapshotPolicy,
+    timeoutMs: 90_000,
+    promptDirectives: codexConfig.promptDirectives,
+  }), [activeProvider, branchName, codexConfig, config, repositoryId]);
+
+  const handlePreparePreview = React.useCallback(() => {
+    if (!canPreparePreview) {
+      return;
+    }
+
+    setSnapshotAcknowledged(false);
+    void preparePreview(buildAnalysisPayload());
+  }, [buildAnalysisPayload, canPreparePreview, preparePreview]);
 
   const handleRun = React.useCallback(() => {
     if (!canRunAnalysis) {
       return;
     }
 
-    void execute({
-      requestId: `${Date.now()}-${repositoryId}-${branchName}`,
-      source: {
-        ...config,
-        provider: activeProvider!.kind,
-        repositoryId,
-        project: activeProvider!.kind === 'azure-devops' ? config.project : repositoryId,
-      },
-      repositoryId,
-      branchName,
-      model: codexConfig.model,
-      apiKey: codexConfig.apiKey,
-      analysisDepth: codexConfig.analysisDepth,
-      maxFilesPerRun: codexConfig.maxFilesPerRun,
-      includeTests: codexConfig.includeTests,
-      timeoutMs: 90_000,
-      promptDirectives: codexConfig.promptDirectives,
-    });
-  }, [activeProvider, branchName, canRunAnalysis, codexConfig, config, execute, repositoryId]);
+    void execute(buildAnalysisPayload());
+  }, [buildAnalysisPayload, canRunAnalysis, execute]);
 
   const phaseLabel = phase === 'preparing'
     ? 'Preparando snapshot del repositorio'
@@ -157,17 +189,27 @@ const RepositoryAnalysis = () => {
         model={codexConfig.model}
         maxFiles={codexConfig.maxFilesPerRun}
         activeDirectives={countActiveDirectives(codexConfig)}
+        canPreparePreview={canPreparePreview}
         canRunAnalysis={canRunAnalysis}
+        preview={preview}
+        strictModeEnabled={codexConfig.snapshotPolicy.strictMode}
+        strictModeBlocked={isStrictModeBlocked}
+        snapshotAcknowledged={snapshotAcknowledged}
+        onToggleAcknowledgement={setSnapshotAcknowledged}
+        isPreviewing={isPreviewing}
         isCancelling={isCancelling}
         resultVisible={Boolean(result)}
         onRepositoryChange={(value) => {
           setRepositoryId(value);
           reset();
+          setSnapshotAcknowledged(false);
         }}
         onBranchChange={(value) => {
           setBranchName(value);
           reset();
+          setSnapshotAcknowledged(false);
         }}
+        onPreparePreview={handlePreparePreview}
         onRun={handleRun}
         onCancel={() => void cancel()}
         onReset={reset}

@@ -1,6 +1,7 @@
 const {
   MAX_SNAPSHOT_FILE_BYTES,
   appendPartialReason,
+  buildSnapshotSensitivitySummary,
   isProbablyBinaryContent,
 } = require('../../../src/services/shared/snapshot-content');
 
@@ -20,5 +21,45 @@ describe('snapshot-content', () => {
     expect(appendPartialReason(undefined, [])).toBeUndefined();
     expect(appendPartialReason(undefined, ['uno', '', 'dos'])).toBe('uno dos');
     expect(appendPartialReason('base', ['uno', 'dos'])).toBe('base uno dos');
+  });
+
+  test('buildSnapshotSensitivitySummary detecta config sensible y patrones de secretos', () => {
+    const summary = buildSnapshotSensitivitySummary([
+      {
+        path: '.env.production',
+        extension: 'env',
+        size: 30,
+        content: 'API_KEY=abc123456789',
+      },
+      {
+        path: 'src/app.ts',
+        extension: 'ts',
+        size: 20,
+        content: 'export const ok = true;',
+      },
+    ]);
+
+    expect(summary.hasSensitiveConfigFiles).toBe(true);
+    expect(summary.hasSecretPatterns).toBe(true);
+    expect(summary.noSensitiveConfigFilesDetected).toBe(false);
+    expect(summary.findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ path: '.env.production', kind: 'sensitive-config' }),
+      expect.objectContaining({ path: '.env.production', kind: 'secret-pattern' }),
+    ]));
+  });
+
+  test('buildSnapshotSensitivitySummary informa cuando no hay archivos sensibles', () => {
+    const summary = buildSnapshotSensitivitySummary([
+      {
+        path: 'src/app.ts',
+        extension: 'ts',
+        size: 20,
+        content: 'export const ok = true;',
+      },
+    ]);
+
+    expect(summary.noSensitiveConfigFilesDetected).toBe(true);
+    expect(summary.hasSecretPatterns).toBe(false);
+    expect(summary.summary).toContain('No se detectaron archivos sensibles de configuracion');
   });
 });

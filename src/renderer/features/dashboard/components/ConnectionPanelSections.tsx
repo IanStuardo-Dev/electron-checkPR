@@ -48,7 +48,7 @@ export function ConnectionIdentityFields({
           type="button"
           onClick={onDiscoverProjects}
           disabled={projectsLoading || !config.organization || !config.personalAccessToken}
-          className="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600 disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
         >
           {projectsLoading ? `${loadLabel}...` : loadLabel}
         </button>
@@ -106,7 +106,7 @@ export function ConnectionProjectScope({
           ]}
           hint={projectsLoading ? 'Cargando proyectos...' : `${projects.length} proyectos disponibles`}
         />
-        <div className="md:col-span-2 text-right">
+        <div className="text-left sm:text-right xl:col-span-2">
           <button
             type="button"
             onClick={onManualMode}

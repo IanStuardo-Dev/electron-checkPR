@@ -9,6 +9,50 @@ describe('repository analysis ipc', () => {
     };
   });
 
+  test('previewRepositorySnapshot usa el canal correcto', async () => {
+    window.electronApi.invoke.mockResolvedValue({
+      ok: true,
+      data: {
+        provider: 'github',
+        repository: 'repo-a',
+        branch: 'main',
+        includedFiles: ['src/app.ts'],
+        filesPrepared: 1,
+        totalFilesDiscovered: 3,
+        truncated: true,
+        exclusions: {
+          omittedByPrioritization: ['src/legacy.ts'],
+          omittedBySize: [],
+          omittedByBinaryDetection: [],
+        },
+        disclaimer: 'Se enviara a Codex...',
+      },
+    });
+
+    const payload = {
+      requestId: 'req-preview',
+      source: {
+        provider: 'github',
+        organization: 'acme',
+        project: 'repo-a',
+        repositoryId: 'repo-a',
+        personalAccessToken: 'secret',
+      },
+      repositoryId: 'repo-a',
+      branchName: 'main',
+      model: 'gpt-5.2-codex',
+      apiKey: 'sk-test',
+      analysisDepth: 'standard',
+      maxFilesPerRun: 50,
+      includeTests: false,
+    };
+
+    const result = await repositoryAnalysisIpc.previewRepositorySnapshot(payload);
+
+    expect(window.electronApi.invoke).toHaveBeenCalledWith('analysis:previewRepositorySnapshot', payload);
+    expect(result.filesPrepared).toBe(1);
+  });
+
   test('runRepositoryAnalysis usa el canal correcto', async () => {
     window.electronApi.invoke.mockResolvedValue({
       ok: true,

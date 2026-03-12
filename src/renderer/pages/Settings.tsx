@@ -44,50 +44,51 @@ const Settings = () => {
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-8"
+      className="mx-auto max-w-[1520px] space-y-6 lg:space-y-8"
     >
       <SettingsHero
         isConnectionReady={isConnectionReady}
         isCodexReady={isCodexReady}
       />
 
-      <SettingsOperationalSection
-        activeProvider={activeProvider}
-        activeProviderName={activeProviderName}
-        config={config}
-        selectedProjectName={selectedProjectName}
-        selectedRepositoryName={selectedRepositoryName}
-        summary={summary}
-        isConnectionReady={isConnectionReady}
-        isCodexReady={isCodexReady}
-      />
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.85fr)]">
+        <div className="space-y-6">
+          <SettingsOperationalSection
+            activeProvider={activeProvider}
+            activeProviderName={activeProviderName}
+            config={config}
+            selectedProjectName={selectedProjectName}
+            selectedRepositoryName={selectedRepositoryName}
+            summary={summary}
+            isConnectionReady={isConnectionReady}
+            isCodexReady={isCodexReady}
+          />
 
-      <SettingsIntegrationsSection
-        activeProvider={activeProvider}
-        activeProviderName={activeProviderName}
-        config={config}
-        summary={summary}
-        selectedProjectName={selectedProjectName}
-        selectedRepositoryName={selectedRepositoryName}
-        error={error}
-        isConnectionReady={isConnectionReady}
-        isLoading={isLoading}
-        projects={projects}
-        projectsLoading={projectsLoading}
-        projectDiscoveryWarning={projectDiscoveryWarning}
-        repositories={repositories}
-        repositoriesLoading={repositoriesLoading}
-        discoverProjects={() => void discoverProjects()}
-        selectProject={(project) => void selectProject(project)}
-        updateConfig={updateConfig}
-        refreshPullRequests={() => void refreshPullRequests()}
-        codexConfig={codexConfig}
-        isCodexReady={isCodexReady}
-        updateCodexConfig={updateCodexConfig}
-      />
+          <SettingsIntegrationsSection
+            activeProvider={activeProvider}
+            activeProviderName={activeProviderName}
+            config={config}
+            summary={summary}
+            selectedProjectName={selectedProjectName}
+            selectedRepositoryName={selectedRepositoryName}
+            error={error}
+            isConnectionReady={isConnectionReady}
+            isLoading={isLoading}
+            projects={projects}
+            projectsLoading={projectsLoading}
+            projectDiscoveryWarning={projectDiscoveryWarning}
+            repositories={repositories}
+            repositoriesLoading={repositoriesLoading}
+            discoverProjects={() => void discoverProjects()}
+            selectProject={(project) => void selectProject(project)}
+            updateConfig={updateConfig}
+            refreshPullRequests={() => void refreshPullRequests()}
+            codexConfig={codexConfig}
+            isCodexReady={isCodexReady}
+            updateCodexConfig={updateCodexConfig}
+          />
+        </div>
 
-      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
-        <div />
         <div className="space-y-6 xl:sticky xl:top-6 xl:self-start">
           <SettingsDiagnosticsSection
             activeProviderName={activeProviderName}

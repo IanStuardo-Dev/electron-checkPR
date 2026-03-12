@@ -38,8 +38,17 @@ describe('RepositoryAnalysis page', () => {
     useRepositorySourceContext.mockReturnValue(createRepositorySourceContext());
     useCodexSettings.mockReturnValue({
       config: {
+        enabled: false,
         model: 'gpt-5.2-codex',
+        analysisDepth: 'standard',
         maxFilesPerRun: 120,
+        includeTests: true,
+        repositoryScope: 'selected',
+        apiKey: '',
+        snapshotPolicy: {
+          excludedPathPatterns: '.env\nnode_modules/**',
+          strictMode: false,
+        },
         promptDirectives: {
           architectureReviewEnabled: false,
           architecturePattern: '',
@@ -53,10 +62,13 @@ describe('RepositoryAnalysis page', () => {
     });
     useRepositoryAnalysis.mockReturnValue({
       phase: 'idle',
+      preview: null,
       result: null,
       error: null,
+      isPreviewing: false,
       isRunning: false,
       isCancelling: false,
+      preparePreview: jest.fn(),
       execute: jest.fn(),
       cancel: jest.fn(),
       reset: jest.fn(),
@@ -67,7 +79,7 @@ describe('RepositoryAnalysis page', () => {
 
     expect(screen.getByText(/Analisis AI sobre una rama exacta/i)).toBeInTheDocument();
     expect(screen.getAllByText(/No seleccionado/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Selecciona un repositorio y una rama para ejecutar el primer analisis real/i)).toBeInTheDocument();
+    expect(screen.getByText(/Selecciona un repositorio y una rama, prepara el snapshot y confirma el disclaimer antes de enviar el contexto a Codex/i)).toBeInTheDocument();
   });
 
   test('muestra el resultado estructurado del analisis', async () => {
@@ -93,11 +105,17 @@ describe('RepositoryAnalysis page', () => {
     }));
     useCodexSettings.mockReturnValue({
       config: {
+        enabled: true,
         model: 'gpt-5.2-codex',
         maxFilesPerRun: 120,
         analysisDepth: 'deep',
         includeTests: true,
+        repositoryScope: 'selected',
         apiKey: 'codex-key',
+        snapshotPolicy: {
+          excludedPathPatterns: '.env\nnode_modules/**',
+          strictMode: false,
+        },
         promptDirectives: {
           architectureReviewEnabled: true,
           architecturePattern: 'hexagonal',
@@ -111,6 +129,7 @@ describe('RepositoryAnalysis page', () => {
     });
     useRepositoryAnalysis.mockReturnValue({
       phase: 'completed',
+      preview: null,
       result: {
         provider: 'github',
         repository: 'repo-a',
@@ -145,8 +164,10 @@ describe('RepositoryAnalysis page', () => {
         },
       },
       error: null,
+      isPreviewing: false,
       isRunning: false,
       isCancelling: false,
+      preparePreview: jest.fn(),
       execute: jest.fn(),
       cancel: jest.fn(),
       reset: jest.fn(),

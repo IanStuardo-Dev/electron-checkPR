@@ -28,7 +28,7 @@ export function SettingsDiagnosticsSection({
         <p><span className="font-medium text-slate-900">Organization:</span> {diagnostics.organization || '-'}</p>
         <p><span className="font-medium text-slate-900">Project:</span> {diagnostics.project || '-'}</p>
         <p><span className="font-medium text-slate-900">Repository ID:</span> {diagnostics.repositoryId || '-'}</p>
-        <p><span className="font-medium text-slate-900">Request path:</span> {diagnostics.requestPath || '-'}</p>
+        <p className="break-all"><span className="font-medium text-slate-900">Request path:</span> {diagnostics.requestPath || '-'}</p>
         <p><span className="font-medium text-slate-900">PAT en sesion:</span> {hasCredentialsInSession ? 'si' : 'no'}</p>
         <p><span className="font-medium text-slate-900">Conexion exitosa:</span> {hasSuccessfulConnection ? 'si' : 'no'}</p>
       </div>
@@ -63,7 +63,7 @@ function IntegrationCard({ title, description, status }: {
 }) {
   return (
     <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="font-semibold text-slate-900">{title}</h3>
         <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">{status}</span>
       </div>
@@ -71,4 +71,3 @@ function IntegrationCard({ title, description, status }: {
     </article>
   );
 }
-

@@ -18,6 +18,7 @@ describe('preload security bridge', () => {
   test('expone el catalogo de canales permitidos', () => {
     expect(preload.allowedElectronInvokeChannels).toEqual(expect.arrayContaining([
       'repository-source:fetchPullRequests',
+      'analysis:previewRepositorySnapshot',
       'analysis:runRepositoryAnalysis',
       'session-secrets:get',
     ]));

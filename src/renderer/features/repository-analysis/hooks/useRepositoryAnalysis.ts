@@ -1,14 +1,24 @@
 import React from 'react';
-import type { RepositoryAnalysisRequest, RepositoryAnalysisResult } from '../../../../types/analysis';
-import { cancelRepositoryAnalysis, runRepositoryAnalysis } from '../ipc';
+import type { RepositoryAnalysisRequest, RepositoryAnalysisResult, RepositorySnapshotPreview } from '../../../../types/analysis';
+import { cancelRepositoryAnalysis, previewRepositorySnapshot, runRepositoryAnalysis } from '../ipc';
 
-type AnalysisPhase = 'idle' | 'preparing' | 'analyzing' | 'completed' | 'error' | 'cancelling';
+type AnalysisPhase = 'idle' | 'previewing' | 'preparing' | 'analyzing' | 'completed' | 'error' | 'cancelling';
 
 export function useRepositoryAnalysis() {
   const [phase, setPhase] = React.useState<AnalysisPhase>('idle');
   const [result, setResult] = React.useState<RepositoryAnalysisResult | null>(null);
+  const [preview, setPreview] = React.useState<RepositorySnapshotPreview | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const activeRequestIdRef = React.useRef<string | null>(null);
+
+  const preparePreview = React.useCallback(async (payload: RepositoryAnalysisRequest) => {
+    setPhase('previewing');
+    setError(null);
+    setResult(null);
+    const nextPreview = await previewRepositorySnapshot(payload);
+    setPreview(nextPreview);
+    setPhase('idle');
+  }, []);
 
   const execute = React.useCallback(async (payload: RepositoryAnalysisRequest) => {
     setPhase('preparing');
@@ -24,6 +34,7 @@ export function useRepositoryAnalysis() {
       const nextResult = await runRepositoryAnalysis(payload);
       window.clearTimeout(timer);
       activeRequestIdRef.current = null;
+      setPreview(null);
       setResult(nextResult);
       setPhase('completed');
     } catch (nextError) {
@@ -49,22 +60,27 @@ export function useRepositoryAnalysis() {
       setPhase('idle');
       setError(null);
       setResult(null);
+      setPreview(null);
     }
   }, []);
 
   const reset = React.useCallback(() => {
     activeRequestIdRef.current = null;
     setPhase('idle');
+    setPreview(null);
     setResult(null);
     setError(null);
   }, []);
 
   return {
     phase,
+    preview,
     result,
     error,
+    isPreviewing: phase === 'previewing',
     isRunning: phase === 'preparing' || phase === 'analyzing' || phase === 'cancelling',
     isCancelling: phase === 'cancelling',
+    preparePreview,
     execute,
     cancel,
     reset,

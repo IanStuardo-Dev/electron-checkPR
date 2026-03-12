@@ -20,6 +20,10 @@ describe('useCodexSettings', () => {
       includeTests: true,
       repositoryScope: 'selected',
       apiKey: '',
+      snapshotPolicy: {
+        excludedPathPatterns: '.env\nnode_modules/**',
+        strictMode: false,
+      },
       promptDirectives: {
         architectureReviewEnabled: false,
         architecturePattern: '',

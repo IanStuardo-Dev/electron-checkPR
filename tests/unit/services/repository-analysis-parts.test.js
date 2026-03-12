@@ -2,6 +2,7 @@ const { RepositoryAnalysisPromptBuilder } = require('../../../src/services/analy
 const { RepositoryAnalysisResponseParser } = require('../../../src/services/analysis/repository-analysis.response-parser');
 const { OpenAIRepositoryAnalysisClient } = require('../../../src/services/analysis/repository-analysis.openai-client');
 const { RepositoryAnalysisSnapshotProvider } = require('../../../src/services/analysis/repository-analysis.snapshot-provider');
+const { RepositoryAnalysisService } = require('../../../src/services/analysis/repository-analysis.service');
 
 describe('repository analysis parts', () => {
   afterEach(() => {
@@ -112,5 +113,48 @@ describe('repository analysis parts', () => {
       maxFiles: 50,
       includeTests: false,
     });
+  });
+
+  test('analysis service construye preview con sensibilidad local', async () => {
+    const service = new RepositoryAnalysisService({
+      getSnapshot: jest.fn().mockResolvedValue({
+        provider: 'github',
+        repository: 'repo-a',
+        branch: 'main',
+        files: [
+          { path: '.env', extension: 'env', size: 20, content: 'SECRET=abc12345678' },
+          { path: 'src/app.ts', extension: 'ts', size: 20, content: 'export const ok = true;' },
+        ],
+        totalFilesDiscovered: 2,
+        truncated: false,
+        exclusions: {
+          omittedByPrioritization: [],
+          omittedBySize: [],
+          omittedByBinaryDetection: [],
+        },
+      }),
+    });
+
+    const preview = await service.previewSnapshot({
+      requestId: 'req-preview',
+      source: {
+        provider: 'github',
+        organization: 'acme',
+        project: 'repo-a',
+        repositoryId: 'repo-a',
+        personalAccessToken: 'pat',
+      },
+      repositoryId: 'repo-a',
+      branchName: 'main',
+      model: 'gpt-5.2-codex',
+      apiKey: 'sk',
+      analysisDepth: 'standard',
+      maxFilesPerRun: 20,
+      includeTests: false,
+    });
+
+    expect(preview.sensitivity.hasSensitiveConfigFiles).toBe(true);
+    expect(preview.sensitivity.hasSecretPatterns).toBe(true);
+    expect(preview.disclaimer).toContain('alertas de sensibilidad');
   });
 });

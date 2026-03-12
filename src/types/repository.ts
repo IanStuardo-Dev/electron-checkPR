@@ -68,4 +68,5 @@ export interface RepositorySnapshotOptions {
   branchName: string;
   maxFiles: number;
   includeTests: boolean;
+  excludedPathPatterns?: string;
 }
