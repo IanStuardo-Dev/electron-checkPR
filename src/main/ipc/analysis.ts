@@ -2,6 +2,8 @@ import type { PullRequestAnalysisBatchRequest, PullRequestAnalysisPreview, PullR
 import type { RepositoryProviderKind } from '../../types/repository';
 import { RepositoryAnalysisService } from '../../services/analysis/repository-analysis.service';
 import { PullRequestAnalysisService } from '../../services/analysis/pull-request-analysis.service';
+import type { SessionSecretsStore } from './session-secrets';
+import { CODEX_SESSION_API_KEY } from '../../constants/session-secrets';
 import { registerHandle } from './shared';
 
 function readString(value: unknown, fieldName: string): string {
@@ -12,7 +14,7 @@ function readString(value: unknown, fieldName: string): string {
   return value.trim();
 }
 
-export function sanitizeAnalysisPayload(payload: unknown): RepositoryAnalysisRequest {
+export function sanitizeAnalysisPayload(payload: unknown, codexApiKey = ''): RepositoryAnalysisRequest {
   if (!payload || typeof payload !== 'object') {
     throw new Error('El payload de analisis es invalido.');
   }
@@ -52,7 +54,9 @@ export function sanitizeAnalysisPayload(payload: unknown): RepositoryAnalysisReq
     repositoryId: readString(request.repositoryId, 'repositoryId'),
     branchName: readString(request.branchName, 'branchName'),
     model: readString(request.model, 'model'),
-    apiKey: readString(request.apiKey, 'apiKey'),
+    apiKey: typeof request.apiKey === 'string' && request.apiKey.trim()
+      ? request.apiKey.trim()
+      : readString(codexApiKey, 'apiKey'),
     analysisDepth,
     maxFilesPerRun,
     includeTests: Boolean(request.includeTests),
@@ -84,7 +88,7 @@ export function sanitizeAnalysisPayload(payload: unknown): RepositoryAnalysisReq
   };
 }
 
-export function sanitizePullRequestAnalysisPayload(payload: unknown): PullRequestAnalysisBatchRequest {
+export function sanitizePullRequestAnalysisPayload(payload: unknown, codexApiKey = ''): PullRequestAnalysisBatchRequest {
   if (!payload || typeof payload !== 'object') {
     throw new Error('El payload de PR analysis es invalido.');
   }
@@ -104,6 +108,7 @@ export function sanitizePullRequestAnalysisPayload(payload: unknown): PullReques
   }
 
   return {
+    requestId: typeof request.requestId === 'string' ? request.requestId.trim().slice(0, 200) : '',
     source: {
       ...source,
       provider: source.provider as RepositoryProviderKind,
@@ -113,9 +118,12 @@ export function sanitizePullRequestAnalysisPayload(payload: unknown): PullReques
       personalAccessToken: readString(source.personalAccessToken, 'personalAccessToken'),
       targetReviewer: typeof source.targetReviewer === 'string' ? source.targetReviewer.trim() : undefined,
     },
-    apiKey: readString(request.apiKey, 'apiKey'),
+    apiKey: typeof request.apiKey === 'string' && request.apiKey.trim()
+      ? request.apiKey.trim()
+      : readString(codexApiKey, 'apiKey'),
     model: readString(request.model, 'model'),
     analysisDepth: request.analysisDepth === 'deep' ? 'deep' : 'standard',
+    timeoutMs: Math.min(120_000, Math.max(15_000, Math.floor(Number(request.timeoutMs) || 60_000))),
     snapshotPolicy: {
       excludedPathPatterns: typeof request.snapshotPolicy?.excludedPathPatterns === 'string'
         ? request.snapshotPolicy.excludedPathPatterns.slice(0, 4000)
@@ -137,20 +145,25 @@ export function sanitizePullRequestAnalysisPayload(payload: unknown): PullReques
 export function registerAnalysisIpc(
   repositoryAnalysisService: RepositoryAnalysisService,
   pullRequestAnalysisService: PullRequestAnalysisService,
+  sessionSecretsStore: SessionSecretsStore,
 ): void {
+  const readCodexApiKey = () => sessionSecretsStore.get(CODEX_SESSION_API_KEY);
   registerHandle<unknown, RepositorySnapshotPreview>('analysis:previewRepositorySnapshot', async (payload) => (
-    repositoryAnalysisService.previewSnapshot(sanitizeAnalysisPayload(payload))
+    repositoryAnalysisService.previewSnapshot(sanitizeAnalysisPayload(payload, readCodexApiKey()))
   ));
   registerHandle<unknown, unknown>('analysis:runRepositoryAnalysis', async (payload) => (
-    repositoryAnalysisService.runAnalysis(sanitizeAnalysisPayload(payload))
+    repositoryAnalysisService.runAnalysis(sanitizeAnalysisPayload(payload, readCodexApiKey()))
   ));
   registerHandle<string, void>('analysis:cancelRepositoryAnalysis', async (requestId) => {
     repositoryAnalysisService.cancelAnalysis(requestId);
   });
   registerHandle<unknown, PullRequestAnalysisPreview[]>('analysis:previewPullRequestAiReviews', async (payload) => (
-    pullRequestAnalysisService.previewBatch(sanitizePullRequestAnalysisPayload(payload))
+    pullRequestAnalysisService.previewBatch(sanitizePullRequestAnalysisPayload(payload, readCodexApiKey()))
   ));
   registerHandle<unknown, unknown>('analysis:runPullRequestAiReviews', async (payload) => (
-    pullRequestAnalysisService.analyzeBatch(sanitizePullRequestAnalysisPayload(payload))
+    pullRequestAnalysisService.analyzeBatch(sanitizePullRequestAnalysisPayload(payload, readCodexApiKey()))
   ));
+  registerHandle<string, void>('analysis:cancelPullRequestAiReviews', async (requestId) => {
+    pullRequestAnalysisService.cancelAnalysis(requestId);
+  });
 }

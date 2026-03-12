@@ -11,7 +11,9 @@ const ALLOWED_CHANNELS = new Set([
   'analysis:runRepositoryAnalysis',
   'analysis:cancelRepositoryAnalysis',
   'analysis:runPullRequestAiReviews',
+  'analysis:cancelPullRequestAiReviews',
   'session-secrets:get',
+  'session-secrets:has',
   'session-secrets:set',
 ]);
 

@@ -42,6 +42,7 @@ const Dashboard = () => {
     setSnapshotAcknowledged,
     eligiblePullRequests,
     runSelectedPullRequests,
+    cancelRunningAnalysis,
     closeModal,
   } = usePullRequestAiReviews({
     config,
@@ -142,6 +143,7 @@ const Dashboard = () => {
         onToggleAcknowledgement={setSnapshotAcknowledged}
         onClose={closeModal}
         onConfirm={() => void runSelectedPullRequests()}
+        onCancel={() => void cancelRunningAnalysis()}
         isPreviewing={isPreviewing}
         isSubmitting={isSubmitting}
         error={modalError}

@@ -10,7 +10,8 @@ export function registerIpcHandlers(
   repositoryAnalysisService: RepositoryAnalysisService,
   pullRequestAnalysisService: PullRequestAnalysisService,
 ): void {
+  const sessionSecretsStore = new SessionSecretsStore();
   registerRepositoryProviderIpc(providerRegistry);
-  registerAnalysisIpc(repositoryAnalysisService, pullRequestAnalysisService);
-  registerSessionSecretsIpc(new SessionSecretsStore());
+  registerAnalysisIpc(repositoryAnalysisService, pullRequestAnalysisService, sessionSecretsStore);
+  registerSessionSecretsIpc(sessionSecretsStore);
 }

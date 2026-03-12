@@ -59,16 +59,21 @@ describe('analysis ipc', () => {
     const pullRequestAnalysisService = {
       previewBatch: jest.fn().mockResolvedValue([]),
       analyzeBatch: jest.fn().mockResolvedValue([]),
+      cancelAnalysis: jest.fn(),
+    };
+    const sessionSecretsStore = {
+      get: jest.fn().mockReturnValue('sk-session'),
     };
 
-    registerAnalysisIpc(repositoryAnalysisService, pullRequestAnalysisService);
+    registerAnalysisIpc(repositoryAnalysisService, pullRequestAnalysisService, sessionSecretsStore);
 
-    expect(registerHandle).toHaveBeenCalledTimes(5);
+    expect(registerHandle).toHaveBeenCalledTimes(6);
     const previewHandler = registerHandle.mock.calls[0][1];
     const runHandler = registerHandle.mock.calls[1][1];
     const cancelHandler = registerHandle.mock.calls[2][1];
     const prAiPreviewHandler = registerHandle.mock.calls[3][1];
     const prAiHandler = registerHandle.mock.calls[4][1];
+    const prAiCancelHandler = registerHandle.mock.calls[5][1];
 
     await previewHandler({
       requestId: 'req-preview',
@@ -115,7 +120,7 @@ describe('analysis ipc', () => {
         repositoryId: 'repo-a',
         personalAccessToken: 'pat',
       },
-      apiKey: 'sk',
+      apiKey: '',
       model: 'gpt-5.2-codex',
       analysisDepth: 'standard',
       snapshotPolicy: {
@@ -142,7 +147,9 @@ describe('analysis ipc', () => {
         repositoryId: 'repo-a',
         personalAccessToken: 'pat',
       },
-      apiKey: 'sk',
+      requestId: 'pr-ai-1',
+      timeoutMs: 90000,
+      apiKey: '',
       model: 'gpt-5.2-codex',
       analysisDepth: 'standard',
       snapshotPolicy: {
@@ -173,12 +180,14 @@ describe('analysis ipc', () => {
         },
       ],
     });
+    await prAiCancelHandler('pr-ai-1');
 
     expect(repositoryAnalysisService.previewSnapshot).toHaveBeenCalled();
     expect(repositoryAnalysisService.runAnalysis).toHaveBeenCalled();
     expect(repositoryAnalysisService.cancelAnalysis).toHaveBeenCalledWith('req-1');
     expect(pullRequestAnalysisService.previewBatch).toHaveBeenCalled();
     expect(pullRequestAnalysisService.analyzeBatch).toHaveBeenCalled();
+    expect(pullRequestAnalysisService.cancelAnalysis).toHaveBeenCalledWith('pr-ai-1');
   });
 
   test('sanitizePullRequestAnalysisPayload normaliza source y items', () => {

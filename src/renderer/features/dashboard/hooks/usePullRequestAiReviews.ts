@@ -6,7 +6,11 @@ import type {
 } from '../../../../types/analysis';
 import type { RepositoryProviderKind } from '../../../../types/repository';
 import type { SavedConnectionConfig, PrioritizedPullRequest } from '../types';
-import { previewPullRequestAiReviews, runPullRequestAiReviews } from '../pullRequestAiIpc';
+import {
+  cancelPullRequestAiReviews,
+  previewPullRequestAiReviews,
+  runPullRequestAiReviews,
+} from '../pullRequestAiIpc';
 import { selectPullRequestsForAiReview } from '../../../../services/analysis/pull-request-analysis.selection';
 
 interface UsePullRequestAiReviewsOptions {
@@ -37,15 +41,18 @@ function buildAnalysisPayload(
   config: SavedConnectionConfig,
   codexConfig: UsePullRequestAiReviewsOptions['codexConfig'],
   selectedPullRequests: PrioritizedPullRequest[],
+  requestId = '',
 ): PullRequestAnalysisBatchRequest {
   return {
+    requestId,
     source: {
       ...config,
       provider: config.provider as RepositoryProviderKind,
     },
-    apiKey: codexConfig.apiKey,
+    apiKey: '',
     model: codexConfig.model,
     analysisDepth: codexConfig.prReview.analysisDepth,
+    timeoutMs: 60_000,
     snapshotPolicy: codexConfig.snapshotPolicy,
     promptDirectives: codexConfig.prReview.promptDirectives,
     items: selectedPullRequests.map((pullRequest) => ({ pullRequest })),
@@ -87,6 +94,7 @@ export function usePullRequestAiReviews({
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [snapshotAcknowledged, setSnapshotAcknowledged] = React.useState(false);
   const cacheRef = React.useRef(new Map<string, PullRequestAiReview[]>());
+  const activeRequestIdRef = React.useRef<string | null>(null);
 
   const isConfigured = Boolean(
     isConnectionReady
@@ -174,6 +182,22 @@ export function usePullRequestAiReviews({
     setSnapshotAcknowledged(false);
   }, []);
 
+  const cancelRunningAnalysis = React.useCallback(async () => {
+    const requestId = activeRequestIdRef.current;
+    if (!requestId) {
+      return;
+    }
+
+    try {
+      await cancelPullRequestAiReviews(requestId);
+    } catch (error) {
+      setModalError(error instanceof Error ? error.message : 'No fue posible cancelar la revision IA.');
+    } finally {
+      activeRequestIdRef.current = null;
+      setIsSubmitting(false);
+    }
+  }, []);
+
   const eligiblePullRequests = React.useMemo(() => {
     const blockedIds = new Set(
       modalPreviews
@@ -207,9 +231,11 @@ export function usePullRequestAiReviews({
     setReviews((current) => upsertReviews(current, queuedReviews));
     setIsSubmitting(true);
     setModalError(null);
+    const requestId = `${Date.now()}-${eligiblePullRequests.map((pullRequest) => pullRequest.id).join('-')}`;
+    activeRequestIdRef.current = requestId;
 
     try {
-      const nextReviews = await runPullRequestAiReviews(buildAnalysisPayload(config, codexConfig, eligiblePullRequests));
+      const nextReviews = await runPullRequestAiReviews(buildAnalysisPayload(config, codexConfig, eligiblePullRequests, requestId));
       cacheRef.current.set(cacheKey, nextReviews);
       setReviews((current) => upsertReviews(current, nextReviews));
       closeModal();
@@ -218,6 +244,8 @@ export function usePullRequestAiReviews({
       setReviews((current) => upsertReviews(current, errorReviews));
       setModalError(error instanceof Error ? error.message : 'No fue posible ejecutar el analisis IA del PR.');
       setIsSubmitting(false);
+    } finally {
+      activeRequestIdRef.current = null;
     }
   }, [buildCacheKey, closeModal, codexConfig, config, eligiblePullRequests, isConfigured]);
 
@@ -241,6 +269,7 @@ export function usePullRequestAiReviews({
     openPriorityQueueReview,
     openPullRequestReview,
     runSelectedPullRequests,
+    cancelRunningAnalysis,
     closeModal,
   };
 }

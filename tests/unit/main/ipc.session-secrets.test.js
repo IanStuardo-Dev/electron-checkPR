@@ -18,12 +18,14 @@ describe('session secrets ipc', () => {
     expect(store.get('key')).toBe('');
   });
 
-  test('registerSessionSecretsIpc registra canales get/set', async () => {
+  test('registerSessionSecretsIpc registra canales get/has/set', async () => {
     const store = new SessionSecretsStore();
     registerSessionSecretsIpc(store);
 
-    expect(registerHandle).toHaveBeenCalledTimes(2);
-    const setHandler = registerHandle.mock.calls[1][1];
+    expect(registerHandle).toHaveBeenCalledTimes(3);
+    const hasHandler = registerHandle.mock.calls[1][1];
+    const setHandler = registerHandle.mock.calls[2][1];
+    await expect(hasHandler('key')).resolves.toBe(false);
     await expect(setHandler({ key: '', value: 'x' })).rejects.toThrow('Secret key is required.');
   });
 });

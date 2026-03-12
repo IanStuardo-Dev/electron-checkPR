@@ -4,11 +4,13 @@ const { renderHook, act, waitFor } = require('@testing-library/react');
 jest.mock('../../../src/renderer/features/dashboard/pullRequestAiIpc', () => ({
   previewPullRequestAiReviews: jest.fn(),
   runPullRequestAiReviews: jest.fn(),
+  cancelPullRequestAiReviews: jest.fn(),
 }));
 
 const { usePullRequestAiReviews } = require('../../../src/renderer/features/dashboard/hooks/usePullRequestAiReviews');
 const { previewPullRequestAiReviews } = require('../../../src/renderer/features/dashboard/pullRequestAiIpc');
 const { runPullRequestAiReviews } = require('../../../src/renderer/features/dashboard/pullRequestAiIpc');
+const { cancelPullRequestAiReviews } = require('../../../src/renderer/features/dashboard/pullRequestAiIpc');
 
 function createPullRequest(id = 1) {
   return {
@@ -71,6 +73,7 @@ describe('usePullRequestAiReviews', () => {
     jest.useFakeTimers();
     previewPullRequestAiReviews.mockReset();
     runPullRequestAiReviews.mockReset();
+    cancelPullRequestAiReviews.mockReset();
     previewPullRequestAiReviews.mockResolvedValue([
       {
         pullRequestId: 1,
@@ -138,5 +141,9 @@ describe('usePullRequestAiReviews', () => {
     });
 
     expect(runPullRequestAiReviews).toHaveBeenCalledTimes(1);
+    const payload = runPullRequestAiReviews.mock.calls[0][0];
+    expect(payload.apiKey).toBe('');
+    expect(payload.requestId).toEqual(expect.any(String));
+    expect(payload.timeoutMs).toBe(60000);
   });
 });

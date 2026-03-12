@@ -1,11 +1,14 @@
 import type { PullRequestAiReview, PullRequestAnalysisBatchRequest, PullRequestAnalysisPreview, PullRequestSnapshot } from '../../types/analysis';
 import { buildSnapshotSensitivitySummary } from '../shared/snapshot-content';
+import { mapWithConcurrency } from '../shared/request-control';
 import { OpenAIPullRequestAnalysisClient } from './pull-request-analysis.openai-client';
 import { PullRequestAnalysisPromptBuilder } from './pull-request-analysis.prompt-builder';
 import { PullRequestAnalysisResponseParser } from './pull-request-analysis.response-parser';
 import { PullRequestAnalysisSnapshotProvider } from './pull-request-analysis.snapshot-provider';
 
 export class PullRequestAnalysisService {
+  private activeRuns = new Map<string, Set<AbortController>>();
+
   constructor(
     private readonly snapshotProvider: PullRequestAnalysisSnapshotProvider,
     private readonly promptBuilder: PullRequestAnalysisPromptBuilder = new PullRequestAnalysisPromptBuilder(),
@@ -94,66 +97,99 @@ export class PullRequestAnalysisService {
       }));
     }
 
-    const results: PullRequestAiReview[] = [];
-    for (const item of request.items) {
-      const snapshot = await this.snapshotProvider.getSnapshot(request.source, item.pullRequest, request.snapshotPolicy);
-      const preview = this.buildPreview(snapshot, Boolean(request.snapshotPolicy?.strictMode));
-
-      if (preview.lacksPatchCoverage) {
-        results.push({
-          pullRequestId: item.pullRequest.id,
-          repository: item.pullRequest.repository,
-          status: 'omitted',
-          topConcerns: [],
-          reviewChecklist: [],
-          coverageNote: preview.partialReason || preview.sensitivity.summary,
-        });
-        continue;
-      }
-
-      if (preview.strictModeWouldBlock) {
-        const blockedBySensitiveConfig = preview.sensitivity.hasSensitiveConfigFiles && !preview.sensitivity.hasSecretPatterns;
-        results.push({
-          pullRequestId: item.pullRequest.id,
-          repository: item.pullRequest.repository,
-          status: 'omitted',
-          topConcerns: [],
-          reviewChecklist: [],
-          coverageNote: preview.lacksPatchCoverage
-            ? 'PR omitido por modo estricto: el snapshot no incluye diff textual suficiente para una revision segura.'
-            : blockedBySensitiveConfig
-              ? 'PR omitido por modo estricto: se detectaron archivos potencialmente sensibles y la cobertura del diff es incompleta.'
-              : 'PR omitido por modo estricto y señales sensibles en el diff.',
-        });
-        continue;
-      }
-
-      try {
-        const prompt = this.promptBuilder.build(request, snapshot);
-        const rawText = await this.analysisClient.analyze({ request, prompt });
-        const parsed = this.responseParser.parse(rawText);
-        results.push({
-          pullRequestId: item.pullRequest.id,
-          repository: item.pullRequest.repository,
-          status: 'analyzed',
-          riskScore: Math.max(0, Math.min(100, Math.round(parsed.riskScore))),
-          shortSummary: parsed.shortSummary,
-          topConcerns: parsed.topConcerns,
-          reviewChecklist: parsed.reviewChecklist,
-          coverageNote: snapshot.partialReason,
-        });
-      } catch (error) {
-        results.push({
-          pullRequestId: item.pullRequest.id,
-          repository: item.pullRequest.repository,
-          status: 'error',
-          topConcerns: [],
-          reviewChecklist: [],
-          error: error instanceof Error ? error.message : 'No fue posible analizar el PR.',
-        });
-      }
+    const requestId = request.requestId?.trim();
+    if (requestId) {
+      this.activeRuns.set(requestId, new Set());
     }
 
-    return results;
+    try {
+      const results = await mapWithConcurrency(request.items, 2, async (item) => {
+        const snapshot = await this.snapshotProvider.getSnapshot(request.source, item.pullRequest, request.snapshotPolicy);
+        const preview = this.buildPreview(snapshot, Boolean(request.snapshotPolicy?.strictMode));
+
+        if (preview.lacksPatchCoverage) {
+          return {
+            pullRequestId: item.pullRequest.id,
+            repository: item.pullRequest.repository,
+            status: 'omitted' as const,
+            topConcerns: [],
+            reviewChecklist: [],
+            coverageNote: preview.partialReason || preview.sensitivity.summary,
+          };
+        }
+
+        if (preview.strictModeWouldBlock) {
+          const blockedBySensitiveConfig = preview.sensitivity.hasSensitiveConfigFiles && !preview.sensitivity.hasSecretPatterns;
+          return {
+            pullRequestId: item.pullRequest.id,
+            repository: item.pullRequest.repository,
+            status: 'omitted' as const,
+            topConcerns: [],
+            reviewChecklist: [],
+            coverageNote: preview.lacksPatchCoverage
+              ? 'PR omitido por modo estricto: el snapshot no incluye diff textual suficiente para una revision segura.'
+              : blockedBySensitiveConfig
+                ? 'PR omitido por modo estricto: se detectaron archivos potencialmente sensibles y la cobertura del diff es incompleta.'
+                : 'PR omitido por modo estricto y señales sensibles en el diff.',
+          };
+        }
+
+        const prompt = this.promptBuilder.build(request, snapshot);
+        const timeoutMs = request.timeoutMs ?? 60_000;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort('timeout'), timeoutMs);
+        if (requestId) {
+          this.activeRuns.get(requestId)?.add(controller);
+        }
+
+        try {
+          const rawText = await this.analysisClient.analyze({ request, prompt, signal: controller.signal });
+          const parsed = this.responseParser.parse(rawText);
+
+          return {
+            pullRequestId: item.pullRequest.id,
+            repository: item.pullRequest.repository,
+            status: 'analyzed' as const,
+            riskScore: Math.max(0, Math.min(100, Math.round(parsed.riskScore))),
+            shortSummary: parsed.shortSummary,
+            topConcerns: parsed.topConcerns,
+            reviewChecklist: parsed.reviewChecklist,
+            coverageNote: snapshot.partialReason,
+          };
+        } catch (error) {
+          return {
+            pullRequestId: item.pullRequest.id,
+            repository: item.pullRequest.repository,
+            status: 'error' as const,
+            topConcerns: [],
+            reviewChecklist: [],
+            error: error instanceof Error
+              ? error.message
+              : 'No fue posible analizar el PR.',
+          };
+        } finally {
+          clearTimeout(timeoutId);
+          if (requestId) {
+            this.activeRuns.get(requestId)?.delete(controller);
+          }
+        }
+      });
+
+      return results;
+    } finally {
+      if (requestId) {
+        this.activeRuns.delete(requestId);
+      }
+    }
+  }
+
+  cancelAnalysis(requestId: string): void {
+    const controllers = this.activeRuns.get(requestId);
+    if (!controllers) {
+      return;
+    }
+
+    controllers.forEach((controller) => controller.abort('cancelled'));
+    this.activeRuns.delete(requestId);
   }
 }

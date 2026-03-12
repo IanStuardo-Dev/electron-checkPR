@@ -114,4 +114,46 @@ describe('PullRequestAnalysisService', () => {
     expect(result[0].coverageNote).toMatch(/modo estricto/i);
     expect(analysisClient.analyze).not.toHaveBeenCalled();
   });
+
+  test('permite cancelar una corrida en lote y limpia el request activo', async () => {
+    const snapshotProvider = {
+      getSnapshot: jest.fn().mockResolvedValue({
+        provider: 'github',
+        repository: 'repo-a',
+        pullRequestId: 88,
+        title: 'Actualizar auth',
+        description: 'Ajustes de seguridad',
+        author: 'Ian',
+        sourceBranch: 'feature/auth',
+        targetBranch: 'main',
+        reviewers: [],
+        files: [
+          { path: 'src/auth.ts', status: 'modified', patch: '+ const enabled = true;' },
+        ],
+        totalFilesChanged: 1,
+        truncated: false,
+      }),
+    };
+    const promptBuilder = { build: jest.fn().mockReturnValue('prompt') };
+    const analysisClient = {
+      analyze: jest.fn(({ signal }) => new Promise((resolve, reject) => {
+        if (signal.aborted) {
+          reject(new Error('cancelled'));
+          return;
+        }
+        signal.addEventListener('abort', () => reject(new Error('cancelled')));
+      })),
+    };
+    const responseParser = { parse: jest.fn() };
+    const service = new PullRequestAnalysisService(snapshotProvider, promptBuilder, analysisClient, responseParser);
+    const pending = service.analyzeBatch(createRequest({ requestId: 'batch-1', timeoutMs: 30000 }));
+
+    await Promise.resolve();
+    service.cancelAnalysis('batch-1');
+    const result = await pending;
+
+    expect(result[0].status).toBe('error');
+    expect(result[0].error).toMatch(/cancelled/i);
+    expect(service.activeRuns.size).toBe(0);
+  });
 });

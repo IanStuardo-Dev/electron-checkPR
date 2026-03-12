@@ -152,10 +152,12 @@ export interface PullRequestAnalysisItemRequest {
 }
 
 export interface PullRequestAnalysisBatchRequest {
+  requestId?: string;
   source: RepositoryAnalysisRequest['source'];
   apiKey: string;
   model: string;
   analysisDepth: 'standard' | 'deep';
+  timeoutMs?: number;
   promptDirectives?: PullRequestAnalysisPromptDirectives;
   snapshotPolicy?: RepositoryAnalysisSnapshotPolicy;
   items: PullRequestAnalysisItemRequest[];

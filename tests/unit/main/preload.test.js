@@ -20,7 +20,9 @@ describe('preload security bridge', () => {
       'repository-source:fetchPullRequests',
       'analysis:previewRepositorySnapshot',
       'analysis:runRepositoryAnalysis',
+      'analysis:cancelPullRequestAiReviews',
       'session-secrets:get',
+      'session-secrets:has',
     ]));
   });
 

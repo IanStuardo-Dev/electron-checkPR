@@ -31,3 +31,11 @@ export async function runPullRequestAiReviews(payload: PullRequestAnalysisBatchR
 
   return response.data;
 }
+
+export async function cancelPullRequestAiReviews(requestId: string): Promise<void> {
+  const response = await window.electronApi.invoke('analysis:cancelPullRequestAiReviews', requestId) as IpcResponse<void>;
+
+  if (!response.ok) {
+    throw new Error(response.error);
+  }
+}

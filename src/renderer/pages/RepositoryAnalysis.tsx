@@ -111,7 +111,7 @@ const RepositoryAnalysis = () => {
     repositoryId,
     branchName,
     model: codexConfig.model,
-    apiKey: codexConfig.apiKey,
+    apiKey: '',
     analysisDepth: codexConfig.analysisDepth,
     maxFilesPerRun: codexConfig.maxFilesPerRun,
     includeTests: codexConfig.includeTests,
