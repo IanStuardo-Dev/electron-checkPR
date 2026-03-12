@@ -146,4 +146,110 @@ describe('usePullRequestAiReviews', () => {
     expect(payload.requestId).toEqual(expect.any(String));
     expect(payload.timeoutMs).toBe(60000);
   });
+
+  test('usa cache local al reejecutar el mismo subset', async () => {
+    const options = createOptions();
+    const { result } = renderHook((props) => usePullRequestAiReviews(props), {
+      initialProps: options,
+    });
+
+    await act(async () => {
+      await result.current.openPriorityQueueReview();
+    });
+    act(() => {
+      result.current.setSnapshotAcknowledged(true);
+    });
+    await act(async () => {
+      await result.current.runSelectedPullRequests();
+    });
+
+    await act(async () => {
+      await result.current.openPriorityQueueReview();
+    });
+    act(() => {
+      result.current.setSnapshotAcknowledged(true);
+    });
+    await act(async () => {
+      await result.current.runSelectedPullRequests();
+    });
+
+    expect(runPullRequestAiReviews).toHaveBeenCalledTimes(1);
+    expect(result.current.reviews[0].status).toBe('analyzed');
+  });
+
+  test('bloquea confirmacion cuando todos los previews quedan sin cobertura', async () => {
+    previewPullRequestAiReviews.mockResolvedValueOnce([
+      {
+        pullRequestId: 1,
+        repository: 'repo-a',
+        title: 'PR 1',
+        filesPrepared: 0,
+        totalFilesChanged: 1,
+        includedFiles: [],
+        truncated: false,
+        sensitivity: {
+          findings: [],
+          hasSensitiveConfigFiles: false,
+          hasSecretPatterns: false,
+          noSensitiveConfigFilesDetected: true,
+          summary: 'Sin señales sensibles.',
+        },
+        disclaimer: 'preview',
+        lacksPatchCoverage: true,
+        strictModeWouldBlock: true,
+      },
+    ]);
+
+    const { result } = renderHook((props) => usePullRequestAiReviews(props), {
+      initialProps: createOptions(),
+    });
+
+    await act(async () => {
+      await result.current.openPriorityQueueReview();
+    });
+
+    expect(result.current.eligiblePullRequests).toHaveLength(0);
+
+    await act(async () => {
+      await result.current.runSelectedPullRequests();
+    });
+
+    expect(runPullRequestAiReviews).not.toHaveBeenCalled();
+  });
+
+  test('permite cancelar una corrida en curso', async () => {
+    let releaseRun;
+    runPullRequestAiReviews.mockImplementationOnce(() => new Promise((resolve) => {
+      releaseRun = () => resolve([]);
+    }));
+
+    const { result } = renderHook((props) => usePullRequestAiReviews(props), {
+      initialProps: createOptions(),
+    });
+
+    await act(async () => {
+      await result.current.openPriorityQueueReview();
+    });
+    act(() => {
+      result.current.setSnapshotAcknowledged(true);
+    });
+
+    let pendingRun;
+    await act(async () => {
+      pendingRun = result.current.runSelectedPullRequests();
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      await result.current.cancelRunningAnalysis();
+    });
+
+    expect(cancelPullRequestAiReviews).toHaveBeenCalledWith(expect.any(String));
+    act(() => {
+      releaseRun();
+    });
+    await act(async () => {
+      await pendingRun;
+    });
+  });
 });

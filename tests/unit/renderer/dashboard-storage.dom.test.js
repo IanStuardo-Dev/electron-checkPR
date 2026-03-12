@@ -65,4 +65,36 @@ describe('dashboard storage', () => {
 
     await expect(storage.hydrateConnectionSecret()).resolves.toBe('stored-secret');
   });
+
+  test('loadConnectionConfig tolera JSON invalido en sesion', () => {
+    window.sessionStorage.setItem(storage.DASHBOARD_SESSION_CONFIG_KEY, '{invalid');
+    expect(storage.loadConnectionConfig()).toEqual(storage.defaultConnectionConfig);
+  });
+
+  test('persistConnectionConfig propaga error si session-secrets falla', async () => {
+    window.electronApi.invoke.mockResolvedValue({ ok: false, error: 'secret failed' });
+
+    await expect(storage.persistConnectionConfig({
+      provider: 'github',
+      organization: 'acme',
+      project: 'repo-a',
+      repositoryId: 'repo-a',
+      personalAccessToken: 'secret',
+      targetReviewer: '',
+    })).rejects.toThrow('secret failed');
+  });
+
+  test('hydrateConnectionSecret propaga error de ipc', async () => {
+    window.electronApi.invoke.mockResolvedValue({ ok: false, error: 'missing secret' });
+    await expect(storage.hydrateConnectionSecret()).rejects.toThrow('missing secret');
+  });
+
+  test('saved azure contexts sigue deshabilitado y limpia legacy', () => {
+    window.localStorage.setItem(storage.DASHBOARD_SAVED_CONTEXTS_KEY, 'legacy-contexts');
+
+    expect(storage.loadSavedAzureContexts()).toEqual([]);
+    storage.persistSavedAzureContext(storage.defaultConnectionConfig);
+
+    expect(window.localStorage.getItem(storage.DASHBOARD_SAVED_CONTEXTS_KEY)).toBeNull();
+  });
 });
