@@ -2,7 +2,6 @@ import React from 'react';
 import type { RepositoryProviderKind, RepositoryProviderDefinition, RepositoryProject, RepositorySummary } from '../../../../types/repository';
 import type { CodexIntegrationConfig, DashboardSummary, SavedConnectionConfig } from '../../dashboard/types';
 import ConnectionPanel from '../../dashboard/components/ConnectionPanel';
-import ConnectionSummary from '../../dashboard/components/ConnectionSummary';
 import { repositoryProviders } from '../../repository-source/providers';
 import CodexIntegrationCard from './CodexIntegrationCard';
 import GlobalSnapshotPolicyCard from './GlobalSnapshotPolicyCard';
@@ -62,20 +61,6 @@ export function SettingsIntegrationsSection({
 
   return (
     <section className="space-y-6">
-        <ConnectionSummary
-          providerKind={activeProvider?.kind}
-          providerName={activeProviderName}
-          scopeLabel={summary.scopeLabel}
-          projectName={selectedProjectName}
-          repositoryName={selectedRepositoryName}
-          isConnected={isConnectionReady}
-          compact
-          expandable
-          expanded={Boolean(activeProvider && expandedProviderKind === activeProvider.kind)}
-          onToggleExpand={activeProvider ? () => setExpandedProviderKind((current) => (current === activeProvider.kind ? '' : activeProvider.kind)) : undefined}
-          empty={!config.provider}
-        />
-
         <SettingsSectionCard
           eyebrow="Prioridad 2"
           title="Provider activo y fuentes disponibles"
@@ -124,16 +109,18 @@ export function SettingsIntegrationsSection({
           </div>
         </SettingsSectionCard>
 
-        <GlobalSnapshotPolicyCard
-          snapshotPolicy={codexConfig.snapshotPolicy}
-          onChange={(value) => updateCodexConfig('snapshotPolicy', value)}
-        />
+        <div className="grid gap-6 2xl:grid-cols-2">
+          <GlobalSnapshotPolicyCard
+            snapshotPolicy={codexConfig.snapshotPolicy}
+            onChange={(value) => updateCodexConfig('snapshotPolicy', value)}
+          />
 
-        <CodexIntegrationCard
-          config={codexConfig}
-          isReady={isCodexReady}
-          onChange={updateCodexConfig}
-        />
+          <CodexIntegrationCard
+            config={codexConfig}
+            isReady={isCodexReady}
+            onChange={updateCodexConfig}
+          />
+        </div>
     </section>
   );
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import type { RepositoryProviderDefinition } from '../../../../types/repository';
 import ConnectionSummary from '../../dashboard/components/ConnectionSummary';
 import type { DashboardSummary, SavedConnectionConfig } from '../../dashboard/types';
-import { BoltIcon } from '@heroicons/react/24/outline';
+import { BoltIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import { SettingsSectionCard, SettingsStatTile, SettingsStatusBadge } from './SettingsPrimitives';
 
 export function SettingsOperationalSection({
@@ -25,19 +25,31 @@ export function SettingsOperationalSection({
   isCodexReady: boolean;
 }) {
   return (
-    <section className="grid gap-6 2xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.95fr)]">
-      <SettingsSectionCard
-        eyebrow="Prioridad 1"
-        title="Resumen operativo"
-        description="Empieza aqui: esta card te dice si el workspace esta listo o que pieza falta antes de entrar al dashboard o lanzar un analisis."
-        badge={<SettingsStatusBadge tone={isConnectionReady ? 'emerald' : 'amber'} label={isConnectionReady ? 'Workspace operativo' : 'Faltan pasos'} />}
-      >
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)]">
+    <SettingsSectionCard
+      eyebrow="Prioridad 1"
+      title="Resumen operativo"
+      description="Empieza aqui: esta vista resume el estado del workspace y deja el detalle tecnico fuera del camino principal."
+      badge={<SettingsStatusBadge tone={isConnectionReady ? 'emerald' : 'amber'} label={isConnectionReady ? 'Workspace operativo' : 'Faltan pasos'} />}
+      actions={(
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+          <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+            <BoltIcon className="h-4 w-4 text-sky-600" />
+            Secrets solo en sesion
+          </span>
+          <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+            <WrenchScrewdriverIcon className="h-4 w-4 text-sky-600" />
+            Diagnostico en panel lateral
+          </span>
+        </div>
+      )}
+    >
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.9fr)]">
+        <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <SettingsStatTile label="Provider activo" value={config.provider ? activeProviderName : 'No seleccionado'} description="Fuente primaria de repositorios y PRs para esta sesion." />
             <SettingsStatTile label="Conexion" value={isConnectionReady ? 'OK' : 'Pendiente'} description={isConnectionReady ? 'Sesion autenticada y sincronizacion exitosa.' : 'Falta autenticar o sincronizar el provider activo.'} />
             <SettingsStatTile label="Scope actual" value={selectedRepositoryName || selectedProjectName || 'Global'} description={summary.scopeLabel} />
-            <SettingsStatTile label="Codex" value={isCodexReady ? 'Listo' : 'Pendiente'} description="Disponibilidad de analisis AI sobre ramas exactas." />
+            <SettingsStatTile label="Codex" value={isCodexReady ? 'Listo' : 'Pendiente'} description="Disponibilidad de analisis AI sobre ramas exactas y PRs." />
           </div>
           <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Siguiente accion</p>
@@ -56,14 +68,12 @@ export function SettingsOperationalSection({
                 : !isConnectionReady
                   ? 'Autentica el provider activo y ejecuta una sincronizacion inicial.'
                   : !isCodexReady
-                    ? 'Configura la API key y politicas de Codex para habilitar Repository Analysis.'
-                    : 'Puedes navegar al dashboard o ejecutar un analisis de repositorio con contexto completo.'}
+                    ? 'Configura la API key y las reglas base de Codex para habilitar PR AI Review y Repository Analysis.'
+                    : 'Puedes ir al dashboard para operar la cola de PRs o lanzar un analisis profundo de repositorio.'}
             </p>
           </div>
         </div>
-      </SettingsSectionCard>
 
-      <div className="space-y-6">
         <ConnectionSummary
           providerKind={activeProvider?.kind}
           providerName={activeProviderName}
@@ -75,20 +85,7 @@ export function SettingsOperationalSection({
           actionLabel="Dashboard"
           actionTo="/"
         />
-
-        <SettingsSectionCard
-          eyebrow="Politica"
-          title="Persistencia y sesion"
-          description="Esta app distingue entre configuracion reutilizable y secretos efimeros para no mezclar comodidad con riesgo."
-          actions={<BoltIcon className="h-5 w-5 text-sky-600" />}
-        >
-          <div className="space-y-2 text-sm leading-6 text-slate-600">
-            <p>Las fuentes de repositorios no persisten organizacion, proyecto ni repositorio al cerrar la app.</p>
-            <p>Se guarda solo en sesion: el token del provider activo, para no persistir secretos ni contexto sensible en disco.</p>
-            <p>Este mismo patron se aplica tambien a Codex: configuracion persistida y API key solo en sesion.</p>
-          </div>
-        </SettingsSectionCard>
       </div>
-    </section>
+    </SettingsSectionCard>
   );
 }

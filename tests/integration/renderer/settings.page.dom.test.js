@@ -1,5 +1,6 @@
 const React = require('react');
 const { render, screen } = require('@testing-library/react');
+const userEvent = require('@testing-library/user-event').default;
 const { MemoryRouter } = require('react-router-dom');
 const { createDashboardSummary, createRepositorySourceContext } = require('../../support/helpers/dashboard-context');
 
@@ -24,7 +25,8 @@ function renderWithRouter(element) {
 }
 
 describe('Settings page', () => {
-  test('muestra el resumen operativo y el estado del provider activo', () => {
+  test('muestra el resumen operativo y abre modales de soporte y politicas avanzadas', async () => {
+    const user = userEvent.setup();
     useRepositorySourceContext.mockReturnValue(createRepositorySourceContext({
       activeProvider: { kind: 'github' },
       activeProviderName: 'GitHub',
@@ -89,6 +91,20 @@ describe('Settings page', () => {
     expect(screen.getAllByText('GitHub').length).toBeGreaterThan(0);
     expect(screen.getByText('Provider activo y fuentes disponibles')).toBeInTheDocument();
     expect(screen.getByText('Reglas globales de snapshot')).toBeInTheDocument();
-    expect(screen.getAllByText(/cualquier snapshot del producto/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/politicas avanzadas/i).length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole('button', { name: /abrir diagnostico/i }));
+    expect(screen.getByRole('dialog', { name: /diagnostico del provider/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/persistencia y sesion/i).length).toBeGreaterThan(0);
+    await user.click(screen.getAllByRole('button', { name: /^cerrar$/i })[0]);
+
+    await user.click(screen.getByRole('button', { name: /editar reglas/i }));
+    expect(screen.getByRole('dialog', { name: /reglas globales de snapshot/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /aplicar preset node/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^listo$/i }));
+
+    await user.click(screen.getByRole('button', { name: /politicas avanzadas/i }));
+    expect(screen.getByRole('dialog', { name: /politicas avanzadas de codex/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/focus areas para pr ai review/i)).toBeInTheDocument();
   });
 });

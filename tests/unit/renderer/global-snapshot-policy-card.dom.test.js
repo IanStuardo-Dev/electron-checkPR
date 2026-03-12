@@ -30,6 +30,7 @@ describe('GlobalSnapshotPolicyCard', () => {
       onChange,
     }));
 
+    await user.click(screen.getByRole('button', { name: /editar reglas/i }));
     await user.click(screen.getByRole('button', { name: /aplicar preset node/i }));
 
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
