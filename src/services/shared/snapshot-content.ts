@@ -63,6 +63,29 @@ const SECRET_CONTENT_PATTERNS: Array<{ pattern: RegExp; reason: string; confiden
   { pattern: /Bearer\s+[A-Za-z0-9\-_=]+\.[A-Za-z0-9\-_=]+\.[A-Za-z0-9\-_=]+/, reason: 'incluye un bearer token o JWT embebido', confidence: 'medium' },
 ];
 
+function extractFindingLocation(content: string, pattern: RegExp): {
+  lineNumber?: number;
+  codeSnippet?: string;
+} {
+  const match = content.match(pattern);
+  if (!match || typeof match.index !== 'number') {
+    return {};
+  }
+
+  const beforeMatch = content.slice(0, match.index);
+  const lineNumber = beforeMatch.split('\n').length;
+  const lines = content.split('\n');
+  const matchedLine = lines[lineNumber - 1]?.trim() || '';
+  const codeSnippet = matchedLine.length > 180
+    ? `${matchedLine.slice(0, 177)}...`
+    : matchedLine;
+
+  return {
+    lineNumber,
+    codeSnippet,
+  };
+}
+
 export function buildSnapshotSensitivitySummary(files: RepositoryFileSnapshot[]): RepositorySnapshotSensitivitySummary {
   const findings: RepositorySnapshotSensitivitySummary['findings'] = [];
   const seenPaths = new Set<string>();
@@ -87,6 +110,7 @@ export function buildSnapshotSensitivitySummary(files: RepositoryFileSnapshot[])
     for (const matcher of SECRET_CONTENT_PATTERNS) {
       if (matcher.pattern.test(file.content)) {
         hasSecretPatterns = true;
+        const location = extractFindingLocation(file.content, matcher.pattern);
 
         if (!seenPaths.has(`secret:${file.path}`) && findings.length < 10) {
           seenPaths.add(`secret:${file.path}`);
@@ -95,6 +119,8 @@ export function buildSnapshotSensitivitySummary(files: RepositoryFileSnapshot[])
             path: file.path,
             reason: matcher.reason,
             confidence: matcher.confidence,
+            lineNumber: location.lineNumber,
+            codeSnippet: location.codeSnippet,
           });
         }
         break;

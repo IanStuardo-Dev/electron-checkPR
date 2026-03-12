@@ -44,7 +44,12 @@ describe('snapshot-content', () => {
     expect(summary.noSensitiveConfigFilesDetected).toBe(false);
     expect(summary.findings).toEqual(expect.arrayContaining([
       expect.objectContaining({ path: '.env.production', kind: 'sensitive-config' }),
-      expect.objectContaining({ path: '.env.production', kind: 'secret-pattern' }),
+      expect.objectContaining({
+        path: '.env.production',
+        kind: 'secret-pattern',
+        lineNumber: 1,
+        codeSnippet: 'API_KEY=abc123456789',
+      }),
     ]));
   });
 

@@ -22,7 +22,10 @@ export const RepositoryAnalysisScopeForm = ({
   preview,
   strictModeEnabled,
   strictModeBlocked,
+  pendingExcludedPaths,
   snapshotAcknowledged,
+  onToggleExcludedPath,
+  onRegenerateWithExclusions,
   onToggleAcknowledgement,
   isPreviewing,
   isCancelling,
@@ -52,7 +55,10 @@ export const RepositoryAnalysisScopeForm = ({
   preview: RepositorySnapshotPreview | null;
   strictModeEnabled: boolean;
   strictModeBlocked: boolean;
+  pendingExcludedPaths: string[];
   snapshotAcknowledged: boolean;
+  onToggleExcludedPath: (path: string, checked: boolean) => void;
+  onRegenerateWithExclusions: () => void;
   onToggleAcknowledgement: (value: boolean) => void;
   isPreviewing: boolean;
   isCancelling: boolean;
@@ -255,10 +261,55 @@ export const RepositoryAnalysisScopeForm = ({
                       : 'border-amber-200 bg-amber-50 text-amber-800'
                   }`}
                 >
-                  <p className="font-medium">{finding.path}</p>
-                  <p className="mt-1">{finding.reason} ({finding.confidence})</p>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="font-medium break-all">{finding.path}</p>
+                      <p className="mt-1">{finding.reason} ({finding.confidence})</p>
+                    </div>
+                    <label className="inline-flex shrink-0 items-center gap-2 rounded-full border border-current/20 bg-white/60 px-3 py-2 text-xs font-medium">
+                      <input
+                        type="checkbox"
+                        checked={pendingExcludedPaths.includes(finding.path)}
+                        onChange={(event) => onToggleExcludedPath(finding.path, event.target.checked)}
+                        className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                      />
+                      Excluir del snapshot
+                    </label>
+                  </div>
+                  {finding.lineNumber ? (
+                    <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em]">
+                      Linea sospechosa: {finding.lineNumber}
+                    </p>
+                  ) : null}
+                  {finding.codeSnippet ? (
+                    <pre className="mt-2 whitespace-pre-wrap break-words rounded-xl bg-white/70 px-3 py-2 text-xs leading-5 text-slate-900">
+                      {finding.codeSnippet}
+                    </pre>
+                  ) : null}
                 </div>
               ))}
+            </div>
+          ) : null}
+
+          {preview.sensitivity.findings.length > 0 ? (
+            <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-sm text-slate-600">
+                <p className="font-medium text-slate-900">Exclusiones temporales para esta corrida</p>
+                <p className="mt-1">
+                  {pendingExcludedPaths.length > 0
+                    ? `${pendingExcludedPaths.length} archivo(s) seleccionado(s) para excluir y regenerar el snapshot una sola vez.`
+                    : 'Selecciona uno o varios archivos sospechosos si quieres regenerar el snapshot sin enviarlos a Codex.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={pendingExcludedPaths.length === 0 || isPreviewing || isRunning}
+                onClick={onRegenerateWithExclusions}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isPreviewing ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : null}
+                Regenerar snapshot con exclusiones
+              </button>
             </div>
           ) : null}
         </div>

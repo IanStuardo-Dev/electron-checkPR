@@ -32,6 +32,8 @@ export interface RepositorySnapshotSensitivityFinding {
   path: string;
   reason: string;
   confidence: 'medium' | 'high';
+  lineNumber?: number;
+  codeSnippet?: string;
 }
 
 export interface RepositorySnapshotSensitivitySummary {

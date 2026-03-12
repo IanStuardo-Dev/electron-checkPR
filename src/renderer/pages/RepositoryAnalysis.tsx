@@ -37,6 +37,7 @@ const RepositoryAnalysis = () => {
   const [isLoadingBranches, setIsLoadingBranches] = React.useState(false);
   const [branchError, setBranchError] = React.useState<string | null>(null);
   const [snapshotAcknowledged, setSnapshotAcknowledged] = React.useState(false);
+  const [pendingExcludedPaths, setPendingExcludedPaths] = React.useState<string[]>([]);
 
   React.useEffect(() => {
     setRepositoryId(config.repositoryId || '');
@@ -45,6 +46,10 @@ const RepositoryAnalysis = () => {
   React.useEffect(() => {
     setSnapshotAcknowledged(false);
   }, [repositoryId, branchName, preview?.repository, preview?.branch]);
+
+  React.useEffect(() => {
+    setPendingExcludedPaths([]);
+  }, [repositoryId, branchName]);
 
   React.useEffect(() => {
     if (!config.provider || !isConnectionReady || !repositoryId) {
@@ -110,10 +115,16 @@ const RepositoryAnalysis = () => {
     analysisDepth: codexConfig.analysisDepth,
     maxFilesPerRun: codexConfig.maxFilesPerRun,
     includeTests: codexConfig.includeTests,
-    snapshotPolicy: codexConfig.snapshotPolicy,
+    snapshotPolicy: {
+      ...codexConfig.snapshotPolicy,
+      excludedPathPatterns: [
+        codexConfig.snapshotPolicy.excludedPathPatterns.trim(),
+        ...pendingExcludedPaths,
+      ].filter(Boolean).join('\n'),
+    },
     timeoutMs: 90_000,
     promptDirectives: codexConfig.promptDirectives,
-  }), [activeProvider, branchName, codexConfig, config, repositoryId]);
+  }), [activeProvider, branchName, codexConfig, config, pendingExcludedPaths, repositoryId]);
 
   const handlePreparePreview = React.useCallback(() => {
     if (!canPreparePreview) {
@@ -123,6 +134,24 @@ const RepositoryAnalysis = () => {
     setSnapshotAcknowledged(false);
     void preparePreview(buildAnalysisPayload());
   }, [buildAnalysisPayload, canPreparePreview, preparePreview]);
+
+  const handleToggleExcludedPath = React.useCallback((path: string, checked: boolean) => {
+    setPendingExcludedPaths((current) => (
+      checked
+        ? Array.from(new Set([...current, path]))
+        : current.filter((item) => item !== path)
+    ));
+    setSnapshotAcknowledged(false);
+  }, []);
+
+  const handleRegenerateWithExclusions = React.useCallback(() => {
+    if (!canPreparePreview || pendingExcludedPaths.length === 0) {
+      return;
+    }
+
+    setSnapshotAcknowledged(false);
+    void preparePreview(buildAnalysisPayload());
+  }, [buildAnalysisPayload, canPreparePreview, pendingExcludedPaths.length, preparePreview]);
 
   const handleRun = React.useCallback(() => {
     if (!canRunAnalysis) {
@@ -194,7 +223,10 @@ const RepositoryAnalysis = () => {
         preview={preview}
         strictModeEnabled={codexConfig.snapshotPolicy.strictMode}
         strictModeBlocked={isStrictModeBlocked}
+        pendingExcludedPaths={pendingExcludedPaths}
         snapshotAcknowledged={snapshotAcknowledged}
+        onToggleExcludedPath={handleToggleExcludedPath}
+        onRegenerateWithExclusions={handleRegenerateWithExclusions}
         onToggleAcknowledgement={setSnapshotAcknowledged}
         isPreviewing={isPreviewing}
         isCancelling={isCancelling}
@@ -203,11 +235,13 @@ const RepositoryAnalysis = () => {
           setRepositoryId(value);
           reset();
           setSnapshotAcknowledged(false);
+          setPendingExcludedPaths([]);
         }}
         onBranchChange={(value) => {
           setBranchName(value);
           reset();
           setSnapshotAcknowledged(false);
+          setPendingExcludedPaths([]);
         }}
         onPreparePreview={handlePreparePreview}
         onRun={handleRun}
