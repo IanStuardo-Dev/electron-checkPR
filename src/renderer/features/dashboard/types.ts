@@ -6,6 +6,7 @@ import type {
   RepositorySummary,
   ReviewItem,
 } from '../../../types/repository';
+import type { PullRequestAiReview, PullRequestAnalysisPromptDirectives } from '../../../types/analysis';
 
 export type SavedConnectionConfig = Omit<RepositoryConnectionConfig, 'provider' | 'personalAccessToken'> & {
   provider: RepositoryProviderSelection;
@@ -34,6 +35,13 @@ export interface CodexIntegrationConfig {
     excludedPathPatterns: string;
     strictMode: boolean;
   };
+  prReview: {
+    enabled: boolean;
+    maxPullRequests: number;
+    selectionMode: 'top-risk' | 'oldest' | 'mixed';
+    analysisDepth: 'standard' | 'deep';
+    promptDirectives: PullRequestAnalysisPromptDirectives;
+  };
   promptDirectives: {
     architectureReviewEnabled: boolean;
     architecturePattern: string;
@@ -57,6 +65,10 @@ export interface PrioritizedPullRequest extends ReviewItem {
   riskScore: number;
   approvals: number;
   pendingReviewers: number;
+}
+
+export interface OperationalPullRequest extends PrioritizedPullRequest {
+  aiReview: PullRequestAiReview;
 }
 
 export interface RepositoryInsight {
@@ -93,13 +105,26 @@ export interface AttentionAlert {
 
 export interface DashboardSummary {
   metrics: DashboardMetric[];
+  executiveMetrics: DashboardMetric[];
+  queueMetrics: DashboardMetric[];
   prioritizedPullRequests: PrioritizedPullRequest[];
+  operationalPullRequests: OperationalPullRequest[];
   repositoryInsights: RepositoryInsight[];
   branchInsights: BranchInsight[];
   reviewerInsights: ReviewerInsight[];
+  reviewerWorkload: ReviewerInsight[];
   deliveryIndicators: HealthIndicator[];
   reviewIndicators: HealthIndicator[];
   governanceAlerts: AttentionAlert[];
+  prAiSignals: AttentionAlert[];
+  aiCoverage: {
+    analyzed: number;
+    eligible: number;
+    highRisk: number;
+    errored: number;
+    omitted: number;
+    configured: boolean;
+  };
   lastUpdatedLabel: string;
   scopeLabel: string;
   noDescriptionCount: number;

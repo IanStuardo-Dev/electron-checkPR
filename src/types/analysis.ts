@@ -1,4 +1,5 @@
 import type { RepositoryConnectionConfig } from './repository';
+import type { ReviewItem } from './repository';
 
 export interface RepositoryAnalysisPromptDirectives {
   architectureReviewEnabled: boolean;
@@ -6,6 +7,11 @@ export interface RepositoryAnalysisPromptDirectives {
   requiredPractices: string;
   forbiddenPractices: string;
   domainContext: string;
+  customInstructions: string;
+}
+
+export interface PullRequestAnalysisPromptDirectives {
+  focusAreas: string;
   customInstructions: string;
 }
 
@@ -96,6 +102,77 @@ export interface RepositoryAnalysisRequest {
   snapshotPolicy?: RepositoryAnalysisSnapshotPolicy;
   timeoutMs?: number;
   promptDirectives?: RepositoryAnalysisPromptDirectives;
+}
+
+export interface PullRequestChangedFileSnapshot {
+  path: string;
+  status: string;
+  additions?: number;
+  deletions?: number;
+  patch?: string;
+}
+
+export interface PullRequestSnapshot {
+  provider: RepositoryConnectionConfig['provider'];
+  repository: string;
+  pullRequestId: number;
+  title: string;
+  description: string;
+  author: string;
+  sourceBranch: string;
+  targetBranch: string;
+  reviewers: Array<{
+    displayName: string;
+    vote: number;
+    isRequired?: boolean;
+  }>;
+  files: PullRequestChangedFileSnapshot[];
+  totalFilesChanged: number;
+  truncated: boolean;
+  partialReason?: string;
+}
+
+export interface PullRequestAnalysisPreview {
+  pullRequestId: number;
+  repository: string;
+  title: string;
+  filesPrepared: number;
+  totalFilesChanged: number;
+  includedFiles: string[];
+  truncated: boolean;
+  partialReason?: string;
+  sensitivity: RepositorySnapshotSensitivitySummary;
+  disclaimer: string;
+  lacksPatchCoverage: boolean;
+  strictModeWouldBlock: boolean;
+}
+
+export interface PullRequestAnalysisItemRequest {
+  pullRequest: ReviewItem;
+}
+
+export interface PullRequestAnalysisBatchRequest {
+  requestId?: string;
+  source: RepositoryAnalysisRequest['source'];
+  apiKey: string;
+  model: string;
+  analysisDepth: 'standard' | 'deep';
+  timeoutMs?: number;
+  promptDirectives?: PullRequestAnalysisPromptDirectives;
+  snapshotPolicy?: RepositoryAnalysisSnapshotPolicy;
+  items: PullRequestAnalysisItemRequest[];
+}
+
+export interface PullRequestAiReview {
+  pullRequestId: number;
+  repository: string;
+  status: 'not-configured' | 'queued' | 'analyzed' | 'error' | 'omitted';
+  riskScore?: number;
+  shortSummary?: string;
+  topConcerns: string[];
+  reviewChecklist: string[];
+  coverageNote?: string;
+  error?: string;
 }
 
 export interface RepositoryAnalysisFinding {

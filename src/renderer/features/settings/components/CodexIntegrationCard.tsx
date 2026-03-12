@@ -51,6 +51,11 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
         value={config.repositoryScope === 'all' ? 'Todos' : 'Seleccionado'}
         description="Cómo se resuelve el alcance por defecto al lanzar un analisis."
       />
+      <SettingsStatTile
+        label="PR AI Review"
+        value={config.prReview.enabled ? `${config.prReview.maxPullRequests}` : 'Off'}
+        description="Cantidad de PRs que recibirán analisis IA por sincronizacion."
+      />
     </div>
 
     <div className="mt-6 grid gap-4 xl:grid-cols-2">
@@ -116,13 +121,50 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
       />
 
       <SettingsToggleCard
-        title="Modo estricto de snapshot"
-        description="Bloquea el envio a Codex si el preflight detecta posibles secretos o archivos sensibles dentro del snapshot."
-        checked={config.snapshotPolicy.strictMode}
-        onChange={(checked) => onChange('snapshotPolicy', {
-          ...config.snapshotPolicy,
-          strictMode: checked,
+        title="Habilitar PR AI Review"
+        description="Activa el analisis IA sobre la cola priorizada de Pull Requests en el dashboard."
+        checked={config.prReview.enabled}
+        onChange={(checked) => onChange('prReview', {
+          ...config.prReview,
+          enabled: checked,
         })}
+      />
+
+      <SettingsField
+        label="Maximo de PRs por sincronizacion"
+        type="number"
+        value={config.prReview.maxPullRequests}
+        onChange={(value) => onChange('prReview', {
+          ...config.prReview,
+          maxPullRequests: Number(value) || 0,
+        })}
+      />
+
+      <SettingsSelectField
+        label="Modo de seleccion"
+        value={config.prReview.selectionMode}
+        onChange={(value) => onChange('prReview', {
+          ...config.prReview,
+          selectionMode: value as CodexIntegrationConfig['prReview']['selectionMode'],
+        })}
+        options={[
+          { value: 'top-risk', label: 'Top risk' },
+          { value: 'oldest', label: 'Oldest' },
+          { value: 'mixed', label: 'Mixed' },
+        ]}
+      />
+
+      <SettingsSelectField
+        label="Profundidad PR AI"
+        value={config.prReview.analysisDepth}
+        onChange={(value) => onChange('prReview', {
+          ...config.prReview,
+          analysisDepth: value as CodexIntegrationConfig['prReview']['analysisDepth'],
+        })}
+        options={[
+          { value: 'standard', label: 'Standard' },
+          { value: 'deep', label: 'Deep' },
+        ]}
       />
     </div>
 
@@ -141,15 +183,31 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
 
       <div className="mt-5 grid gap-4 xl:grid-cols-2">
         <SettingsTextAreaField
-          label="Patrones de paths excluidos del snapshot"
-          value={config.snapshotPolicy.excludedPathPatterns}
-          placeholder={'Ejemplo:\n.env\n.env.*\nnode_modules/**\ndist/**\n*.pem\n*.key'}
-          onChange={(value) => onChange('snapshotPolicy', {
-            ...config.snapshotPolicy,
-            excludedPathPatterns: value,
+          label="Focus areas para PR AI Review"
+          value={config.prReview.promptDirectives.focusAreas}
+          placeholder={'Ejemplo:\n- revisar autenticacion y permisos\n- priorizar regresiones en API\n- detectar cambios riesgosos en infraestructura'}
+          onChange={(value) => onChange('prReview', {
+            ...config.prReview,
+            promptDirectives: {
+              ...config.prReview.promptDirectives,
+              focusAreas: value,
+            },
           })}
-          span="xl:col-span-2"
-          hint="Uno por linea. Se aplican antes del preflight y del envio a Codex."
+          hint="Orientaciones específicas para la revision IA de Pull Requests."
+        />
+
+        <SettingsTextAreaField
+          label="Instrucciones extra para PR AI Review"
+          value={config.prReview.promptDirectives.customInstructions}
+          placeholder="Qué tipo de comentarios, checklist o tono debe priorizar la IA al resumir un PR."
+          onChange={(value) => onChange('prReview', {
+            ...config.prReview,
+            promptDirectives: {
+              ...config.prReview.promptDirectives,
+              customInstructions: value,
+            },
+          })}
+          hint="Contexto adicional para la cola de PRs. No afecta Repository Analysis."
         />
 
         <SettingsToggleCard

@@ -1,4 +1,5 @@
 const {
+  mergeExcludedPathPatterns,
   parseExcludedPathPatterns,
   shouldExcludeSnapshotPath,
 } = require('../../../src/services/shared/repository-snapshot-helpers');
@@ -20,5 +21,18 @@ describe('repository-snapshot-helpers', () => {
     expect(shouldExcludeSnapshotPath('certs/server.pem', patterns)).toBe(true);
     expect(shouldExcludeSnapshotPath('dist/main.js', patterns)).toBe(true);
     expect(shouldExcludeSnapshotPath('src/app.ts', patterns)).toBe(false);
+  });
+
+  test('mergeExcludedPathPatterns deduplica y conserva una lista global reutilizable', () => {
+    expect(mergeExcludedPathPatterns(
+      '.env\nnode_modules/**\n*.pem',
+      'node_modules/**\nsrc/generated/**',
+      '',
+    )).toBe([
+      '.env',
+      'node_modules/**',
+      '*.pem',
+      'src/generated/**',
+    ].join('\n'));
   });
 });

@@ -15,10 +15,15 @@ export class SessionSecretsStore {
 
     this.sessionSecrets.delete(key);
   }
+
+  has(key: string): boolean {
+    return this.sessionSecrets.has(key);
+  }
 }
 
 export function registerSessionSecretsIpc(store: SessionSecretsStore): void {
   registerHandle<string, string>('session-secrets:get', async (key) => store.get(key));
+  registerHandle<string, boolean>('session-secrets:has', async (key) => store.has(key));
   registerHandle<{ key: string; value: string }, void>('session-secrets:set', async (payload) => {
     if (!payload?.key || typeof payload.key !== 'string') {
       throw new Error('Secret key is required.');

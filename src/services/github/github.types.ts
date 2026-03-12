@@ -61,3 +61,11 @@ export interface GitHubReviewResponseItem {
   };
   state: string;
 }
+
+export interface GitHubPullRequestFileResponseItem {
+  filename: string;
+  status: string;
+  additions: number;
+  deletions: number;
+  patch?: string;
+}

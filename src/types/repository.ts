@@ -70,3 +70,7 @@ export interface RepositorySnapshotOptions {
   includeTests: boolean;
   excludedPathPatterns?: string;
 }
+
+export interface PullRequestSnapshotOptions {
+  excludedPathPatterns?: string;
+}

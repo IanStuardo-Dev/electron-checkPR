@@ -1,7 +1,8 @@
-import type { RepositorySnapshot, RepositoryAnalysisRequest } from '../../types/analysis';
+import type { PullRequestSnapshot, RepositorySnapshot, RepositoryAnalysisRequest } from '../../types/analysis';
 import type {
   RepositoryBranch,
   RepositoryConnectionConfig,
+  PullRequestSnapshotOptions,
   RepositoryProject,
   RepositoryProviderKind,
   RepositorySnapshotOptions,
@@ -15,6 +16,7 @@ export interface RepositoryProviderPort {
   getRepositories(config: RepositoryConnectionConfig): Promise<RepositorySummary[]>;
   getBranches(config: RepositoryConnectionConfig): Promise<RepositoryBranch[]>;
   getPullRequests(config: RepositoryConnectionConfig): Promise<ReviewItem[]>;
+  getPullRequestSnapshot(config: RepositoryConnectionConfig, pullRequest: ReviewItem, options: PullRequestSnapshotOptions): Promise<PullRequestSnapshot>;
   getRepositorySnapshot(config: RepositoryConnectionConfig, options: RepositorySnapshotOptions): Promise<RepositorySnapshot>;
 }
 

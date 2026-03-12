@@ -5,6 +5,8 @@ import { buildDefaultRepositoryProviderPorts } from './services/providers/reposi
 import { createRepositoryProviderRegistry } from './services/providers/repository-provider.composition';
 import { RepositoryAnalysisSnapshotProvider } from './services/analysis/repository-analysis.snapshot-provider';
 import { RepositoryAnalysisService } from './services/analysis/repository-analysis.service';
+import { PullRequestAnalysisSnapshotProvider } from './services/analysis/pull-request-analysis.snapshot-provider';
+import { PullRequestAnalysisService } from './services/analysis/pull-request-analysis.service';
 
 // Asegurarse de que las notificaciones estén habilitadas
 app.setAppUserModelId(process.execPath);
@@ -54,8 +56,11 @@ export function bootstrapMainProcess() {
   const repositoryAnalysisService = new RepositoryAnalysisService(
     new RepositoryAnalysisSnapshotProvider(providerRegistry),
   );
+  const pullRequestAnalysisService = new PullRequestAnalysisService(
+    new PullRequestAnalysisSnapshotProvider(providerRegistry),
+  );
 
-  registerIpcHandlers(providerRegistry, repositoryAnalysisService);
+  registerIpcHandlers(providerRegistry, repositoryAnalysisService, pullRequestAnalysisService);
   createWindow();
 }
 

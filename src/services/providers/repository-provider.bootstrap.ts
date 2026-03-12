@@ -3,6 +3,7 @@ import { gitHubRepositoryService } from '../github/repository.service';
 import { gitLabRepositoryService } from '../gitlab/repository.service';
 import type { RepositoryProviderPort } from './repository-provider.port';
 import type {
+  PullRequestSnapshotOptions,
   RepositoryBranch,
   RepositoryConnectionConfig,
   RepositoryProject,
@@ -11,7 +12,7 @@ import type {
   RepositorySummary,
   ReviewItem,
 } from '../../types/repository';
-import type { RepositorySnapshot } from '../../types/analysis';
+import type { PullRequestSnapshot, RepositorySnapshot } from '../../types/analysis';
 
 function createProviderPort(
   kind: RepositoryProviderKind,
@@ -20,6 +21,7 @@ function createProviderPort(
     getRepositories(config: RepositoryConnectionConfig): Promise<RepositorySummary[]>;
     getBranches(config: RepositoryConnectionConfig): Promise<RepositoryBranch[]>;
     getPullRequests(config: RepositoryConnectionConfig): Promise<ReviewItem[]>;
+    getPullRequestSnapshot(config: RepositoryConnectionConfig, pullRequest: ReviewItem, options: PullRequestSnapshotOptions): Promise<PullRequestSnapshot>;
     getRepositorySnapshot(config: RepositoryConnectionConfig, options: RepositorySnapshotOptions): Promise<RepositorySnapshot>;
   },
 ): RepositoryProviderPort {
@@ -29,6 +31,7 @@ function createProviderPort(
     getRepositories: (config) => service.getRepositories(config),
     getBranches: (config) => service.getBranches(config),
     getPullRequests: (config) => service.getPullRequests(config),
+    getPullRequestSnapshot: (config, pullRequest, options) => service.getPullRequestSnapshot(config, pullRequest, options),
     getRepositorySnapshot: (config, options) => service.getRepositorySnapshot(config, options),
   };
 }

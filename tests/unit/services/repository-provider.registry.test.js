@@ -35,4 +35,21 @@ describe('RepositoryProviderRegistry', () => {
     expect(registry.get('gitlab')).toBe(provider);
     expect(registry.list()).toHaveLength(1);
   });
+
+  test('registerMany agrega multiples providers y clear los elimina', () => {
+    const registry = new RepositoryProviderRegistry();
+    registry.registerMany([
+      { kind: 'github' },
+      { kind: 'gitlab' },
+    ]);
+
+    expect(registry.list()).toHaveLength(2);
+    registry.clear();
+    expect(registry.list()).toHaveLength(0);
+  });
+
+  test('get lanza error si el provider no existe', () => {
+    const registry = new RepositoryProviderRegistry();
+    expect(() => registry.get('azure-devops')).toThrow(/aun no esta registrado/i);
+  });
 });

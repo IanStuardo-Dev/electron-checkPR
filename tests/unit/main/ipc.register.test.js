@@ -20,12 +20,19 @@ describe('ipc register', () => {
   test('registra todos los dominios ipc', () => {
     const providerRegistry = { get: jest.fn() };
     const repositoryAnalysisService = { runAnalysis: jest.fn(), cancelAnalysis: jest.fn() };
+    const pullRequestAnalysisService = { analyzeBatch: jest.fn() };
+    const sessionSecretsStoreInstance = {};
+    SessionSecretsStore.mockImplementation(() => sessionSecretsStoreInstance);
 
-    registerIpcHandlers(providerRegistry, repositoryAnalysisService);
+    registerIpcHandlers(providerRegistry, repositoryAnalysisService, pullRequestAnalysisService);
 
     expect(registerRepositoryProviderIpc).toHaveBeenCalledWith(providerRegistry);
-    expect(registerAnalysisIpc).toHaveBeenCalledWith(repositoryAnalysisService);
+    expect(registerAnalysisIpc).toHaveBeenCalledWith(
+      repositoryAnalysisService,
+      pullRequestAnalysisService,
+      sessionSecretsStoreInstance,
+    );
     expect(SessionSecretsStore).toHaveBeenCalled();
-    expect(registerSessionSecretsIpc).toHaveBeenCalled();
+    expect(registerSessionSecretsIpc).toHaveBeenCalledWith(sessionSecretsStoreInstance);
   });
 });

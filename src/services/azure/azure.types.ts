@@ -62,3 +62,18 @@ export interface AzureItemsResponse {
     };
   }>;
 }
+
+export interface AzurePullRequestIterationsResponse {
+  value: Array<{
+    id: number;
+  }>;
+}
+
+export interface AzurePullRequestChangesResponse {
+  changeEntries: Array<{
+    changeType: string;
+    item?: {
+      path?: string;
+    };
+  }>;
+}

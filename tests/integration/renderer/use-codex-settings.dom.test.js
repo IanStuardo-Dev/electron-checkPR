@@ -24,6 +24,16 @@ describe('useCodexSettings', () => {
         excludedPathPatterns: '.env\nnode_modules/**',
         strictMode: false,
       },
+      prReview: {
+        enabled: false,
+        maxPullRequests: 4,
+        selectionMode: 'top-risk',
+        analysisDepth: 'standard',
+        promptDirectives: {
+          focusAreas: '',
+          customInstructions: '',
+        },
+      },
       promptDirectives: {
         architectureReviewEnabled: false,
         architecturePattern: '',

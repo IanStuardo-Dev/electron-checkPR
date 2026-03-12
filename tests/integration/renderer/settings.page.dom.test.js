@@ -59,6 +59,16 @@ describe('Settings page', () => {
           excludedPathPatterns: '.env\nnode_modules/**',
           strictMode: true,
         },
+        prReview: {
+          enabled: true,
+          maxPullRequests: 4,
+          selectionMode: 'top-risk',
+          analysisDepth: 'standard',
+          promptDirectives: {
+            focusAreas: '',
+            customInstructions: '',
+          },
+        },
         promptDirectives: {
           architectureReviewEnabled: true,
           architecturePattern: 'hexagonal',
@@ -78,5 +88,7 @@ describe('Settings page', () => {
     expect(screen.getByText('Workspace operativo')).toBeInTheDocument();
     expect(screen.getAllByText('GitHub').length).toBeGreaterThan(0);
     expect(screen.getByText('Provider activo y fuentes disponibles')).toBeInTheDocument();
+    expect(screen.getByText('Reglas globales de snapshot')).toBeInTheDocument();
+    expect(screen.getAllByText(/cualquier snapshot del producto/i).length).toBeGreaterThan(0);
   });
 });

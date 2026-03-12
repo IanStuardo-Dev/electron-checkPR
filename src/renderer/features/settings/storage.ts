@@ -1,7 +1,7 @@
 import type { CodexIntegrationConfig } from '../dashboard/types';
+import { CODEX_SESSION_API_KEY } from '../../../constants/session-secrets';
 
 const CODEX_SETTINGS_STORAGE_KEY = 'checkpr.settings.codex';
-const CODEX_SESSION_API_KEY = 'checkpr.settings.codex.api-key';
 
 async function getSessionSecret(key: string): Promise<string> {
   const response = await window.electronApi.invoke('session-secrets:get', key) as { ok: boolean; data?: string; error?: string };
@@ -41,6 +41,16 @@ export const defaultCodexConfig: CodexIntegrationConfig = {
       'terraform.tfvars',
     ].join('\n'),
     strictMode: false,
+  },
+  prReview: {
+    enabled: false,
+    maxPullRequests: 4,
+    selectionMode: 'top-risk',
+    analysisDepth: 'standard',
+    promptDirectives: {
+      focusAreas: '',
+      customInstructions: '',
+    },
   },
   promptDirectives: {
     architectureReviewEnabled: false,
