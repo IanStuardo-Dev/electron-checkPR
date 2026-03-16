@@ -3,6 +3,7 @@ jest.mock('../../../src/main/ipc/shared', () => ({
 }));
 
 const { registerHandle } = require('../../../src/main/ipc/shared');
+const analysisShared = require('../../../src/main/ipc/analysis.shared');
 const {
   sanitizeAnalysisPayload,
   sanitizePullRequestAnalysisPayload,
@@ -12,6 +13,24 @@ const {
 describe('analysis ipc', () => {
   beforeEach(() => {
     registerHandle.mockReset();
+  });
+
+  test('sanitizeAnalysisPayload y sanitizePullRequestAnalysisPayload rechazan payloads invalidos', () => {
+    expect(() => sanitizeAnalysisPayload(null)).toThrow('El payload de analisis es invalido.');
+    expect(() => sanitizeAnalysisPayload({
+      requestId: 'req-1',
+      repositoryId: 'repo-a',
+      branchName: 'main',
+      model: 'gpt-5.2-codex',
+      apiKey: 'sk',
+    })).toThrow('La fuente del analisis es obligatoria.');
+
+    expect(() => sanitizePullRequestAnalysisPayload(null)).toThrow('El payload de PR analysis es invalido.');
+    expect(() => sanitizePullRequestAnalysisPayload({
+      model: 'gpt-5.2-codex',
+      apiKey: 'sk',
+      items: [],
+    })).toThrow('La fuente del PR analysis es obligatoria.');
   });
 
   test('sanitizeAnalysisPayload normaliza limites y directivas', () => {
@@ -48,6 +67,53 @@ describe('analysis ipc', () => {
     expect(payload.snapshotPolicy.excludedPathPatterns).toContain('.env');
     expect(payload.snapshotPolicy.strictMode).toBe(true);
     expect(payload.promptDirectives.architecturePattern).toBe('hexagonal');
+  });
+
+  test('sanitizeAnalysisPayload usa el apiKey de sesion y valida Azure DevOps', () => {
+    const payload = sanitizeAnalysisPayload({
+      requestId: 'req-azure',
+      source: {
+        provider: 'azure-devops',
+        organization: 'acme',
+        project: 'platform-team',
+        repositoryId: 'repo-a',
+        personalAccessToken: 'pat',
+        targetReviewer: ' review@example.com ',
+      },
+      repositoryId: 'repo-a',
+      branchName: 'main',
+      model: 'gpt-5.2-codex',
+      apiKey: '   ',
+      analysisDepth: 'standard',
+      maxFilesPerRun: 2,
+      includeTests: false,
+      timeoutMs: 1000,
+      promptDirectives: {
+        architectureReviewEnabled: 1,
+        requiredPractices: 'x'.repeat(2500),
+      },
+    }, 'sk-session');
+
+    expect(payload.apiKey).toBe('sk-session');
+    expect(payload.timeoutMs).toBe(15000);
+    expect(payload.maxFilesPerRun).toBe(10);
+    expect(payload.source.targetReviewer).toBe('review@example.com');
+    expect(payload.promptDirectives.requiredPractices).toHaveLength(2000);
+
+    expect(() => sanitizeAnalysisPayload({
+      requestId: 'req-invalid-azure',
+      source: {
+        provider: 'azure-devops',
+        organization: 'acme',
+        project: '   ',
+        repositoryId: 'repo-a',
+        personalAccessToken: 'pat',
+      },
+      repositoryId: 'repo-a',
+      branchName: 'main',
+      model: 'gpt-5.2-codex',
+      analysisDepth: 'standard',
+    }, 'sk-session')).toThrow('Azure DevOps requiere un project valido para ejecutar el analisis.');
   });
 
   test('registerAnalysisIpc registra run y cancel', async () => {
@@ -227,5 +293,53 @@ describe('analysis ipc', () => {
     expect(payload.snapshotPolicy.strictMode).toBe(true);
     expect(payload.promptDirectives.focusAreas).toBe('arquitectura');
     expect(payload.items).toHaveLength(1);
+  });
+
+  test('sanitizePullRequestAnalysisPayload aplica fallbacks y recorta prompt directives', () => {
+    const payload = sanitizePullRequestAnalysisPayload({
+      requestId: '  req-pr  ',
+      source: {
+        provider: 'gitlab',
+        organization: ' acme ',
+        project: ' ',
+        repositoryId: ' repo-a ',
+        personalAccessToken: ' pat ',
+      },
+      apiKey: '',
+      model: ' gpt-5.2-codex ',
+      analysisDepth: 'whatever',
+      timeoutMs: 999999,
+      promptDirectives: {
+        focusAreas: 'x'.repeat(2500),
+        customInstructions: 'y'.repeat(3000),
+      },
+      items: [{ invalid: true }],
+    }, 'sk-session');
+
+    expect(payload.requestId).toBe('req-pr');
+    expect(payload.apiKey).toBe('sk-session');
+    expect(payload.analysisDepth).toBe('standard');
+    expect(payload.timeoutMs).toBe(120000);
+    expect(payload.promptDirectives.focusAreas).toHaveLength(2000);
+    expect(payload.promptDirectives.customInstructions).toHaveLength(2500);
+    expect(payload.items).toEqual([]);
+  });
+
+  test('analysis.shared helpers validan campos y normalizan policy', () => {
+    expect(analysisShared.readRequiredString('  value  ', 'field')).toBe('value');
+    expect(() => analysisShared.readRequiredString('   ', 'field')).toThrow('field es obligatorio.');
+    expect(analysisShared.normalizeProvider('github', 'provider')).toBe('github');
+    expect(() => analysisShared.normalizeProvider('bitbucket', 'provider')).toThrow('provider no es valido.');
+    expect(analysisShared.normalizeOptionalString('  reviewer  ')).toBe('reviewer');
+    expect(analysisShared.normalizeOptionalString('   ')).toBeUndefined();
+    expect(analysisShared.clampNumber('45.8', 10, 50, 20)).toBe(45);
+    expect(analysisShared.clampNumber('nope', 10, 50, 20)).toBe(20);
+    expect(analysisShared.readSnapshotPolicy({
+      excludedPathPatterns: 'x'.repeat(5000),
+      strictMode: 'truthy',
+    })).toEqual({
+      excludedPathPatterns: 'x'.repeat(4000),
+      strictMode: true,
+    });
   });
 });

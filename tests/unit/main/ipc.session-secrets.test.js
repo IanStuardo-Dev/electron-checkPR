@@ -14,8 +14,10 @@ describe('session secrets ipc', () => {
     const store = new SessionSecretsStore();
     store.set('key', 'value');
     expect(store.get('key')).toBe('value');
+    expect(store.has('key')).toBe(true);
     store.set('key', '');
     expect(store.get('key')).toBe('');
+    expect(store.has('key')).toBe(false);
   });
 
   test('registerSessionSecretsIpc registra canales get/has/set', async () => {
@@ -23,9 +25,15 @@ describe('session secrets ipc', () => {
     registerSessionSecretsIpc(store);
 
     expect(registerHandle).toHaveBeenCalledTimes(3);
+    const getHandler = registerHandle.mock.calls[0][1];
     const hasHandler = registerHandle.mock.calls[1][1];
     const setHandler = registerHandle.mock.calls[2][1];
+
+    await expect(getHandler('key')).resolves.toBe('');
     await expect(hasHandler('key')).resolves.toBe(false);
+    await expect(setHandler({ key: 'api-key', value: 'secret' })).resolves.toBeUndefined();
+    await expect(getHandler('api-key')).resolves.toBe('secret');
+    await expect(hasHandler('api-key')).resolves.toBe(true);
     await expect(setHandler({ key: '', value: 'x' })).rejects.toThrow('Secret key is required.');
   });
 });

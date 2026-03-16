@@ -1,6 +1,15 @@
 const loadURL = jest.fn();
 const loadFile = jest.fn();
 const setWindowButtonVisibility = jest.fn();
+const registeredAppEvents = new Map();
+let readyCallback;
+const appOn = jest.fn((eventName, handler) => {
+  registeredAppEvents.set(eventName, handler);
+});
+const appQuit = jest.fn();
+const whenReadyThen = jest.fn((callback) => {
+  readyCallback = callback;
+});
 const browserWindowMock = jest.fn().mockImplementation(() => ({
   loadURL,
   loadFile,
@@ -13,9 +22,9 @@ jest.mock('electron', () => ({
     getPath: jest.fn(() => 'C:\\Users\\ianst\\AppData\\Roaming'),
     setPath: jest.fn(),
     setAppUserModelId: jest.fn(),
-    whenReady: jest.fn(() => ({ then: jest.fn() })),
-    on: jest.fn(),
-    quit: jest.fn(),
+    whenReady: jest.fn(() => ({ then: whenReadyThen })),
+    on: appOn,
+    quit: appQuit,
   },
   BrowserWindow: Object.assign(browserWindowMock, {
     getAllWindows: jest.fn(() => []),
@@ -42,6 +51,7 @@ const {
   registerDefaultRepositoryProviders,
 } = require('../../../src/services/providers/repository-provider.bootstrap');
 const main = require('../../../src/main');
+const { app, BrowserWindow } = require('electron');
 
 function withPlatform(platform, callback) {
   const originalDescriptor = Object.getOwnPropertyDescriptor(process, 'platform');
@@ -72,6 +82,16 @@ describe('main process bootstrap', () => {
     expect(storage.userDataPath).toContain('AppData\\Local');
     expect(storage.userDataPath).toContain('CheckPR');
     expect(storage.sessionDataPath).toContain('SessionData');
+  });
+
+  test('resolveAppStoragePaths usa appData cuando LOCALAPPDATA no esta disponible', () => {
+    process.env.LOCALAPPDATA = '   ';
+
+    const storage = main.resolveAppStoragePaths();
+
+    expect(app.getPath).toHaveBeenCalledWith('appData');
+    expect(storage.userDataPath).toContain('AppData\\Roaming');
+    expect(storage.userDataPath).toContain('CheckPR');
   });
 
   test('buildMainWindowOptions endurece webPreferences', () => {
@@ -131,5 +151,43 @@ describe('main process bootstrap', () => {
     expect(registerDefaultRepositoryProviders).not.toHaveBeenCalled();
     expect(registerIpcHandlers).toHaveBeenCalled();
     expect(browserWindowMock).toHaveBeenCalled();
+  });
+
+  test('cuando app esta lista ejecuta bootstrapMainProcess', () => {
+    readyCallback();
+
+    expect(buildDefaultRepositoryProviderPorts).toHaveBeenCalled();
+    expect(registerIpcHandlers).toHaveBeenCalled();
+  });
+
+  test('window-all-closed cierra la app fuera de macOS', () => {
+    const windowAllClosedHandler = registeredAppEvents.get('window-all-closed');
+    windowAllClosedHandler();
+
+    expect(appQuit).toHaveBeenCalled();
+  });
+
+  test('window-all-closed no cierra la app en macOS', () => {
+    const windowAllClosedHandler = registeredAppEvents.get('window-all-closed');
+
+    withPlatform('darwin', () => {
+      windowAllClosedHandler();
+    });
+
+    expect(appQuit).not.toHaveBeenCalled();
+  });
+
+  test('activate crea una ventana solo cuando no hay ventanas abiertas', () => {
+    const activateHandler = registeredAppEvents.get('activate');
+
+    BrowserWindow.getAllWindows.mockReturnValue([]);
+    activateHandler();
+    expect(browserWindowMock).toHaveBeenCalledTimes(1);
+
+    browserWindowMock.mockClear();
+    BrowserWindow.getAllWindows.mockClear();
+    BrowserWindow.getAllWindows.mockReturnValue([{}]);
+    activateHandler();
+    expect(browserWindowMock).not.toHaveBeenCalled();
   });
 });

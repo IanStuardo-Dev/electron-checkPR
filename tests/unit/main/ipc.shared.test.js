@@ -15,6 +15,7 @@ describe('main ipc shared', () => {
   test('safeIpcResponse envuelve errores', async () => {
     await expect(safeIpcResponse(async () => 'ok')).resolves.toEqual({ ok: true, data: 'ok' });
     await expect(safeIpcResponse(async () => { throw new Error('boom'); })).resolves.toEqual({ ok: false, error: 'boom' });
+    await expect(safeIpcResponse(async () => { throw 'boom'; })).resolves.toEqual({ ok: false, error: 'Unknown IPC error.' });
   });
 
   test('registerHandle registra handler seguro', async () => {

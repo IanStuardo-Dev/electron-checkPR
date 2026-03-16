@@ -2,6 +2,7 @@ const { RepositoryAnalysisPromptBuilder } = require('../../../src/services/analy
 const { RepositoryAnalysisResponseParser } = require('../../../src/services/analysis/repository-analysis.response-parser');
 const { OpenAIRepositoryAnalysisClient } = require('../../../src/services/analysis/repository-analysis.openai-client');
 const { RepositoryAnalysisSnapshotProvider } = require('../../../src/services/analysis/repository-analysis.snapshot-provider');
+const { buildRepositoryAnalysisPreview } = require('../../../src/services/analysis/repository-analysis.preview');
 const { RepositoryAnalysisService } = require('../../../src/services/analysis/repository-analysis.service');
 
 describe('repository analysis parts', () => {
@@ -83,6 +84,40 @@ describe('repository analysis parts', () => {
     })).rejects.toThrow('insufficient_quota');
   });
 
+  test('openai client compacta errores remotos genericos', async () => {
+    const client = new OpenAIRepositoryAnalysisClient();
+    global.fetch = jest.fn().mockResolvedValue(new Response('  upstream failed hard  ', {
+      status: 500,
+      statusText: 'Internal Server Error',
+    }));
+
+    await expect(client.analyze({
+      request: {
+        model: 'gpt-5.2-codex',
+        apiKey: 'sk-test',
+      },
+      prompt: { systemPrompt: 'system', userPrompt: 'user' },
+      signal: new AbortController().signal,
+    })).rejects.toThrow('Codex analysis failed (500): upstream failed hard');
+  });
+
+  test('openai client usa statusText cuando la respuesta llega vacia', async () => {
+    const client = new OpenAIRepositoryAnalysisClient();
+    global.fetch = jest.fn().mockResolvedValue(new Response('', {
+      status: 502,
+      statusText: 'Bad Gateway',
+    }));
+
+    await expect(client.analyze({
+      request: {
+        model: 'gpt-5.2-codex',
+        apiKey: 'sk-test',
+      },
+      prompt: { systemPrompt: 'system', userPrompt: 'user' },
+      signal: new AbortController().signal,
+    })).rejects.toThrow('Codex analysis failed (502): Bad Gateway');
+  });
+
   test('snapshot provider resuelve el provider y adapta el source config', async () => {
     const provider = {
       getRepositorySnapshot: jest.fn().mockResolvedValue({ files: [] }),
@@ -113,6 +148,70 @@ describe('repository analysis parts', () => {
       maxFiles: 50,
       includeTests: false,
     });
+  });
+
+  test('snapshot provider preserva el project en Azure DevOps', async () => {
+    const provider = {
+      getRepositorySnapshot: jest.fn().mockResolvedValue({ files: [] }),
+    };
+    const snapshotProvider = new RepositoryAnalysisSnapshotProvider({
+      get: jest.fn().mockReturnValue(provider),
+    });
+
+    await snapshotProvider.getSnapshot({
+      source: {
+        provider: 'azure-devops',
+        organization: 'acme',
+        project: 'platform-team',
+        repositoryId: 'repo-a',
+        personalAccessToken: 'pat',
+      },
+      repositoryId: 'repo-a',
+      branchName: 'main',
+      maxFilesPerRun: 25,
+      includeTests: true,
+      snapshotPolicy: {
+        excludedPathPatterns: '.env',
+      },
+    });
+
+    expect(provider.getRepositorySnapshot).toHaveBeenCalledWith(expect.objectContaining({
+      project: 'platform-team',
+      repositoryId: 'repo-a',
+    }), expect.objectContaining({
+      excludedPathPatterns: '.env',
+      includeTests: true,
+    }));
+  });
+
+  test('snapshot provider usa project como fallback cuando falta repositoryId fuera de Azure', async () => {
+    const provider = {
+      getRepositorySnapshot: jest.fn().mockResolvedValue({ files: [] }),
+    };
+    const snapshotProvider = new RepositoryAnalysisSnapshotProvider({
+      get: jest.fn().mockReturnValue(provider),
+    });
+
+    await snapshotProvider.getSnapshot({
+      source: {
+        provider: 'github',
+        organization: 'acme',
+        project: 'repo-a',
+        repositoryId: '',
+        personalAccessToken: 'pat',
+      },
+      repositoryId: '',
+      branchName: 'main',
+      maxFilesPerRun: 25,
+      includeTests: false,
+    });
+
+    expect(provider.getRepositorySnapshot).toHaveBeenCalledWith(expect.objectContaining({
+      project: 'repo-a',
+      repositoryId: '',
+    }), expect.objectContaining({
+      branchName: 'main',
+    }));
   });
 
   test('analysis service construye preview con sensibilidad local', async () => {
@@ -167,5 +266,24 @@ describe('repository analysis parts', () => {
     expect(preview.sensitivity.hasSensitiveConfigFiles).toBe(true);
     expect(preview.sensitivity.hasSecretPatterns).toBe(true);
     expect(preview.disclaimer).toContain('alertas de sensibilidad');
+  });
+
+  test('buildRepositoryAnalysisPreview crea exclusiones por defecto cuando el snapshot no las expone', () => {
+    const preview = buildRepositoryAnalysisPreview({
+      provider: 'github',
+      repository: 'repo-a',
+      branch: 'main',
+      files: [
+        { path: 'src/a.ts', extension: 'ts', size: 10, content: 'export const a = 1;' },
+      ],
+      totalFilesDiscovered: 1,
+      truncated: false,
+    });
+
+    expect(preview.exclusions).toEqual({
+      omittedByPrioritization: [],
+      omittedBySize: [],
+      omittedByBinaryDetection: [],
+    });
   });
 });
