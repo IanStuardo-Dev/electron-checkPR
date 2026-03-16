@@ -117,22 +117,33 @@ describe('repository analysis parts', () => {
 
   test('analysis service construye preview con sensibilidad local', async () => {
     const service = new RepositoryAnalysisService({
-      getSnapshot: jest.fn().mockResolvedValue({
-        provider: 'github',
-        repository: 'repo-a',
-        branch: 'main',
-        files: [
-          { path: '.env', extension: 'env', size: 20, content: 'SECRET=abc12345678' },
-          { path: 'src/app.ts', extension: 'ts', size: 20, content: 'export const ok = true;' },
-        ],
-        totalFilesDiscovered: 2,
-        truncated: false,
-        exclusions: {
-          omittedByPrioritization: [],
-          omittedBySize: [],
-          omittedByBinaryDetection: [],
-        },
-      }),
+      snapshotProvider: {
+        getSnapshot: jest.fn().mockResolvedValue({
+          provider: 'github',
+          repository: 'repo-a',
+          branch: 'main',
+          files: [
+            { path: '.env', extension: 'env', size: 20, content: 'SECRET=abc12345678' },
+            { path: 'src/app.ts', extension: 'ts', size: 20, content: 'export const ok = true;' },
+          ],
+          totalFilesDiscovered: 2,
+          truncated: false,
+          exclusions: {
+            omittedByPrioritization: [],
+            omittedBySize: [],
+            omittedByBinaryDetection: [],
+          },
+        }),
+      },
+      promptBuilder: {
+        build: jest.fn(),
+      },
+      analysisClient: {
+        analyze: jest.fn(),
+      },
+      responseParser: {
+        parse: jest.fn(),
+      },
     });
 
     const preview = await service.previewSnapshot({

@@ -1,9 +1,13 @@
 import type { RepositoryConnectionConfig, RepositorySnapshotOptions } from '../../types/repository';
 import type { RepositorySnapshot } from '../../types/analysis';
 import { mapWithConcurrency, retryWithBackoff } from '../shared/request-control';
-import { isSupportedCodeFile, isTestFile, rankPath, shouldExcludeSnapshotPath } from '../shared/repository-snapshot-helpers';
-import { isProbablyBinaryContent, MAX_SNAPSHOT_FILE_BYTES } from '../shared/snapshot-content';
-import { buildRepositorySnapshot } from '../shared/repository-snapshot';
+import {
+  buildRepositoryFileSnapshot,
+  buildRepositorySnapshot,
+  createRepositorySnapshotCollectionState,
+  getPrioritizedSnapshotPaths,
+  selectRepositorySnapshotCandidates,
+} from '../shared/repository-snapshot';
 import { GITLAB_API_BASE_URL, getGitLabConfig, requestGitLabJson, requestPaginatedGitLabTree } from './gitlab.api';
 import type { GitLabFileResponse, GitLabTreeItemResponse } from './gitlab.types';
 
@@ -23,19 +27,13 @@ export async function getGitLabRepositorySnapshot(
 
   const tree = await requestPaginatedGitLabTree<GitLabTreeItemResponse>(project, options.branchName, personalAccessToken);
 
-  const candidateFiles = tree
-    .filter((item) => item.type === 'blob')
-    .filter((item) => isSupportedCodeFile(item.path))
-    .filter((item) => options.includeTests || !isTestFile(item.path))
-    .filter((item) => !shouldExcludeSnapshotPath(item.path, options.excludedPathPatterns))
-    .sort((left, right) => rankPath(right.path) - rankPath(left.path) || left.path.localeCompare(right.path));
+  const candidateFiles = selectRepositorySnapshotCandidates(
+    tree.filter((item) => item.type === 'blob'),
+    options,
+  );
 
   const selectedFiles = candidateFiles.slice(0, options.maxFiles);
-  let retryCount = 0;
-  let skippedLargeFiles = 0;
-  let skippedBinaryFiles = 0;
-  const oversizedPaths: string[] = [];
-  const binaryPaths: string[] = [];
+  const collectionState = createRepositorySnapshotCollectionState();
   const files = (await mapWithConcurrency(selectedFiles, 5, async (file) => {
     const payload = await retryWithBackoff(() => requestGitLabJson<GitLabFileResponse>(
       `${GITLAB_API_BASE_URL}/projects/${encodeURIComponent(project)}/repository/files/${encodeURIComponent(file.path)}?ref=${encodeURIComponent(options.branchName)}`,
@@ -43,36 +41,20 @@ export async function getGitLabRepositorySnapshot(
       `file request (${file.path})`,
     ), {
       onRetry: () => {
-        retryCount += 1;
+        collectionState.retryCount += 1;
       },
     });
-
-    if (payload.size > MAX_SNAPSHOT_FILE_BYTES) {
-      skippedLargeFiles += 1;
-      if (oversizedPaths.length < 8) {
-        oversizedPaths.push(file.path);
-      }
-      return null;
-    }
 
     const content = payload.encoding === 'base64'
       ? Buffer.from(payload.content, 'base64').toString('utf8')
       : payload.content;
 
-    if (isProbablyBinaryContent(content)) {
-      skippedBinaryFiles += 1;
-      if (binaryPaths.length < 8) {
-        binaryPaths.push(file.path);
-      }
-      return null;
-    }
-
-    return {
-      path: payload.file_path,
-      extension: payload.file_path.split('.').pop()?.toLowerCase() || '',
-      size: payload.size,
+    return buildRepositoryFileSnapshot(
+      payload.file_path,
       content,
-    };
+      payload.size,
+      collectionState,
+    );
   })).filter((file) => file !== null);
 
   return buildRepositorySnapshot({
@@ -83,12 +65,8 @@ export async function getGitLabRepositorySnapshot(
     totalFilesDiscovered: candidateFiles.length,
     maxFiles: options.maxFiles,
     startedAt,
-    retryCount,
-    skippedLargeFiles,
-    skippedBinaryFiles,
-    oversizedPaths,
-    binaryPaths,
-    prioritizedPaths: candidateFiles.slice(options.maxFiles, options.maxFiles + 8).map((file) => file.path),
+    collectionState,
+    prioritizedPaths: getPrioritizedSnapshotPaths(candidateFiles, options.maxFiles),
     basePartialReason: candidateFiles.length > options.maxFiles
       ? `El snapshot se recorto a ${options.maxFiles} archivos priorizados de ${candidateFiles.length} descubiertos en GitLab.`
       : undefined,

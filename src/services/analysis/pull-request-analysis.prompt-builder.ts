@@ -1,4 +1,5 @@
 import type { PullRequestAnalysisBatchRequest, PullRequestSnapshot } from '../../types/analysis';
+import type { PullRequestAnalysisPromptBuilderPort, PullRequestAnalysisPromptPayload } from './pull-request-analysis.ports';
 
 function buildPromptDirectiveSection(promptDirectives?: PullRequestAnalysisBatchRequest['promptDirectives']): string {
   if (!promptDirectives) {
@@ -18,11 +19,11 @@ function buildPromptDirectiveSection(promptDirectives?: PullRequestAnalysisBatch
   return sections.length > 0 ? `PR AI review directives:\n${sections.join('\n\n')}` : '';
 }
 
-export class PullRequestAnalysisPromptBuilder {
+export class PullRequestAnalysisPromptBuilder implements PullRequestAnalysisPromptBuilderPort {
   build(
     request: PullRequestAnalysisBatchRequest,
     snapshot: PullRequestSnapshot,
-  ): { systemPrompt: string; userPrompt: string } {
+  ): PullRequestAnalysisPromptPayload {
     const systemPrompt = [
       'You are a senior staff engineer reviewing a Pull Request for delivery risk, architecture, security, maintainability and reviewer guidance.',
       'Respond in Spanish.',

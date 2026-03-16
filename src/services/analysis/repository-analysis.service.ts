@@ -1,14 +1,18 @@
-import type { RepositoryAnalysisRequest, RepositoryAnalysisResult, RepositorySnapshot, RepositorySnapshotPreview } from '../../types/analysis';
-import { buildSnapshotSensitivitySummary } from '../shared/snapshot-content';
-import { OpenAIRepositoryAnalysisClient } from './repository-analysis.openai-client';
-import { RepositoryAnalysisPromptBuilder } from './repository-analysis.prompt-builder';
+import type { RepositoryAnalysisRequest, RepositoryAnalysisResult, RepositorySnapshotPreview } from '../../types/analysis';
 import type {
   AnalysisClientPort,
   AnalysisPromptBuilderPort,
   AnalysisResponseParserPort,
   SnapshotProviderPort,
 } from './repository-analysis.ports';
-import { RepositoryAnalysisResponseParser } from './repository-analysis.response-parser';
+import { buildRepositoryAnalysisPreview } from './repository-analysis.preview';
+
+interface RepositoryAnalysisServiceDependencies {
+  snapshotProvider: SnapshotProviderPort;
+  promptBuilder: AnalysisPromptBuilderPort;
+  analysisClient: AnalysisClientPort;
+  responseParser: AnalysisResponseParserPort;
+}
 
 interface ActiveAnalysisRun {
   cancelled: boolean;
@@ -21,12 +25,22 @@ const DEFAULT_ANALYSIS_TIMEOUT_MS = 90_000;
 export class RepositoryAnalysisService {
   private activeRuns = new Map<string, ActiveAnalysisRun>();
 
-  constructor(
-    private readonly snapshotProvider: SnapshotProviderPort,
-    private readonly promptBuilder: AnalysisPromptBuilderPort = new RepositoryAnalysisPromptBuilder(),
-    private readonly analysisClient: AnalysisClientPort = new OpenAIRepositoryAnalysisClient(),
-    private readonly responseParser: AnalysisResponseParserPort = new RepositoryAnalysisResponseParser(),
-  ) {}
+  private readonly snapshotProvider: SnapshotProviderPort;
+  private readonly promptBuilder: AnalysisPromptBuilderPort;
+  private readonly analysisClient: AnalysisClientPort;
+  private readonly responseParser: AnalysisResponseParserPort;
+
+  constructor({
+    snapshotProvider,
+    promptBuilder,
+    analysisClient,
+    responseParser,
+  }: RepositoryAnalysisServiceDependencies) {
+    this.snapshotProvider = snapshotProvider;
+    this.promptBuilder = promptBuilder;
+    this.analysisClient = analysisClient;
+    this.responseParser = responseParser;
+  }
 
   async previewSnapshot(request: RepositoryAnalysisRequest): Promise<RepositorySnapshotPreview> {
     const snapshot = await this.snapshotProvider.getSnapshot(request);
@@ -35,7 +49,7 @@ export class RepositoryAnalysisService {
       throw new Error('No se encontraron archivos de codigo legibles para analizar en el scope seleccionado.');
     }
 
-    return this.buildSnapshotPreview(snapshot);
+    return buildRepositoryAnalysisPreview(snapshot);
   }
 
   async runAnalysis(request: RepositoryAnalysisRequest): Promise<RepositoryAnalysisResult> {
@@ -142,28 +156,5 @@ export class RepositoryAnalysisService {
     }
 
     this.activeRuns.delete(requestId);
-  }
-
-  private buildSnapshotPreview(snapshot: RepositorySnapshot): RepositorySnapshotPreview {
-    const sensitivity = buildSnapshotSensitivitySummary(snapshot.files);
-
-    return {
-      provider: snapshot.provider,
-      repository: snapshot.repository,
-      branch: snapshot.branch,
-      includedFiles: snapshot.files.slice(0, 8).map((file) => file.path),
-      filesPrepared: snapshot.files.length,
-      totalFilesDiscovered: snapshot.totalFilesDiscovered,
-      truncated: snapshot.truncated,
-      partialReason: snapshot.partialReason,
-      exclusions: snapshot.exclusions ?? {
-        omittedByPrioritization: [],
-        omittedBySize: [],
-        omittedByBinaryDetection: [],
-      },
-      sensitivity,
-      disclaimer: 'Se enviara a Codex el contenido textual del snapshot preparado para este repositorio y rama. Revisa los archivos incluidos, las exclusiones y las alertas de sensibilidad antes de continuar.',
-      metrics: snapshot.metrics,
-    };
   }
 }

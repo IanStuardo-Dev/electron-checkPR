@@ -20,4 +20,6 @@ export interface RepositoryProviderPort {
   getRepositorySnapshot(config: RepositoryConnectionConfig, options: RepositorySnapshotOptions): Promise<RepositorySnapshot>;
 }
 
+export type RepositoryProviderService = Omit<RepositoryProviderPort, 'kind'>;
+
 export type RepositoryAnalysisSource = RepositoryAnalysisRequest['source'];

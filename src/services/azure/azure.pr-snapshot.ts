@@ -3,8 +3,7 @@ import type { PullRequestSnapshotOptions, ReviewItem } from '../../types/reposit
 import type { AzureConnectionConfig } from '../../types/azure';
 import { AZURE_API_VERSION, getAzureConfig, requestAzureJson } from './azure.api';
 import type { AzurePullRequestChangesResponse, AzurePullRequestIterationsResponse } from './azure.types';
-import { shouldExcludeSnapshotPath } from '../shared/repository-snapshot-helpers';
-import { appendPartialReason } from '../shared/snapshot-content';
+import { buildPullRequestSnapshot } from '../shared/pull-request-snapshot';
 
 export async function getAzurePullRequestSnapshot(
   config: AzureConnectionConfig,
@@ -31,41 +30,17 @@ export async function getAzurePullRequestSnapshot(
     `pull request changes request (#${pullRequest.id})`,
   );
 
-  const visibleFiles = changes.changeEntries
-    .filter((entry) => entry.item?.path)
-    .filter((entry) => !shouldExcludeSnapshotPath(entry.item!.path!, options.excludedPathPatterns))
-    .map((entry) => ({
-      path: entry.item!.path!.replace(/^\//, ''),
-      status: entry.changeType || 'modified',
-    }));
-
-  const totalFilesChanged = changes.changeEntries.filter((entry) => entry.item?.path).length;
-  const excludedCount = totalFilesChanged - visibleFiles.length;
-
-  return {
+  return buildPullRequestSnapshot({
     provider: 'azure-devops',
-    repository: pullRequest.repository,
-    pullRequestId: pullRequest.id,
-    title: pullRequest.title,
-    description: pullRequest.description,
-    author: pullRequest.createdBy.displayName,
-    sourceBranch: pullRequest.sourceBranch,
-    targetBranch: pullRequest.targetBranch,
-    reviewers: pullRequest.reviewers.map((reviewer) => ({
-      displayName: reviewer.displayName,
-      vote: reviewer.vote,
-      isRequired: reviewer.isRequired,
-    })),
-    files: visibleFiles,
-    totalFilesChanged,
-    truncated: totalFilesChanged !== visibleFiles.length,
-    partialReason: appendPartialReason(undefined, [
-      excludedCount > 0
-        ? `Se excluyeron ${excludedCount} archivos del Pull Request por las reglas de snapshot configuradas.`
-        : '',
-      visibleFiles.length > 0
-        ? 'Azure DevOps no entrego patch textual para este PR; el snapshot contiene solo metadata de archivos cambiados.'
-        : '',
-    ]),
-  };
+    pullRequest,
+    changes: changes.changeEntries.filter((entry) => entry.item?.path),
+    snapshotOptions: options,
+    getPath: (entry) => entry.item?.path || '',
+    mapFile: (entry) => ({
+      path: entry.item?.path?.replace(/^\//, '') || '',
+      status: entry.changeType || 'modified',
+    }),
+    excludedLabel: 'Pull Request',
+    missingPatchMessage: 'archivos del Pull Request no incluyen patch textual porque Azure DevOps no entrego patch textual y solo entrego metadata de cambios.',
+  });
 }

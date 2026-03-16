@@ -153,10 +153,10 @@ export function SettingsIntegrationsSection({
                   projectsLoading={projectsLoading}
                   repositories={repositories}
                   repositoriesLoading={repositoriesLoading}
-                  onDiscoverProjects={() => void discoverProjects()}
-                  onSelectProject={(project) => void selectProject(project)}
+                  onDiscoverProjects={discoverProjects}
+                  onSelectProject={selectProject}
                   onConfigChange={updateConfig}
-                  onRefresh={() => void refreshPullRequests()}
+                  onRefresh={refreshPullRequests}
                 />
               ) : null}
             </RepositoryProviderCard>

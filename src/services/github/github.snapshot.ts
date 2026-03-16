@@ -1,11 +1,17 @@
 import type { RepositoryConnectionConfig, RepositorySnapshotOptions } from '../../types/repository';
 import type { RepositorySnapshot } from '../../types/analysis';
 import { mapWithConcurrency, retryWithBackoff } from '../shared/request-control';
-import { isSupportedCodeFile, isTestFile, rankPath, shouldExcludeSnapshotPath } from '../shared/repository-snapshot-helpers';
-import { isProbablyBinaryContent, MAX_SNAPSHOT_FILE_BYTES } from '../shared/snapshot-content';
+import { rankPath } from '../shared/repository-snapshot-helpers';
 import { getGitHubConfig, requestGitHubContent, requestGitHubJson } from './github.api';
 import type { GitHubTreeResponse } from './github.types';
-import { buildRepositorySnapshot } from '../shared/repository-snapshot';
+import {
+  buildRepositoryFileSnapshot,
+  buildRepositorySnapshot,
+  createRepositorySnapshotCollectionState,
+  getPrioritizedSnapshotPaths,
+  skipRepositorySnapshotFileBySize,
+  selectRepositorySnapshotCandidates,
+} from '../shared/repository-snapshot';
 
 export async function enumerateGitHubContents(
   owner: string,
@@ -113,11 +119,7 @@ export async function getGitHubRepositorySnapshot(
     : { files: treeFiles, reachedInventoryTarget: false };
   const discoveredFiles = enumerated.files;
 
-  const candidateFiles = discoveredFiles
-    .filter((item) => isSupportedCodeFile(item.path))
-    .filter((item) => options.includeTests || !isTestFile(item.path))
-    .filter((item) => !shouldExcludeSnapshotPath(item.path, options.excludedPathPatterns))
-    .sort((left, right) => {
+  const candidateFiles = selectRepositorySnapshotCandidates(discoveredFiles, options, (left, right) => {
       const scoreDelta = rankPath(right.path) - rankPath(left.path);
       if (scoreDelta !== 0) {
         return scoreDelta;
@@ -126,17 +128,9 @@ export async function getGitHubRepositorySnapshot(
     });
 
   const selectedFiles = candidateFiles.slice(0, options.maxFiles);
-  let retryCount = 0;
-  let skippedLargeFiles = 0;
-  let skippedBinaryFiles = 0;
-  const oversizedPaths: string[] = [];
-  const binaryPaths: string[] = [];
+  const collectionState = createRepositorySnapshotCollectionState();
   const files = (await mapWithConcurrency(selectedFiles, 5, async (file) => {
-    if ((file.size || 0) > MAX_SNAPSHOT_FILE_BYTES) {
-      skippedLargeFiles += 1;
-      if (oversizedPaths.length < 8) {
-        oversizedPaths.push(file.path);
-      }
+    if (skipRepositorySnapshotFileBySize(file.path, file.size || 0, collectionState)) {
       return null;
     }
 
@@ -146,7 +140,7 @@ export async function getGitHubRepositorySnapshot(
       `content request (${file.path})`,
     ), {
       onRetry: () => {
-        retryCount += 1;
+        collectionState.retryCount += 1;
       },
     });
 
@@ -158,28 +152,12 @@ export async function getGitHubRepositorySnapshot(
       ? Buffer.from(contentPayload.content.replace(/\n/g, ''), 'base64').toString('utf8')
       : contentPayload.content;
 
-    if (contentPayload.size > MAX_SNAPSHOT_FILE_BYTES) {
-      skippedLargeFiles += 1;
-      if (oversizedPaths.length < 8) {
-        oversizedPaths.push(file.path);
-      }
-      return null;
-    }
-
-    if (isProbablyBinaryContent(content)) {
-      skippedBinaryFiles += 1;
-      if (binaryPaths.length < 8) {
-        binaryPaths.push(file.path);
-      }
-      return null;
-    }
-
-    return {
-      path: file.path,
-      extension: file.path.split('.').pop()?.toLowerCase() || '',
-      size: contentPayload.size,
+    return buildRepositoryFileSnapshot(
+      file.path,
       content,
-    };
+      contentPayload.size,
+      collectionState,
+    );
   })).filter((file) => file !== null);
 
   return buildRepositorySnapshot({
@@ -190,12 +168,8 @@ export async function getGitHubRepositorySnapshot(
     totalFilesDiscovered: candidateFiles.length,
     maxFiles: options.maxFiles,
     startedAt,
-    retryCount,
-    skippedLargeFiles,
-    skippedBinaryFiles,
-    oversizedPaths,
-    binaryPaths,
-    prioritizedPaths: candidateFiles.slice(options.maxFiles, options.maxFiles + 8).map((file) => file.path),
+    collectionState,
+    prioritizedPaths: getPrioritizedSnapshotPaths(candidateFiles, options.maxFiles),
     basePartialReason: tree.truncated
       ? `GitHub reporto el tree como truncado; se reconstruyo el inventario via contents${enumerated.reachedInventoryTarget ? ` con corte temprano al alcanzar ${inventoryTarget} archivos inventariados` : ''} y el analisis puede omitir archivos profundos o no textuales.`
       : candidateFiles.length > options.maxFiles

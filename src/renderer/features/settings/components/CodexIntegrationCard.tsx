@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircleIcon, CpuChipIcon } from '@heroicons/react/24/outline';
 import type { CodexIntegrationConfig } from '../../dashboard/types';
+import { countActiveArchitectureDirectives } from '../../../shared/codex/prompt-directives';
 import {
   SettingsField,
   SettingsModal,
@@ -318,19 +319,11 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
 };
 
 function countConfiguredPolicies(config: CodexIntegrationConfig): number {
-  const directives = config.promptDirectives;
   const prDirectives = config.prReview.promptDirectives;
 
-  return [
-    directives.architectureReviewEnabled,
-    Boolean(directives.architecturePattern.trim()),
-    Boolean(directives.requiredPractices.trim()),
-    Boolean(directives.forbiddenPractices.trim()),
-    Boolean(directives.domainContext.trim()),
-    Boolean(directives.customInstructions.trim()),
-    Boolean(prDirectives.focusAreas.trim()),
-    Boolean(prDirectives.customInstructions.trim()),
-  ].filter(Boolean).length;
+  return countActiveArchitectureDirectives(config.promptDirectives)
+    + (prDirectives.focusAreas.trim() ? 1 : 0)
+    + (prDirectives.customInstructions.trim() ? 1 : 0);
 }
 
 export default CodexIntegrationCard;

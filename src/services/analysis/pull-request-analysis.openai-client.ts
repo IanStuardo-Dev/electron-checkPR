@@ -1,5 +1,6 @@
 import type { PullRequestAnalysisBatchRequest } from '../../types/analysis';
 import { retryWithBackoff } from '../shared/request-control';
+import type { PullRequestAnalysisClientPort, PullRequestAnalysisPromptPayload } from './pull-request-analysis.ports';
 
 const PULL_REQUEST_ANALYSIS_SCHEMA = {
   type: 'object',
@@ -19,10 +20,10 @@ const PULL_REQUEST_ANALYSIS_SCHEMA = {
   },
 } as const;
 
-export class OpenAIPullRequestAnalysisClient {
+export class OpenAIPullRequestAnalysisClient implements PullRequestAnalysisClientPort {
   async analyze(input: {
     request: PullRequestAnalysisBatchRequest;
-    prompt: { systemPrompt: string; userPrompt: string };
+    prompt: PullRequestAnalysisPromptPayload;
     signal: AbortSignal;
   }): Promise<string> {
     return retryWithBackoff(async () => {
