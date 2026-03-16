@@ -7,6 +7,7 @@ import Sidebar from './components/Layout/Sidebar';
 import Settings from './pages/Settings';
 import RepositoryAnalysis from './pages/RepositoryAnalysis';
 import { RepositorySourceProvider } from './features/dashboard/context/RepositorySourceContext';
+import TitleBar from './components/Layout/TitleBar';
 
 const App = () => {
   return (
@@ -30,18 +31,21 @@ const AppShell = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <div className="mx-auto flex min-h-screen max-w-[1600px]">
+    <div className="h-screen overflow-hidden bg-slate-100">
+      <div className="mx-auto flex h-full max-w-[1680px]">
         <Sidebar />
-        <main key={location.pathname} className="min-w-0 flex-1 px-6 py-8 lg:px-10">
-          <Routes location={location}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/history" element={<History />} />
-            <Route path="/repository-analysis" element={<RepositoryAnalysis />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <TitleBar pathname={location.pathname} />
+          <main key={location.pathname} className="min-w-0 flex-1 overflow-y-auto px-6 py-8 lg:px-10">
+            <Routes location={location}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/history" element={<History />} />
+              <Route path="/repository-analysis" element={<RepositoryAnalysis />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
+        </div>
       </div>
     </div>
   );
