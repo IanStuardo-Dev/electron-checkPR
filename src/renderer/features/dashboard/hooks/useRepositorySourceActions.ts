@@ -1,7 +1,7 @@
 import React from 'react';
 import type { SavedConnectionConfig } from '../types';
-import { useRepositoryDiagnostics } from './useRepositoryDiagnostics';
-import { useRepositorySourceState } from './useRepositorySourceState';
+import type { useRepositoryDiagnostics } from './useRepositoryDiagnostics';
+import type { useRepositorySourceState } from './useRepositorySourceState';
 
 interface UseRepositorySourceActionsOptions {
   state: ReturnType<typeof useRepositorySourceState>;

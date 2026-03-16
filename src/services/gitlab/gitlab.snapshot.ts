@@ -2,7 +2,8 @@ import type { RepositoryConnectionConfig, RepositorySnapshotOptions } from '../.
 import type { RepositorySnapshot } from '../../types/analysis';
 import { mapWithConcurrency, retryWithBackoff } from '../shared/request-control';
 import { isSupportedCodeFile, isTestFile, rankPath, shouldExcludeSnapshotPath } from '../shared/repository-snapshot-helpers';
-import { appendPartialReason, isProbablyBinaryContent, MAX_SNAPSHOT_FILE_BYTES } from '../shared/snapshot-content';
+import { isProbablyBinaryContent, MAX_SNAPSHOT_FILE_BYTES } from '../shared/snapshot-content';
+import { buildRepositorySnapshot } from '../shared/repository-snapshot';
 import { GITLAB_API_BASE_URL, getGitLabConfig, requestGitLabJson, requestPaginatedGitLabTree } from './gitlab.api';
 import type { GitLabFileResponse, GitLabTreeItemResponse } from './gitlab.types';
 
@@ -74,35 +75,22 @@ export async function getGitLabRepositorySnapshot(
     };
   })).filter((file) => file !== null);
 
-  const partialReason = appendPartialReason(
-    candidateFiles.length > options.maxFiles
-      ? `El snapshot se recorto a ${options.maxFiles} archivos priorizados de ${candidateFiles.length} descubiertos en GitLab.`
-      : undefined,
-    [
-      skippedLargeFiles > 0 ? `Se omitieron ${skippedLargeFiles} archivos por exceder ${Math.round(MAX_SNAPSHOT_FILE_BYTES / 1024)} KB.` : '',
-      skippedBinaryFiles > 0 ? `Se omitieron ${skippedBinaryFiles} archivos por contenido binario o no legible.` : '',
-    ],
-  );
-
-  return {
+  return buildRepositorySnapshot({
     provider: 'gitlab',
     repository: project,
-    branch: options.branchName,
+    branchName: options.branchName,
     files,
     totalFilesDiscovered: candidateFiles.length,
-    truncated: candidateFiles.length > options.maxFiles || skippedLargeFiles > 0 || skippedBinaryFiles > 0,
-    partialReason,
-    exclusions: {
-      omittedByPrioritization: candidateFiles.slice(options.maxFiles, options.maxFiles + 8).map((file) => file.path),
-      omittedBySize: oversizedPaths,
-      omittedByBinaryDetection: binaryPaths,
-    },
-    metrics: {
-      durationMs: Date.now() - startedAt,
-      retryCount,
-      discardedByPrioritization: Math.max(0, candidateFiles.length - selectedFiles.length),
-      discardedBySize: skippedLargeFiles,
-      discardedByBinaryDetection: skippedBinaryFiles,
-    },
-  };
+    maxFiles: options.maxFiles,
+    startedAt,
+    retryCount,
+    skippedLargeFiles,
+    skippedBinaryFiles,
+    oversizedPaths,
+    binaryPaths,
+    prioritizedPaths: candidateFiles.slice(options.maxFiles, options.maxFiles + 8).map((file) => file.path),
+    basePartialReason: candidateFiles.length > options.maxFiles
+      ? `El snapshot se recorto a ${options.maxFiles} archivos priorizados de ${candidateFiles.length} descubiertos en GitLab.`
+      : undefined,
+  });
 }

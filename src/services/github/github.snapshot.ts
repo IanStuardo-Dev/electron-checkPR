@@ -2,9 +2,10 @@ import type { RepositoryConnectionConfig, RepositorySnapshotOptions } from '../.
 import type { RepositorySnapshot } from '../../types/analysis';
 import { mapWithConcurrency, retryWithBackoff } from '../shared/request-control';
 import { isSupportedCodeFile, isTestFile, rankPath, shouldExcludeSnapshotPath } from '../shared/repository-snapshot-helpers';
-import { appendPartialReason, isProbablyBinaryContent, MAX_SNAPSHOT_FILE_BYTES } from '../shared/snapshot-content';
+import { isProbablyBinaryContent, MAX_SNAPSHOT_FILE_BYTES } from '../shared/snapshot-content';
 import { getGitHubConfig, requestGitHubContent, requestGitHubJson } from './github.api';
 import type { GitHubTreeResponse } from './github.types';
+import { buildRepositorySnapshot } from '../shared/repository-snapshot';
 
 export async function enumerateGitHubContents(
   owner: string,
@@ -181,37 +182,24 @@ export async function getGitHubRepositorySnapshot(
     };
   })).filter((file) => file !== null);
 
-  const partialReason = appendPartialReason(
-    tree.truncated
+  return buildRepositorySnapshot({
+    provider: 'github',
+    repository,
+    branchName: options.branchName,
+    files,
+    totalFilesDiscovered: candidateFiles.length,
+    maxFiles: options.maxFiles,
+    startedAt,
+    retryCount,
+    skippedLargeFiles,
+    skippedBinaryFiles,
+    oversizedPaths,
+    binaryPaths,
+    prioritizedPaths: candidateFiles.slice(options.maxFiles, options.maxFiles + 8).map((file) => file.path),
+    basePartialReason: tree.truncated
       ? `GitHub reporto el tree como truncado; se reconstruyo el inventario via contents${enumerated.reachedInventoryTarget ? ` con corte temprano al alcanzar ${inventoryTarget} archivos inventariados` : ''} y el analisis puede omitir archivos profundos o no textuales.`
       : candidateFiles.length > options.maxFiles
         ? `El snapshot se recorto a ${options.maxFiles} archivos priorizados de ${candidateFiles.length} descubiertos.`
         : undefined,
-    [
-      skippedLargeFiles > 0 ? `Se omitieron ${skippedLargeFiles} archivos por exceder ${Math.round(MAX_SNAPSHOT_FILE_BYTES / 1024)} KB.` : '',
-      skippedBinaryFiles > 0 ? `Se omitieron ${skippedBinaryFiles} archivos por contenido binario o no legible.` : '',
-    ],
-  );
-
-  return {
-    provider: 'github',
-    repository,
-    branch: options.branchName,
-    files,
-    totalFilesDiscovered: candidateFiles.length,
-    truncated: candidateFiles.length > options.maxFiles || Boolean(tree.truncated) || skippedLargeFiles > 0 || skippedBinaryFiles > 0,
-    partialReason,
-    exclusions: {
-      omittedByPrioritization: candidateFiles.slice(options.maxFiles, options.maxFiles + 8).map((file) => file.path),
-      omittedBySize: oversizedPaths,
-      omittedByBinaryDetection: binaryPaths,
-    },
-    metrics: {
-      durationMs: Date.now() - startedAt,
-      retryCount,
-      discardedByPrioritization: Math.max(0, candidateFiles.length - selectedFiles.length),
-      discardedBySize: skippedLargeFiles,
-      discardedByBinaryDetection: skippedBinaryFiles,
-    },
-  };
+  });
 }

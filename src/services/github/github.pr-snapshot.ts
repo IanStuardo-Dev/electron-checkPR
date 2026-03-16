@@ -2,8 +2,7 @@ import type { PullRequestSnapshot } from '../../types/analysis';
 import type { PullRequestSnapshotOptions, RepositoryConnectionConfig, ReviewItem } from '../../types/repository';
 import { getGitHubConfig, requestGitHubPaginated } from './github.api';
 import type { GitHubPullRequestFileResponseItem } from './github.types';
-import { shouldExcludeSnapshotPath } from '../shared/repository-snapshot-helpers';
-import { appendPartialReason } from '../shared/snapshot-content';
+import { buildPullRequestSnapshot } from '../shared/pull-request-snapshot';
 
 export async function getGitHubPullRequestSnapshot(
   config: RepositoryConnectionConfig,
@@ -22,42 +21,20 @@ export async function getGitHubPullRequestSnapshot(
     `pull request files request (#${pullRequest.id})`,
   );
 
-  const visibleFiles = files
-    .filter((file) => !shouldExcludeSnapshotPath(file.filename, options.excludedPathPatterns))
-    .map((file) => ({
+  return buildPullRequestSnapshot({
+    provider: 'github',
+    pullRequest,
+    changes: files,
+    snapshotOptions: options,
+    getPath: (file) => file.filename,
+    mapFile: (file) => ({
       path: file.filename,
       status: file.status,
       additions: file.additions,
       deletions: file.deletions,
       patch: file.patch,
-    }));
-  const excludedCount = files.length - visibleFiles.length;
-  const filesWithoutPatch = visibleFiles.filter((file) => !file.patch).length;
-
-  return {
-    provider: 'github',
-    repository: pullRequest.repository,
-    pullRequestId: pullRequest.id,
-    title: pullRequest.title,
-    description: pullRequest.description,
-    author: pullRequest.createdBy.displayName,
-    sourceBranch: pullRequest.sourceBranch,
-    targetBranch: pullRequest.targetBranch,
-    reviewers: pullRequest.reviewers.map((reviewer) => ({
-      displayName: reviewer.displayName,
-      vote: reviewer.vote,
-      isRequired: reviewer.isRequired,
-    })),
-    files: visibleFiles,
-    totalFilesChanged: files.length,
-    truncated: files.length !== visibleFiles.length,
-    partialReason: appendPartialReason(undefined, [
-      excludedCount > 0
-        ? `Se excluyeron ${excludedCount} archivos del PR por las reglas de snapshot configuradas.`
-        : '',
-      filesWithoutPatch > 0
-        ? `${filesWithoutPatch} archivos del PR no incluyen patch textual en la respuesta del provider.`
-        : '',
-    ]),
-  };
+    }),
+    excludedLabel: 'PR',
+    missingPatchMessage: 'archivos del PR no incluyen patch textual en la respuesta del provider.',
+  });
 }

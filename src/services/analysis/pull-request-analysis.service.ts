@@ -4,7 +4,7 @@ import { mapWithConcurrency } from '../shared/request-control';
 import { OpenAIPullRequestAnalysisClient } from './pull-request-analysis.openai-client';
 import { PullRequestAnalysisPromptBuilder } from './pull-request-analysis.prompt-builder';
 import { PullRequestAnalysisResponseParser } from './pull-request-analysis.response-parser';
-import { PullRequestAnalysisSnapshotProvider } from './pull-request-analysis.snapshot-provider';
+import type { PullRequestAnalysisSnapshotProvider } from './pull-request-analysis.snapshot-provider';
 
 export class PullRequestAnalysisService {
   private activeRuns = new Map<string, Set<AbortController>>();

@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import type { ReviewItem } from '../../../../types/repository';
 import type { SavedConnectionConfig } from '../types';
 import { useRepositorySourceActions } from './useRepositorySourceActions';
