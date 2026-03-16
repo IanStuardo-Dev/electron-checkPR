@@ -1,4 +1,4 @@
-import type { RepositoryProviderDefinition, RepositoryProviderKind, RepositoryProviderSelection } from '../../../types/repository';
+import type { RepositoryProviderDefinition, RepositoryProviderSelection } from '../../../types/repository';
 
 export const repositoryProviders: RepositoryProviderDefinition[] = [
   {

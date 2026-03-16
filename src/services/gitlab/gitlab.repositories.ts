@@ -24,11 +24,7 @@ export async function getGitLabRepositories(config: RepositoryConnectionConfig):
 
 export async function getGitLabProjects(config: RepositoryConnectionConfig): Promise<RepositoryProject[]> {
   const repositories = await getGitLabRepositories(config);
-  return repositories.map((repository) => ({
-    id: repository.id,
-    name: repository.name,
-    state: 'active',
-  }));
+  return repositories.map((repository) => buildProject({ path_with_namespace: repository.id }));
 }
 
 export async function getGitLabBranches(config: RepositoryConnectionConfig): Promise<RepositoryBranch[]> {

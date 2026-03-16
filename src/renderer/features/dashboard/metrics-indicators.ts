@@ -3,7 +3,6 @@ import {
   countPullRequestsOlderThan,
   formatHours,
   formatPercentage,
-  getAverageAgeHours,
   hasEmptyDescription,
   hasMergeConflict,
 } from './metrics-core';

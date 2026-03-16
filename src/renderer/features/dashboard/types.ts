@@ -1,7 +1,6 @@
 import type {
   RepositoryConnectionConfig,
   RepositoryProject,
-  RepositoryProviderKind,
   RepositoryProviderSelection,
   RepositorySummary,
   ReviewItem,

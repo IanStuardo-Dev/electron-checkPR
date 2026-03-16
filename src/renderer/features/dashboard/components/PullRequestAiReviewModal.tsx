@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowPathIcon, ExclamationTriangleIcon, ShieldExclamationIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, ShieldExclamationIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import type { PullRequestAnalysisPreview } from '../../../../types/analysis';
 import type { PrioritizedPullRequest } from '../types';
 

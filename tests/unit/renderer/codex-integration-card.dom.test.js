@@ -44,7 +44,7 @@ describe('CodexIntegrationCard', () => {
       },
     }));
 
-    expect(screen.getByText(/las reglas textuales viven en un modal dedicado/i)).toBeInTheDocument();
+    expect(screen.getByText(/las reglas avanzadas quedan fuera de la vista principal/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /politicas avanzadas/i }));
 

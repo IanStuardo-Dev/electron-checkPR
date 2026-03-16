@@ -3,6 +3,7 @@ import type { RepositoryProject, RepositorySummary, ReviewItem } from '../../../
 import type { SavedConnectionConfig } from '../types';
 
 export function useRepositorySourceState(initialProvider: SavedConnectionConfig['provider']) {
+  void initialProvider;
   const [pullRequests, setPullRequests] = React.useState<ReviewItem[]>([]);
   const [projects, setProjects] = React.useState<RepositoryProject[]>([]);
   const [repositories, setRepositories] = React.useState<RepositorySummary[]>([]);

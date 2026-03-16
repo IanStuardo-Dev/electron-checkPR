@@ -16,6 +16,7 @@ Object.defineProperty(window, 'matchMedia', {
 
 window.electronApi = {
   invoke: jest.fn().mockResolvedValue({ ok: true, data: '' }),
+  onWindowStateChange: jest.fn(() => jest.fn()),
 };
 
 jest.mock('framer-motion', () => ({

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { SavedConnectionConfig } from '../types';
-import { useRepositorySourceState } from './useRepositorySourceState';
+import type { useRepositorySourceState } from './useRepositorySourceState';
 
 interface UseRepositorySourceEffectsOptions {
   config: SavedConnectionConfig;

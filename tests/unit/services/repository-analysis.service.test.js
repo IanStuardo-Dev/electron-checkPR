@@ -1,4 +1,5 @@
 const { RepositoryAnalysisService } = require('../../../src/services/analysis/repository-analysis.service');
+const { createRepositoryAnalysisService } = require('../../../src/services/analysis/repository-analysis.factory');
 
 describe('RepositoryAnalysisService', () => {
   afterEach(() => {
@@ -7,11 +8,11 @@ describe('RepositoryAnalysisService', () => {
   });
 
   function createServiceWithSnapshot(snapshot) {
-    return new RepositoryAnalysisService(
-      {
+    return createRepositoryAnalysisService({
+      snapshotProvider: {
         getSnapshot: jest.fn().mockResolvedValue(snapshot),
       },
-    );
+    });
   }
 
   test('acepta payload JSON en la raiz y lo convierte en resultado estructurado', async () => {
@@ -144,8 +145,8 @@ describe('RepositoryAnalysisService', () => {
   });
 
   test('cancela una corrida activa y limpia el estado interno', async () => {
-    const service = new RepositoryAnalysisService(
-      {
+    const service = new RepositoryAnalysisService({
+      snapshotProvider: {
         getSnapshot: jest.fn().mockResolvedValue({
           provider: 'github',
           repository: 'repo-a',
@@ -155,18 +156,18 @@ describe('RepositoryAnalysisService', () => {
           truncated: false,
         }),
       },
-      {
+      promptBuilder: {
         build: jest.fn().mockReturnValue({ systemPrompt: 'system', userPrompt: 'user' }),
       },
-      {
+      analysisClient: {
         analyze: jest.fn().mockImplementation(({ signal }) => new Promise((_, reject) => {
           signal.addEventListener('abort', () => reject(new Error('aborted')));
         })),
       },
-      {
+      responseParser: {
         parse: jest.fn(),
       },
-    );
+    });
 
     const runPromise = service.runAnalysis({
       requestId: 'req-cancel',
@@ -202,8 +203,8 @@ describe('RepositoryAnalysisService', () => {
 
   test('aborta por timeout y limpia activeRuns', async () => {
     jest.useFakeTimers();
-    const service = new RepositoryAnalysisService(
-      {
+    const service = new RepositoryAnalysisService({
+      snapshotProvider: {
         getSnapshot: jest.fn().mockResolvedValue({
           provider: 'github',
           repository: 'repo-a',
@@ -213,18 +214,18 @@ describe('RepositoryAnalysisService', () => {
           truncated: false,
         }),
       },
-      {
+      promptBuilder: {
         build: jest.fn().mockReturnValue({ systemPrompt: 'system', userPrompt: 'user' }),
       },
-      {
+      analysisClient: {
         analyze: jest.fn().mockImplementation(({ signal }) => new Promise((_, reject) => {
           signal.addEventListener('abort', () => reject(new Error('aborted')));
         })),
       },
-      {
+      responseParser: {
         parse: jest.fn(),
       },
-    );
+    });
 
     const runPromise = service.runAnalysis({
       requestId: 'req-timeout',

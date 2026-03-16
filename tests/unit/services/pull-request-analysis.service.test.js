@@ -68,7 +68,12 @@ describe('PullRequestAnalysisService', () => {
     const promptBuilder = { build: jest.fn() };
     const analysisClient = { analyze: jest.fn() };
     const responseParser = { parse: jest.fn() };
-    const service = new PullRequestAnalysisService(snapshotProvider, promptBuilder, analysisClient, responseParser);
+    const service = new PullRequestAnalysisService({
+      snapshotProvider,
+      promptBuilder,
+      analysisClient,
+      responseParser,
+    });
 
     const result = await service.analyzeBatch(createRequest());
 
@@ -101,7 +106,12 @@ describe('PullRequestAnalysisService', () => {
     const promptBuilder = { build: jest.fn() };
     const analysisClient = { analyze: jest.fn() };
     const responseParser = { parse: jest.fn() };
-    const service = new PullRequestAnalysisService(snapshotProvider, promptBuilder, analysisClient, responseParser);
+    const service = new PullRequestAnalysisService({
+      snapshotProvider,
+      promptBuilder,
+      analysisClient,
+      responseParser,
+    });
 
     const result = await service.analyzeBatch(createRequest({
       snapshotPolicy: {
@@ -145,7 +155,12 @@ describe('PullRequestAnalysisService', () => {
       })),
     };
     const responseParser = { parse: jest.fn() };
-    const service = new PullRequestAnalysisService(snapshotProvider, promptBuilder, analysisClient, responseParser);
+    const service = new PullRequestAnalysisService({
+      snapshotProvider,
+      promptBuilder,
+      analysisClient,
+      responseParser,
+    });
     const pending = service.analyzeBatch(createRequest({ requestId: 'batch-1', timeoutMs: 30000 }));
 
     await Promise.resolve();

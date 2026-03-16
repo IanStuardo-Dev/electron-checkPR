@@ -1,77 +1,37 @@
-import type { PullRequestAiReview, PullRequestAnalysisBatchRequest, PullRequestAnalysisPreview, PullRequestSnapshot } from '../../types/analysis';
-import { buildSnapshotSensitivitySummary } from '../shared/snapshot-content';
+import type { PullRequestAiReview, PullRequestAnalysisBatchRequest, PullRequestAnalysisPreview } from '../../types/analysis';
 import { mapWithConcurrency } from '../shared/request-control';
-import { OpenAIPullRequestAnalysisClient } from './pull-request-analysis.openai-client';
-import { PullRequestAnalysisPromptBuilder } from './pull-request-analysis.prompt-builder';
-import { PullRequestAnalysisResponseParser } from './pull-request-analysis.response-parser';
-import { PullRequestAnalysisSnapshotProvider } from './pull-request-analysis.snapshot-provider';
+import type {
+  PullRequestAnalysisClientPort,
+  PullRequestAnalysisPromptBuilderPort,
+  PullRequestAnalysisResponseParserPort,
+  PullRequestAnalysisSnapshotProviderPort,
+} from './pull-request-analysis.ports';
+import { buildPullRequestAnalysisPreview } from './pull-request-analysis.preview';
+
+interface PullRequestAnalysisServiceDependencies {
+  snapshotProvider: PullRequestAnalysisSnapshotProviderPort;
+  promptBuilder: PullRequestAnalysisPromptBuilderPort;
+  analysisClient: PullRequestAnalysisClientPort;
+  responseParser: PullRequestAnalysisResponseParserPort;
+}
 
 export class PullRequestAnalysisService {
   private activeRuns = new Map<string, Set<AbortController>>();
+  private readonly snapshotProvider: PullRequestAnalysisSnapshotProviderPort;
+  private readonly promptBuilder: PullRequestAnalysisPromptBuilderPort;
+  private readonly analysisClient: PullRequestAnalysisClientPort;
+  private readonly responseParser: PullRequestAnalysisResponseParserPort;
 
-  constructor(
-    private readonly snapshotProvider: PullRequestAnalysisSnapshotProvider,
-    private readonly promptBuilder: PullRequestAnalysisPromptBuilder = new PullRequestAnalysisPromptBuilder(),
-    private readonly analysisClient: OpenAIPullRequestAnalysisClient = new OpenAIPullRequestAnalysisClient(),
-    private readonly responseParser: PullRequestAnalysisResponseParser = new PullRequestAnalysisResponseParser(),
-  ) {}
-
-  private buildPreview(snapshot: PullRequestSnapshot, strictMode: boolean): PullRequestAnalysisPreview {
-    const textFiles = snapshot.files
-      .filter((file) => file.patch)
-      .map((file) => ({
-        path: file.path,
-        extension: file.path.split('.').pop()?.toLowerCase() || '',
-        size: file.patch?.length || 0,
-        content: file.patch || '',
-      }));
-    const metadataSensitivity = buildSnapshotSensitivitySummary(
-      snapshot.files.map((file) => ({
-        path: file.path,
-        extension: file.path.split('.').pop()?.toLowerCase() || '',
-        size: file.patch?.length || 0,
-        content: '',
-      })),
-    );
-    const sensitivity = buildSnapshotSensitivitySummary(textFiles);
-    const lacksPatchCoverage = textFiles.length === 0;
-    const hasIncompletePatchCoverage = snapshot.files.length > textFiles.length;
-
-    return {
-      pullRequestId: snapshot.pullRequestId,
-      repository: snapshot.repository,
-      title: snapshot.title,
-      filesPrepared: snapshot.files.length,
-      totalFilesChanged: snapshot.totalFilesChanged,
-      includedFiles: snapshot.files.slice(0, 8).map((file) => file.path),
-      truncated: snapshot.truncated,
-      partialReason: snapshot.partialReason,
-      sensitivity: {
-        findings: [
-          ...metadataSensitivity.findings,
-          ...sensitivity.findings.filter((finding) => !metadataSensitivity.findings.some((metadataFinding) => (
-            metadataFinding.kind === finding.kind && metadataFinding.path === finding.path
-          ))),
-        ].slice(0, 10),
-        hasSensitiveConfigFiles: metadataSensitivity.hasSensitiveConfigFiles || sensitivity.hasSensitiveConfigFiles,
-        hasSecretPatterns: sensitivity.hasSecretPatterns,
-        noSensitiveConfigFilesDetected: metadataSensitivity.noSensitiveConfigFilesDetected && sensitivity.noSensitiveConfigFilesDetected,
-        summary: lacksPatchCoverage
-          ? 'El provider no entrego diff textual suficiente para este PR. No se enviara automaticamente a Codex.'
-          : sensitivity.summary,
-      },
-      disclaimer: strictMode
-        ? 'Revisa este snapshot antes de enviar a Codex. En modo estricto se bloqueara el envio si hay sensibilidad o cobertura incompleta.'
-        : 'Revisa este snapshot local antes de decidir si quieres enviarlo a Codex para analisis IA.',
-      lacksPatchCoverage,
-      strictModeWouldBlock: strictMode && (
-        lacksPatchCoverage
-        || hasIncompletePatchCoverage
-        || sensitivity.hasSecretPatterns
-        || sensitivity.hasSensitiveConfigFiles
-        || metadataSensitivity.hasSensitiveConfigFiles
-      ),
-    };
+  constructor({
+    snapshotProvider,
+    promptBuilder,
+    analysisClient,
+    responseParser,
+  }: PullRequestAnalysisServiceDependencies) {
+    this.snapshotProvider = snapshotProvider;
+    this.promptBuilder = promptBuilder;
+    this.analysisClient = analysisClient;
+    this.responseParser = responseParser;
   }
 
   async previewBatch(request: PullRequestAnalysisBatchRequest): Promise<PullRequestAnalysisPreview[]> {
@@ -79,7 +39,7 @@ export class PullRequestAnalysisService {
 
     for (const item of request.items) {
       const snapshot = await this.snapshotProvider.getSnapshot(request.source, item.pullRequest, request.snapshotPolicy);
-      previews.push(this.buildPreview(snapshot, Boolean(request.snapshotPolicy?.strictMode)));
+      previews.push(buildPullRequestAnalysisPreview(snapshot, Boolean(request.snapshotPolicy?.strictMode)));
     }
 
     return previews;
@@ -105,7 +65,7 @@ export class PullRequestAnalysisService {
     try {
       const results = await mapWithConcurrency(request.items, 2, async (item) => {
         const snapshot = await this.snapshotProvider.getSnapshot(request.source, item.pullRequest, request.snapshotPolicy);
-        const preview = this.buildPreview(snapshot, Boolean(request.snapshotPolicy?.strictMode));
+        const preview = buildPullRequestAnalysisPreview(snapshot, Boolean(request.snapshotPolicy?.strictMode));
 
         if (preview.lacksPatchCoverage) {
           return {

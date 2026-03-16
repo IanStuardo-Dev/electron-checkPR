@@ -1,4 +1,5 @@
 import type { RepositoryConnectionConfig } from '../../types/repository';
+import { readJsonResponse } from '../shared/http-response';
 
 const GITHUB_API_VERSION = '2022-11-28';
 
@@ -29,35 +30,11 @@ export function getGitHubConfig(config: RepositoryConnectionConfig): Required<Pi
 }
 
 export async function readGitHubResponse<T>(response: Response, context: string): Promise<T> {
-  const contentType = response.headers.get('content-type') || '';
-  const responseText = await response.text();
-  const responsePreview = responseText.replace(/\s+/g, ' ').trim().slice(0, 280);
-
-  if (!response.ok) {
-    const detail = responsePreview || response.statusText;
-
-    if (response.status === 401) {
-      throw new Error(`GitHub ${context} failed (401): unauthorized. Response: ${detail || 'empty body'}`);
-    }
-
-    if (response.status === 403) {
-      throw new Error(`GitHub ${context} failed (403): forbidden. Revisa scopes del token. Response: ${detail || 'empty body'}`);
-    }
-
-    throw new Error(`GitHub ${context} failed (${response.status}): ${detail}`);
-  }
-
-  if (!contentType.includes('application/json')) {
-    throw new Error(
-      `GitHub ${context} returned unexpected content (${contentType || 'unknown'}). Response: ${responsePreview || 'empty body'}`,
-    );
-  }
-
-  try {
-    return JSON.parse(responseText) as T;
-  } catch {
-    throw new Error(`GitHub ${context} returned invalid JSON.`);
-  }
+  return readJsonResponse<T>(response, {
+    providerLabel: 'GitHub',
+    context,
+    forbiddenHint: 'Revisa scopes del token.',
+  });
 }
 
 export async function requestGitHubJson<T>(url: string, personalAccessToken: string, context: string): Promise<T> {

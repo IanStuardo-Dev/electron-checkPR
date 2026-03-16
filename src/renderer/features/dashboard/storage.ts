@@ -1,4 +1,6 @@
 import type { SavedConnectionConfig } from './types';
+import { loadStoredObject, removeStoredKeys, saveStoredObject } from '../../shared/storage/jsonStorage';
+import { getSessionSecret, setSessionSecret } from '../../shared/storage/sessionSecrets';
 
 export const DASHBOARD_STORAGE_KEY = 'checkpr.azure.config';
 export const DASHBOARD_SESSION_CONFIG_KEY = 'checkpr.repository.session.config';
@@ -14,36 +16,13 @@ export const defaultConnectionConfig: SavedConnectionConfig = {
   targetReviewer: '',
 };
 
-async function getSessionSecret(key: string): Promise<string> {
-  const response = await window.electronApi.invoke('session-secrets:get', key) as { ok: boolean; data?: string; error?: string };
-  if (!response.ok) {
-    throw new Error(response.error || 'No fue posible leer el secreto de sesion.');
-  }
-
-  return response.data || '';
-}
-
-async function setSessionSecret(key: string, value: string): Promise<void> {
-  const response = await window.electronApi.invoke('session-secrets:set', { key, value }) as { ok: boolean; error?: string };
-  if (!response.ok) {
-    throw new Error(response.error || 'No fue posible persistir el secreto de sesion.');
-  }
-}
-
 export function loadConnectionConfig(): SavedConnectionConfig {
-  try {
-    const savedSessionConfig = window.sessionStorage.getItem(DASHBOARD_SESSION_CONFIG_KEY);
-    window.localStorage.removeItem(DASHBOARD_STORAGE_KEY);
-    window.localStorage.removeItem(DASHBOARD_SAVED_CONTEXTS_KEY);
+  removeStoredKeys(window.localStorage, [DASHBOARD_STORAGE_KEY, DASHBOARD_SAVED_CONTEXTS_KEY]);
 
-    return {
-      ...defaultConnectionConfig,
-      ...(savedSessionConfig ? (JSON.parse(savedSessionConfig) as Partial<SavedConnectionConfig>) : {}),
-      personalAccessToken: '',
-    };
-  } catch {
-    return defaultConnectionConfig;
-  }
+  return {
+    ...loadStoredObject<SavedConnectionConfig>(window.sessionStorage, DASHBOARD_SESSION_CONFIG_KEY, defaultConnectionConfig),
+    personalAccessToken: '',
+  };
 }
 
 export async function hydrateConnectionSecret(): Promise<string> {
@@ -55,17 +34,17 @@ export async function persistConnectionConfig(config: SavedConnectionConfig): Pr
     ...config,
     personalAccessToken: '',
   };
-  window.sessionStorage.setItem(DASHBOARD_SESSION_CONFIG_KEY, JSON.stringify(safeConfig));
+  saveStoredObject(window.sessionStorage, DASHBOARD_SESSION_CONFIG_KEY, safeConfig);
   await setSessionSecret(DASHBOARD_SESSION_PAT_KEY, config.personalAccessToken);
-  window.localStorage.removeItem(DASHBOARD_STORAGE_KEY);
+  removeStoredKeys(window.localStorage, [DASHBOARD_STORAGE_KEY]);
 }
 
 export function loadSavedAzureContexts(): never[] {
-  window.localStorage.removeItem(DASHBOARD_SAVED_CONTEXTS_KEY);
+  removeStoredKeys(window.localStorage, [DASHBOARD_SAVED_CONTEXTS_KEY]);
   return [];
 }
 
 export function persistSavedAzureContext(config: SavedConnectionConfig): void {
   void config;
-  window.localStorage.removeItem(DASHBOARD_SAVED_CONTEXTS_KEY);
+  removeStoredKeys(window.localStorage, [DASHBOARD_SAVED_CONTEXTS_KEY]);
 }

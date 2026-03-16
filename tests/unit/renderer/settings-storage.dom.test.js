@@ -36,4 +36,21 @@ describe('settings storage', () => {
 
     await expect(storage.hydrateCodexApiKey()).resolves.toBe('sk-live');
   });
+
+  test('persistCodexConfig usa fallback de sessionStorage sin Electron', async () => {
+    const originalElectronApi = window.electronApi;
+    delete window.electronApi;
+
+    try {
+      await storage.persistCodexConfig({
+        ...storage.defaultCodexConfig,
+        enabled: true,
+        apiKey: 'sk-browser',
+      });
+
+      await expect(storage.hydrateCodexApiKey()).resolves.toBe('sk-browser');
+    } finally {
+      window.electronApi = originalElectronApi;
+    }
+  });
 });

@@ -1,12 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import type { RepositoryBranch } from '../../types/repository';
 import ConnectionSummary from '../features/dashboard/components/ConnectionSummary';
-import { fetchBranches } from '../features/dashboard/ipc';
 import { useRepositorySourceContext } from '../features/dashboard/context/RepositorySourceContext';
 import { useRepositoryAnalysis } from '../features/repository-analysis/hooks/useRepositoryAnalysis';
+import { useRepositoryAnalysisScope } from '../features/repository-analysis/hooks/useRepositoryAnalysisScope';
 import { useCodexSettings } from '../features/settings/hooks/useCodexSettings';
-import { mergeExcludedPathPatterns } from '../../services/shared/repository-snapshot-helpers';
 import {
   countActiveDirectives,
   RepositoryAnalysisEmptyState,
@@ -31,136 +29,39 @@ const RepositoryAnalysis = () => {
   } = useRepositorySourceContext();
   const { config: codexConfig, isReady: isCodexReady } = useCodexSettings();
   const { phase, preview, result, error, isPreviewing, isRunning, isCancelling, preparePreview, execute, cancel, reset } = useRepositoryAnalysis();
-
-  const [repositoryId, setRepositoryId] = React.useState(config.repositoryId || '');
-  const [branchName, setBranchName] = React.useState('');
-  const [branches, setBranches] = React.useState<RepositoryBranch[]>([]);
-  const [isLoadingBranches, setIsLoadingBranches] = React.useState(false);
-  const [branchError, setBranchError] = React.useState<string | null>(null);
-  const [snapshotAcknowledged, setSnapshotAcknowledged] = React.useState(false);
-  const [pendingExcludedPaths, setPendingExcludedPaths] = React.useState<string[]>([]);
-
-  React.useEffect(() => {
-    setRepositoryId(config.repositoryId || '');
-  }, [config.repositoryId]);
-
-  React.useEffect(() => {
-    setSnapshotAcknowledged(false);
-  }, [repositoryId, branchName, preview?.repository, preview?.branch]);
-
-  React.useEffect(() => {
-    setPendingExcludedPaths([]);
-  }, [repositoryId, branchName]);
-
-  React.useEffect(() => {
-    if (!config.provider || !isConnectionReady || !repositoryId) {
-      setBranches([]);
-      setBranchName('');
-      return;
-    }
-
-    const activeConfig = {
-      ...config,
-      repositoryId,
-      project: repositoryId,
-    };
-
-    setIsLoadingBranches(true);
-    setBranchError(null);
-    void fetchBranches(activeConfig)
-      .then((nextBranches) => {
-        setBranches(nextBranches);
-        const defaultBranch = nextBranches.find((branch) => branch.isDefault)?.name || nextBranches[0]?.name || '';
-        setBranchName(defaultBranch);
-      })
-      .catch((nextError) => {
-        setBranches([]);
-        setBranchName('');
-        setBranchError(nextError instanceof Error ? nextError.message : 'No fue posible cargar las ramas.');
-      })
-      .finally(() => {
-        setIsLoadingBranches(false);
-      });
-  }, [config, isConnectionReady, repositoryId]);
-
-  const selectedRepository = repositories.find((repository) => repository.id === repositoryId);
-  const canPreparePreview = Boolean(config.provider && activeProvider && isConnectionReady && isCodexReady && repositoryId && branchName && !isRunning && !isPreviewing);
-  const isStrictModeBlocked = Boolean(preview && codexConfig.snapshotPolicy.strictMode && (preview.sensitivity.hasSecretPatterns || preview.sensitivity.hasSensitiveConfigFiles));
-  const canRunAnalysis = Boolean(
-    config.provider
-    && activeProvider
-    && isConnectionReady
-    && isCodexReady
-    && repositoryId
-    && branchName
-    && preview
-    && preview.provider === activeProvider.kind
-    && preview.branch === branchName
-    && snapshotAcknowledged
-    && !isStrictModeBlocked
-    && !isRunning,
-  );
-
-  const buildAnalysisPayload = React.useCallback(() => ({
-    requestId: `${Date.now()}-${repositoryId}-${branchName}`,
-    source: {
-      ...config,
-      provider: activeProvider!.kind,
-      repositoryId,
-      project: activeProvider!.kind === 'azure-devops' ? config.project : repositoryId,
-    },
+  const {
     repositoryId,
     branchName,
-    model: codexConfig.model,
-    apiKey: '',
-    analysisDepth: codexConfig.analysisDepth,
-    maxFilesPerRun: codexConfig.maxFilesPerRun,
-    includeTests: codexConfig.includeTests,
-    snapshotPolicy: {
-      ...codexConfig.snapshotPolicy,
-      excludedPathPatterns: mergeExcludedPathPatterns(
-        codexConfig.snapshotPolicy.excludedPathPatterns,
-        pendingExcludedPaths.join('\n'),
-      ),
-    },
-    timeoutMs: 90_000,
-    promptDirectives: codexConfig.promptDirectives,
-  }), [activeProvider, branchName, codexConfig, config, pendingExcludedPaths, repositoryId]);
-
-  const handlePreparePreview = React.useCallback(() => {
-    if (!canPreparePreview) {
-      return;
-    }
-
-    setSnapshotAcknowledged(false);
-    void preparePreview(buildAnalysisPayload());
-  }, [buildAnalysisPayload, canPreparePreview, preparePreview]);
-
-  const handleToggleExcludedPath = React.useCallback((path: string, checked: boolean) => {
-    setPendingExcludedPaths((current) => (
-      checked
-        ? Array.from(new Set([...current, path]))
-        : current.filter((item) => item !== path)
-    ));
-    setSnapshotAcknowledged(false);
-  }, []);
-
-  const handleRegenerateWithExclusions = React.useCallback(() => {
-    if (!canPreparePreview || pendingExcludedPaths.length === 0) {
-      return;
-    }
-
-    setSnapshotAcknowledged(false);
-    void preparePreview(buildAnalysisPayload());
-  }, [buildAnalysisPayload, canPreparePreview, pendingExcludedPaths.length, preparePreview]);
-
-  const handleRun = React.useCallback(() => {
-    if (!canRunAnalysis) {
-      return;
-    }
-
-    void execute(buildAnalysisPayload());
-  }, [buildAnalysisPayload, canRunAnalysis, execute]);
+    branches,
+    isLoadingBranches,
+    branchError,
+    selectedRepository,
+    snapshotAcknowledged,
+    setSnapshotAcknowledged,
+    pendingExcludedPaths,
+    canPreparePreview,
+    isStrictModeBlocked,
+    canRunAnalysis,
+    handleRepositoryChange,
+    handleBranchChange,
+    handlePreparePreview,
+    handleToggleExcludedPath,
+    handleRegenerateWithExclusions,
+    handleRun,
+  } = useRepositoryAnalysisScope({
+    activeProvider,
+    config,
+    repositories,
+    isConnectionReady,
+    isCodexReady,
+    codexConfig,
+    preview,
+    isRunning,
+    isPreviewing,
+    preparePreview,
+    execute,
+    reset,
+  });
 
   const phaseLabel = phase === 'preparing'
     ? 'Preparando snapshot del repositorio'
@@ -232,18 +133,8 @@ const RepositoryAnalysis = () => {
         isPreviewing={isPreviewing}
         isCancelling={isCancelling}
         resultVisible={Boolean(result)}
-        onRepositoryChange={(value) => {
-          setRepositoryId(value);
-          reset();
-          setSnapshotAcknowledged(false);
-          setPendingExcludedPaths([]);
-        }}
-        onBranchChange={(value) => {
-          setBranchName(value);
-          reset();
-          setSnapshotAcknowledged(false);
-          setPendingExcludedPaths([]);
-        }}
+        onRepositoryChange={handleRepositoryChange}
+        onBranchChange={handleBranchChange}
         onPreparePreview={handlePreparePreview}
         onRun={handleRun}
         onCancel={() => void cancel()}

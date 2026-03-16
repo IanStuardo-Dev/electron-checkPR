@@ -38,6 +38,9 @@ const Settings = () => {
     isReady: isCodexReady,
     updateConfig: updateCodexConfig,
   } = useCodexSettings();
+  const handleDiscoverProjects = () => void discoverProjects();
+  const handleSelectProject = (project: string) => void selectProject(project);
+  const handleRefreshPullRequests = () => void refreshPullRequests();
 
   return (
     <motion.div
@@ -77,10 +80,10 @@ const Settings = () => {
           projectDiscoveryWarning={projectDiscoveryWarning}
           repositories={repositories}
           repositoriesLoading={repositoriesLoading}
-          discoverProjects={() => void discoverProjects()}
-          selectProject={(project) => void selectProject(project)}
+          discoverProjects={handleDiscoverProjects}
+          selectProject={handleSelectProject}
           updateConfig={updateConfig}
-          refreshPullRequests={() => void refreshPullRequests()}
+          refreshPullRequests={handleRefreshPullRequests}
           codexConfig={codexConfig}
           isCodexReady={isCodexReady}
           updateCodexConfig={updateCodexConfig}

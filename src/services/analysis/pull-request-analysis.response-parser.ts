@@ -1,3 +1,5 @@
+import type { PullRequestAnalysisResponseParserPort } from './pull-request-analysis.ports';
+
 interface OpenAIResponsesResult {
   output_text?: string;
   output?: Array<{
@@ -36,7 +38,7 @@ function isStructuredPullRequestAnalysis(value: unknown): value is StructuredPul
     && payload.reviewChecklist.every((item) => typeof item === 'string');
 }
 
-export class PullRequestAnalysisResponseParser {
+export class PullRequestAnalysisResponseParser implements PullRequestAnalysisResponseParserPort {
   parse(rawText: string): StructuredPullRequestAnalysis {
     const parsed = tryParseJson<OpenAIResponsesResult>(rawText);
     if (!parsed) {

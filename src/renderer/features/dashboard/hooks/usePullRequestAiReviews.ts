@@ -1,10 +1,5 @@
 import React from 'react';
-import type {
-  PullRequestAiReview,
-  PullRequestAnalysisBatchRequest,
-  PullRequestAnalysisPreview,
-} from '../../../../types/analysis';
-import type { RepositoryProviderKind } from '../../../../types/repository';
+import type { PullRequestAiReview, PullRequestAnalysisPreview } from '../../../../types/analysis';
 import type { SavedConnectionConfig, PrioritizedPullRequest } from '../types';
 import {
   cancelPullRequestAiReviews,
@@ -12,6 +7,13 @@ import {
   runPullRequestAiReviews,
 } from '../pullRequestAiIpc';
 import { selectPullRequestsForAiReview } from '../../../../services/analysis/pull-request-analysis.selection';
+import {
+  buildErrorReviews,
+  buildPullRequestAnalysisPayload,
+  buildPullRequestReviewCacheKey,
+  getEligiblePullRequests,
+  upsertReviews,
+} from '../pullRequestAiReviews.helpers';
 
 interface UsePullRequestAiReviewsOptions {
   config: SavedConnectionConfig;
@@ -35,48 +37,6 @@ interface UsePullRequestAiReviewsOptions {
       };
     };
   };
-}
-
-function buildAnalysisPayload(
-  config: SavedConnectionConfig,
-  codexConfig: UsePullRequestAiReviewsOptions['codexConfig'],
-  selectedPullRequests: PrioritizedPullRequest[],
-  requestId = '',
-): PullRequestAnalysisBatchRequest {
-  return {
-    requestId,
-    source: {
-      ...config,
-      provider: config.provider as RepositoryProviderKind,
-    },
-    apiKey: '',
-    model: codexConfig.model,
-    analysisDepth: codexConfig.prReview.analysisDepth,
-    timeoutMs: 60_000,
-    snapshotPolicy: codexConfig.snapshotPolicy,
-    promptDirectives: codexConfig.prReview.promptDirectives,
-    items: selectedPullRequests.map((pullRequest) => ({ pullRequest })),
-  };
-}
-
-function buildErrorReviews(selectedPullRequests: PrioritizedPullRequest[]): PullRequestAiReview[] {
-  return selectedPullRequests.map((pullRequest) => ({
-    pullRequestId: pullRequest.id,
-    repository: pullRequest.repository,
-    status: 'error',
-    topConcerns: [],
-    reviewChecklist: [],
-    error: 'No fue posible completar el analisis IA del PR.',
-  }));
-}
-
-function upsertReviews(current: PullRequestAiReview[], nextReviews: PullRequestAiReview[]): PullRequestAiReview[] {
-  const reviewMap = new Map(current.map((review) => [review.pullRequestId, review]));
-  nextReviews.forEach((review) => {
-    reviewMap.set(review.pullRequestId, review);
-  });
-
-  return Array.from(reviewMap.values());
 }
 
 export function usePullRequestAiReviews({
@@ -103,33 +63,9 @@ export function usePullRequestAiReviews({
     && codexConfig.apiKey.trim(),
   );
 
-  const buildCacheKey = React.useCallback((items: PrioritizedPullRequest[]) => JSON.stringify({
-    provider: config.provider,
-    organization: config.organization,
-    project: config.project,
-    repositoryId: config.repositoryId,
-    mode: codexConfig.prReview.selectionMode,
-    depth: codexConfig.prReview.analysisDepth,
-    strictMode: codexConfig.snapshotPolicy.strictMode,
-    excludedPathPatterns: codexConfig.snapshotPolicy.excludedPathPatterns,
-    promptDirectives: codexConfig.prReview.promptDirectives,
-    items: items.map((pullRequest) => ({
-      id: pullRequest.id,
-      createdAt: pullRequest.createdAt,
-      riskScore: pullRequest.riskScore,
-      ageHours: pullRequest.ageHours,
-    })),
-  }), [
-    codexConfig.prReview.analysisDepth,
-    codexConfig.prReview.promptDirectives,
-    codexConfig.prReview.selectionMode,
-    codexConfig.snapshotPolicy.excludedPathPatterns,
-    codexConfig.snapshotPolicy.strictMode,
-    config.organization,
-    config.project,
-    config.provider,
-    config.repositoryId,
-  ]);
+  const buildCacheKey = React.useCallback((items: PrioritizedPullRequest[]) => (
+    buildPullRequestReviewCacheKey(config, codexConfig, items)
+  ), [codexConfig, config]);
 
   const openPreview = React.useCallback(async (nextPullRequests: PrioritizedPullRequest[]) => {
     if (!isConfigured || nextPullRequests.length === 0) {
@@ -144,7 +80,7 @@ export function usePullRequestAiReviews({
     setIsPreviewing(true);
 
     try {
-      const previews = await previewPullRequestAiReviews(buildAnalysisPayload(config, codexConfig, nextPullRequests));
+      const previews = await previewPullRequestAiReviews(buildPullRequestAnalysisPayload(config, codexConfig, nextPullRequests));
       setModalPreviews(previews);
     } catch (error) {
       setModalError(error instanceof Error ? error.message : 'No fue posible preparar el snapshot local del PR.');
@@ -199,13 +135,7 @@ export function usePullRequestAiReviews({
   }, []);
 
   const eligiblePullRequests = React.useMemo(() => {
-    const blockedIds = new Set(
-      modalPreviews
-        .filter((preview) => preview.lacksPatchCoverage || preview.strictModeWouldBlock)
-        .map((preview) => preview.pullRequestId),
-    );
-
-    return selectedPullRequests.filter((pullRequest) => !blockedIds.has(pullRequest.id));
+    return getEligiblePullRequests(selectedPullRequests, modalPreviews);
   }, [modalPreviews, selectedPullRequests]);
 
   const runSelectedPullRequests = React.useCallback(async () => {
@@ -235,7 +165,9 @@ export function usePullRequestAiReviews({
     activeRequestIdRef.current = requestId;
 
     try {
-      const nextReviews = await runPullRequestAiReviews(buildAnalysisPayload(config, codexConfig, eligiblePullRequests, requestId));
+      const nextReviews = await runPullRequestAiReviews(
+        buildPullRequestAnalysisPayload(config, codexConfig, eligiblePullRequests, requestId),
+      );
       cacheRef.current.set(cacheKey, nextReviews);
       setReviews((current) => upsertReviews(current, nextReviews));
       closeModal();

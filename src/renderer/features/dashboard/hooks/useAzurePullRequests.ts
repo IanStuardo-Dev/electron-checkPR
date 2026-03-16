@@ -1,5 +1,4 @@
 import React from 'react';
-import type { SavedConnectionConfig } from '../types';
 import { useRepositorySourceBootstrap } from './useRepositorySourceBootstrap';
 import { useRepositorySourceConfig } from './useRepositorySourceConfig';
 import { useRepositorySourceDerived } from './useRepositorySourceDerived';
