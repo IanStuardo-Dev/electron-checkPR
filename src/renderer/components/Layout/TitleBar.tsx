@@ -5,6 +5,11 @@ import {
   Squares2X2Icon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
+import {
+  getElectronApi,
+  subscribeToWindowStateChange,
+  invokeElectronApi,
+} from '../../shared/electron/electronBridge';
 
 const dragRegionStyle = { WebkitAppRegion: 'drag' } as React.CSSProperties & { WebkitAppRegion: 'drag' };
 const noDragRegionStyle = { WebkitAppRegion: 'no-drag' } as React.CSSProperties & { WebkitAppRegion: 'no-drag' };
@@ -46,7 +51,11 @@ function isWindowControlsState(value: unknown): value is WindowControlsState {
 }
 
 async function invokeWindowControl(channel: WindowControlChannel): Promise<WindowControlsState | null> {
-  const response = await window.electronApi.invoke(channel);
+  if (!getElectronApi()) {
+    return null;
+  }
+
+  const response = await invokeElectronApi<unknown>(channel);
 
   if (response === null) {
     return null;
@@ -61,6 +70,7 @@ interface TitleBarProps {
 
 const TitleBar = ({ pathname }: TitleBarProps) => {
   const metadata = pageMetadata[pathname] ?? defaultMetadata;
+  const supportsWindowControls = Boolean(getElectronApi()?.onWindowStateChange);
   const [windowState, setWindowState] = React.useState<WindowControlsState>({
     isMaximized: false,
     isFullScreen: false,
@@ -78,7 +88,7 @@ const TitleBar = ({ pathname }: TitleBarProps) => {
       })
       .catch(() => undefined);
 
-    const unsubscribe = window.electronApi.onWindowStateChange((state) => {
+    const unsubscribe = subscribeToWindowStateChange((state) => {
       if (isSubscribed) {
         setWindowState(state);
       }
@@ -122,34 +132,36 @@ const TitleBar = ({ pathname }: TitleBarProps) => {
           <h2 className="truncate text-sm font-semibold tracking-[0.01em] text-slate-900">{metadata.title}</h2>
         </div>
 
-        <div className="flex items-center" style={noDragRegionStyle}>
-          <div className="flex items-center rounded-xl border border-slate-200/80 bg-white/80 p-1">
-            <button
-              type="button"
-              aria-label="Minimize window"
-              onClick={handleMinimize}
-              className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-            >
-              <MinusIcon className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              aria-label={windowState.isMaximized ? 'Restore window' : 'Maximize window'}
-              onClick={handleToggleMaximize}
-              className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-            >
-              <MaximizeIcon className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              aria-label="Close window"
-              onClick={handleClose}
-              className="rounded-lg p-2 text-slate-500 transition hover:bg-rose-100 hover:text-rose-700"
-            >
-              <XMarkIcon className="h-4 w-4" />
-            </button>
+        {supportsWindowControls ? (
+          <div className="flex items-center" style={noDragRegionStyle}>
+            <div className="flex items-center rounded-xl border border-slate-200/80 bg-white/80 p-1">
+              <button
+                type="button"
+                aria-label="Minimize window"
+                onClick={handleMinimize}
+                className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+              >
+                <MinusIcon className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                aria-label={windowState.isMaximized ? 'Restore window' : 'Maximize window'}
+                onClick={handleToggleMaximize}
+                className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+              >
+                <MaximizeIcon className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                aria-label="Close window"
+                onClick={handleClose}
+                className="rounded-lg p-2 text-slate-500 transition hover:bg-rose-100 hover:text-rose-700"
+              >
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
     </header>
   );

@@ -1,41 +1,14 @@
 import type { PullRequestAiReview, PullRequestAnalysisBatchRequest, PullRequestAnalysisPreview } from '../../../types/analysis';
-
-interface IpcSuccessResponse<T> {
-  ok: true;
-  data: T;
-}
-
-interface IpcErrorResponse {
-  ok: false;
-  error: string;
-}
-
-type IpcResponse<T> = IpcSuccessResponse<T> | IpcErrorResponse;
+import { invokeIpcResponse } from '../../shared/electron/ipcResponse';
 
 export async function previewPullRequestAiReviews(payload: PullRequestAnalysisBatchRequest): Promise<PullRequestAnalysisPreview[]> {
-  const response = await window.electronApi.invoke('analysis:previewPullRequestAiReviews', payload) as IpcResponse<PullRequestAnalysisPreview[]>;
-
-  if (!response.ok) {
-    throw new Error(response.error);
-  }
-
-  return response.data;
+  return invokeIpcResponse<PullRequestAnalysisPreview[]>('analysis:previewPullRequestAiReviews', payload);
 }
 
 export async function runPullRequestAiReviews(payload: PullRequestAnalysisBatchRequest): Promise<PullRequestAiReview[]> {
-  const response = await window.electronApi.invoke('analysis:runPullRequestAiReviews', payload) as IpcResponse<PullRequestAiReview[]>;
-
-  if (!response.ok) {
-    throw new Error(response.error);
-  }
-
-  return response.data;
+  return invokeIpcResponse<PullRequestAiReview[]>('analysis:runPullRequestAiReviews', payload);
 }
 
 export async function cancelPullRequestAiReviews(requestId: string): Promise<void> {
-  const response = await window.electronApi.invoke('analysis:cancelPullRequestAiReviews', requestId) as IpcResponse<void>;
-
-  if (!response.ok) {
-    throw new Error(response.error);
-  }
+  await invokeIpcResponse<void>('analysis:cancelPullRequestAiReviews', requestId);
 }
