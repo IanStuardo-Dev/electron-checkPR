@@ -1,20 +1,17 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import Dashboard from './pages/Dashboard';
-import History from './pages/History';
+import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import './styles/index.css';
 import Sidebar from './components/Layout/Sidebar';
-import Settings from './pages/Settings';
-import RepositoryAnalysis from './pages/RepositoryAnalysis';
-import { RepositorySourceProvider } from './features/dashboard/context/RepositorySourceContext';
 import TitleBar from './components/Layout/TitleBar';
+import RouteLoadingState from './components/Layout/RouteLoadingState';
+
+const History = React.lazy(() => import('./pages/History'));
+const WorkspaceRoutes = React.lazy(() => import('./WorkspaceRoutes'));
 
 const App = () => {
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <RepositorySourceProvider>
-        <AppShell />
-      </RepositorySourceProvider>
+      <AppShell />
     </Router>
   );
 };
@@ -37,13 +34,12 @@ const AppShell = () => {
         <div className="flex min-w-0 flex-1 flex-col">
           <TitleBar pathname={location.pathname} />
           <main key={location.pathname} className="min-w-0 flex-1 overflow-y-auto px-6 py-8 lg:px-10">
-            <Routes location={location}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/history" element={<History />} />
-              <Route path="/repository-analysis" element={<RepositoryAnalysis />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+            <React.Suspense fallback={<RouteLoadingState pathname={location.pathname} />}>
+              <Routes location={location}>
+                <Route path="/history" element={<History />} />
+                <Route path="*" element={<WorkspaceRoutes />} />
+              </Routes>
+            </React.Suspense>
           </main>
         </div>
       </div>

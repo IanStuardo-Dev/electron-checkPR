@@ -13,13 +13,13 @@ jest.mock('../../../src/renderer/features/dashboard/context/RepositorySourceCont
 const App = require('../../../src/renderer/App').default;
 
 describe('App', () => {
-  test('monta sidebar y dashboard por defecto', () => {
+  test('monta sidebar y dashboard por defecto', async () => {
     window.location.hash = '#/';
 
     render(React.createElement(App));
 
     expect(screen.getByText('Repo Command Center')).toBeInTheDocument();
-    expect(screen.getByText('Dashboard page')).toBeInTheDocument();
+    expect(await screen.findByText('Dashboard page')).toBeInTheDocument();
   });
 
   test('navega desde el sidebar a settings e historico', async () => {
@@ -29,9 +29,9 @@ describe('App', () => {
     render(React.createElement(App));
 
     await user.click(screen.getByRole('link', { name: /settings/i }));
-    expect(screen.getByText('Settings page')).toBeInTheDocument();
+    expect(await screen.findByText('Settings page')).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: /historico/i }));
-    expect(screen.getByText('History page')).toBeInTheDocument();
+    expect(await screen.findByText('History page')).toBeInTheDocument();
   });
 });

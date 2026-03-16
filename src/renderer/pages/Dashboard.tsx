@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import ConnectionSummary from '../features/dashboard/components/ConnectionSummary';
 import DashboardHero from '../features/dashboard/components/DashboardHero';
 import GovernanceAlerts from '../features/dashboard/components/GovernanceAlerts';
@@ -56,11 +55,7 @@ const Dashboard = () => {
   );
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
-    >
+    <div className="space-y-6">
       <DashboardHero
         providerName={activeProviderName}
         lastUpdatedLabel={summary.lastUpdatedLabel}
@@ -149,7 +144,7 @@ const Dashboard = () => {
         error={modalError}
         canConfirm={snapshotAcknowledged && eligiblePullRequests.length > 0}
       />
-    </motion.div>
+    </div>
   );
 };
 
