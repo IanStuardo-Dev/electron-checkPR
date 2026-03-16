@@ -1,4 +1,4 @@
-const storage = require('../../../src/renderer/features/settings/storage');
+const storage = require('../../../src/renderer/features/settings/data/settingsStorage');
 
 describe('settings storage', () => {
   beforeEach(() => {
@@ -37,18 +37,18 @@ describe('settings storage', () => {
     await expect(storage.hydrateCodexApiKey()).resolves.toBe('sk-live');
   });
 
-  test('persistCodexConfig usa fallback de sessionStorage sin Electron', async () => {
+  test('persistCodexConfig falla si no existe Electron', async () => {
     const originalElectronApi = window.electronApi;
     delete window.electronApi;
 
     try {
-      await storage.persistCodexConfig({
+      await expect(storage.persistCodexConfig({
         ...storage.defaultCodexConfig,
         enabled: true,
         apiKey: 'sk-browser',
-      });
+      })).rejects.toThrow('No se detecto el bridge de Electron');
 
-      await expect(storage.hydrateCodexApiKey()).resolves.toBe('sk-browser');
+      await expect(storage.hydrateCodexApiKey()).rejects.toThrow('No se detecto el bridge de Electron');
     } finally {
       window.electronApi = originalElectronApi;
     }

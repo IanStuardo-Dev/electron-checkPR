@@ -1,7 +1,7 @@
 const React = require('react');
 const { render, screen } = require('@testing-library/react');
 const { MemoryRouter } = require('react-router-dom');
-const Sidebar = require('../../../src/renderer/components/Layout/Sidebar').default;
+const Sidebar = require('../../../src/renderer/shared/layout/Sidebar').default;
 
 describe('Sidebar', () => {
   test('muestra navegacion principal y settings al final', () => {

@@ -2,6 +2,10 @@ import { BrowserWindow } from 'electron';
 import * as path from 'path';
 import { attachWindowStateSync } from './ipc/window-controls';
 
+function resolveDistAsset(...segments: string[]): string {
+  return path.resolve(__dirname, '..', ...segments);
+}
+
 export function buildMainWindowOptions(): Electron.BrowserWindowConstructorOptions {
   return {
     width: 1200,
@@ -13,7 +17,7 @@ export function buildMainWindowOptions(): Electron.BrowserWindowConstructorOptio
     titleBarOverlay: false,
     backgroundColor: '#e2e8f0',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: resolveDistAsset('preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
@@ -28,7 +32,7 @@ export function resolveRendererTarget() {
   return {
     rendererUrl,
     isDevelopment,
-    productionFile: path.join(__dirname, '../dist/index.html'),
+    productionFile: resolveDistAsset('index.html'),
   };
 }
 

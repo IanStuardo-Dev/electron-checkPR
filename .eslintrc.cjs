@@ -37,6 +37,19 @@ module.exports = {
   },
   overrides: [
     {
+      files: ['src/renderer/**/*.ts', 'src/renderer/**/*.tsx'],
+      rules: {
+        'no-restricted-imports': ['error', {
+          patterns: [
+            {
+              group: ['**/services/**', '**/main/**'],
+              message: 'Renderer no debe importar capas externas; usa shared/core o la API publica de la feature.',
+            },
+          ],
+        }],
+      },
+    },
+    {
       files: ['tests/**/*.js', '*.cjs', '*.js'],
       env: {
         jest: true,

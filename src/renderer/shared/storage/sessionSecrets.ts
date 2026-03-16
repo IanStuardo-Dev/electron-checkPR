@@ -11,15 +11,9 @@ interface SessionSecretWriteResponse {
   error?: string;
 }
 
-const FALLBACK_SESSION_SECRET_PREFIX = 'checkpr.session-secret.';
-
-function getFallbackStorageKey(key: string): string {
-  return `${FALLBACK_SESSION_SECRET_PREFIX}${key}`;
-}
-
 export async function getSessionSecret(key: string): Promise<string> {
   if (!getElectronApi()) {
-    return window.sessionStorage.getItem(getFallbackStorageKey(key)) || '';
+    throw new Error('No se detecto el bridge de Electron. Esta app requiere ejecutarse dentro de Electron.');
   }
 
   const response = await invokeElectronApi<SessionSecretResponse>('session-secrets:get', key);
@@ -32,15 +26,7 @@ export async function getSessionSecret(key: string): Promise<string> {
 
 export async function setSessionSecret(key: string, value: string): Promise<void> {
   if (!getElectronApi()) {
-    const storageKey = getFallbackStorageKey(key);
-
-    if (value) {
-      window.sessionStorage.setItem(storageKey, value);
-    } else {
-      window.sessionStorage.removeItem(storageKey);
-    }
-
-    return;
+    throw new Error('No se detecto el bridge de Electron. Esta app requiere ejecutarse dentro de Electron.');
   }
 
   const response = await invokeElectronApi<SessionSecretWriteResponse>('session-secrets:set', { key, value });

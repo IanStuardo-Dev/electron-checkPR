@@ -1,23 +1,23 @@
 const React = require('react');
 const { fireEvent, render, screen } = require('@testing-library/react');
-const { createDashboardSummary, createRepositorySourceContext } = require('../../support/helpers/dashboard-context');
+const { createDashboardSummary, createRepositorySourceContext } = require('../../support/helpers/renderer-context-factories');
 
-jest.mock('../../../src/renderer/features/dashboard/context/RepositorySourceContext', () => ({
+jest.mock('../../../src/renderer/features/repository-source/presentation/context/RepositorySourceContext', () => ({
   useRepositorySourceContext: jest.fn(),
 }));
 
-jest.mock('../../../src/renderer/features/settings/hooks/useCodexSettings', () => ({
+jest.mock('../../../src/renderer/features/settings/presentation/hooks/useCodexSettings', () => ({
   useCodexSettings: jest.fn(),
 }));
 
-jest.mock('../../../src/renderer/features/dashboard/hooks/usePullRequestAiReviews', () => ({
+jest.mock('../../../src/renderer/features/pull-request-ai/presentation/hooks/usePullRequestAiReviews', () => ({
   usePullRequestAiReviews: jest.fn(),
 }));
 
-const { useRepositorySourceContext } = require('../../../src/renderer/features/dashboard/context/RepositorySourceContext');
-const { useCodexSettings } = require('../../../src/renderer/features/settings/hooks/useCodexSettings');
-const { usePullRequestAiReviews } = require('../../../src/renderer/features/dashboard/hooks/usePullRequestAiReviews');
-const Dashboard = require('../../../src/renderer/pages/Dashboard').default;
+const { useRepositorySourceContext } = require('../../../src/renderer/features/repository-source/presentation/context/RepositorySourceContext');
+const { useCodexSettings } = require('../../../src/renderer/features/settings/presentation/hooks/useCodexSettings');
+const { usePullRequestAiReviews } = require('../../../src/renderer/features/pull-request-ai/presentation/hooks/usePullRequestAiReviews');
+const Dashboard = require('../../../src/renderer/app/pages/Dashboard').default;
 
 describe('Dashboard page', () => {
   beforeEach(() => {

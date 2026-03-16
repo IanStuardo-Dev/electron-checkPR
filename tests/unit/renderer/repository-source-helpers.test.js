@@ -1,4 +1,4 @@
-const diagnostics = require('../../../src/renderer/features/dashboard/repositorySourceDiagnostics');
+const diagnostics = require('../../../src/renderer/features/repository-source/application/repositorySourceDiagnostics');
 
 describe('repository source helpers', () => {
   test('buildScopeLabel soporta github/gitlab y azure', () => {

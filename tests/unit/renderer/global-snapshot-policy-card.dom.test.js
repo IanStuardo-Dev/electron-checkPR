@@ -2,8 +2,8 @@ const React = require('react');
 const { render, screen } = require('@testing-library/react');
 const userEvent = require('@testing-library/user-event').default;
 
-const GlobalSnapshotPolicyCard = require('../../../src/renderer/features/settings/components/GlobalSnapshotPolicyCard').default;
-const { applySnapshotPreset } = require('../../../src/renderer/features/settings/components/GlobalSnapshotPolicyCard');
+const GlobalSnapshotPolicyCard = require('../../../src/renderer/features/settings/presentation/components/GlobalSnapshotPolicyCard').default;
+const { applySnapshotPreset } = require('../../../src/renderer/features/settings/presentation/components/GlobalSnapshotPolicyCard');
 
 describe('GlobalSnapshotPolicyCard', () => {
   test('applySnapshotPreset node reemplaza la base con exclusiones recomendadas', () => {

@@ -1,4 +1,4 @@
-const ipc = require('../../../src/renderer/features/dashboard/pullRequestAiIpc');
+const ipc = require('../../../src/renderer/features/pull-request-ai/data/pullRequestAiIpc');
 
 describe('pull request ai ipc', () => {
   beforeEach(() => {

@@ -27,7 +27,7 @@ export const repositoryProviders: RepositoryProviderDefinition[] = [
     name: 'Bitbucket',
     status: 'todo',
     description: 'Backlog futuro para completar el set de suites de repositorios.',
-    helperText: 'TODO futuro: integrar workspaces, repositorios, ramas y PRs.',
+    helperText: 'Pendiente de implementar soporte para workspaces, repositorios, ramas y Pull Requests.',
   },
 ];
 

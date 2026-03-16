@@ -1,5 +1,5 @@
-const { enrichDashboardSummaryWithAi } = require('../../../src/renderer/features/dashboard/pullRequestAiSummary');
-const { createDashboardSummary } = require('../../support/helpers/dashboard-context');
+const { enrichDashboardSummaryWithAi } = require('../../../src/renderer/features/pull-request-ai/application/pullRequestAiSummary');
+const { createDashboardSummary } = require('../../support/helpers/renderer-context-factories');
 
 describe('enrichDashboardSummaryWithAi', () => {
   test('enriquece la cola priorizada y calcula cobertura IA', () => {

@@ -2,14 +2,14 @@ const { renderHook, act } = require('@testing-library/react');
 
 jest.useFakeTimers();
 
-jest.mock('../../../src/renderer/features/repository-analysis/ipc', () => ({
+jest.mock('../../../src/renderer/features/repository-analysis/data/repositoryAnalysisIpc', () => ({
   previewRepositorySnapshot: jest.fn(),
   runRepositoryAnalysis: jest.fn(),
   cancelRepositoryAnalysis: jest.fn(),
 }));
 
-const ipc = require('../../../src/renderer/features/repository-analysis/ipc');
-const { useRepositoryAnalysis } = require('../../../src/renderer/features/repository-analysis/hooks/useRepositoryAnalysis');
+const ipc = require('../../../src/renderer/features/repository-analysis/data/repositoryAnalysisIpc');
+const { useRepositoryAnalysis } = require('../../../src/renderer/features/repository-analysis/presentation/hooks/useRepositoryAnalysis');
 
 describe('useRepositoryAnalysis', () => {
   beforeEach(() => {
@@ -29,6 +29,19 @@ describe('useRepositoryAnalysis', () => {
     expect(ipc.previewRepositorySnapshot).toHaveBeenCalledWith({ requestId: 'req-preview' });
     expect(result.current.preview).toEqual({ repository: 'repo-a', branch: 'main' });
     expect(result.current.phase).toBe('idle');
+  });
+
+  test('captura error de preview y lo refleja en el estado', async () => {
+    ipc.previewRepositorySnapshot.mockRejectedValue(new Error('bridge unavailable'));
+    const { result } = renderHook(() => useRepositoryAnalysis());
+
+    await act(async () => {
+      await result.current.preparePreview({ requestId: 'req-preview-error' });
+    });
+
+    expect(result.current.preview).toBeNull();
+    expect(result.current.error).toBe('bridge unavailable');
+    expect(result.current.phase).toBe('error');
   });
 
   test('ejecuta analisis y completa resultado', async () => {

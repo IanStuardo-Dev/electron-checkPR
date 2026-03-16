@@ -1,16 +1,16 @@
 const React = require('react');
 const { renderHook, act, waitFor } = require('@testing-library/react');
 
-jest.mock('../../../src/renderer/features/dashboard/pullRequestAiIpc', () => ({
+jest.mock('../../../src/renderer/features/pull-request-ai/data/pullRequestAiIpc', () => ({
   previewPullRequestAiReviews: jest.fn(),
   runPullRequestAiReviews: jest.fn(),
   cancelPullRequestAiReviews: jest.fn(),
 }));
 
-const { usePullRequestAiReviews } = require('../../../src/renderer/features/dashboard/hooks/usePullRequestAiReviews');
-const { previewPullRequestAiReviews } = require('../../../src/renderer/features/dashboard/pullRequestAiIpc');
-const { runPullRequestAiReviews } = require('../../../src/renderer/features/dashboard/pullRequestAiIpc');
-const { cancelPullRequestAiReviews } = require('../../../src/renderer/features/dashboard/pullRequestAiIpc');
+const { usePullRequestAiReviews } = require('../../../src/renderer/features/pull-request-ai/presentation/hooks/usePullRequestAiReviews');
+const { previewPullRequestAiReviews } = require('../../../src/renderer/features/pull-request-ai/data/pullRequestAiIpc');
+const { runPullRequestAiReviews } = require('../../../src/renderer/features/pull-request-ai/data/pullRequestAiIpc');
+const { cancelPullRequestAiReviews } = require('../../../src/renderer/features/pull-request-ai/data/pullRequestAiIpc');
 
 function createPullRequest(id = 1) {
   return {

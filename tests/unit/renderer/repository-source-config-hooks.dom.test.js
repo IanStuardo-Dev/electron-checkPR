@@ -1,15 +1,15 @@
 const { renderHook, act, waitFor } = require('@testing-library/react');
 
-jest.mock('../../../src/renderer/features/dashboard/storage', () => ({
+jest.mock('../../../src/renderer/features/repository-source/data/repositorySourceStorage', () => ({
   loadConnectionConfig: jest.fn(),
   persistConnectionConfig: jest.fn().mockResolvedValue(undefined),
   hydrateConnectionSecret: jest.fn(),
 }));
 
-const storage = require('../../../src/renderer/features/dashboard/storage');
-const { useRepositorySourceConfig } = require('../../../src/renderer/features/dashboard/hooks/useRepositorySourceConfig');
-const { useRepositorySourceBootstrap } = require('../../../src/renderer/features/dashboard/hooks/useRepositorySourceBootstrap');
-const { useRepositorySourceDerived } = require('../../../src/renderer/features/dashboard/hooks/useRepositorySourceDerived');
+const storage = require('../../../src/renderer/features/repository-source/data/repositorySourceStorage');
+const { useRepositorySourceConfig } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceConfig');
+const { useRepositorySourceBootstrap } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceBootstrap');
+const { useRepositorySourceDerived } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceDerived');
 
 describe('repository source config hooks', () => {
   beforeEach(() => {

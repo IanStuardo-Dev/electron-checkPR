@@ -1,4 +1,4 @@
-const repositoryAnalysisIpc = require('../../../src/renderer/features/repository-analysis/ipc');
+const repositoryAnalysisIpc = require('../../../src/renderer/features/repository-analysis/data/repositoryAnalysisIpc');
 
 describe('repository analysis ipc', () => {
   beforeEach(() => {
@@ -107,5 +107,27 @@ describe('repository analysis ipc', () => {
     });
 
     await expect(repositoryAnalysisIpc.cancelRepositoryAnalysis('req-1')).rejects.toThrow('cancel failed');
+  });
+
+  test('previewRepositorySnapshot falla con un error controlado cuando no existe Electron', async () => {
+    delete window.electronApi;
+
+    await expect(repositoryAnalysisIpc.previewRepositorySnapshot({
+      requestId: 'req-preview-web',
+      source: {
+        provider: 'github',
+        organization: 'acme',
+        project: 'repo-a',
+        repositoryId: 'repo-a',
+        personalAccessToken: 'secret',
+      },
+      repositoryId: 'repo-a',
+      branchName: 'main',
+      model: 'gpt-5.2-codex',
+      apiKey: 'sk-test',
+      analysisDepth: 'standard',
+      maxFilesPerRun: 50,
+      includeTests: false,
+    })).rejects.toThrow('No se detecto el bridge de Electron');
   });
 });

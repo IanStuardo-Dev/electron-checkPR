@@ -1,5 +1,5 @@
 const { renderHook } = require('@testing-library/react');
-const { useRepositorySourceOperations } = require('../../../src/renderer/features/dashboard/hooks/useRepositorySourceOperations');
+const { useRepositorySourceOperations } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceOperations');
 
 describe('useRepositorySourceOperations dependency injection', () => {
   test('usa hooks inyectados para componer operaciones sin acoplar implementaciones concretas', () => {
