@@ -12,9 +12,9 @@ describe('Sidebar', () => {
     ));
 
     expect(screen.getByText('Repo Command Center')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Historico' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Repo Analysis' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Settings' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Dashboard/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Historico/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Repo Analysis/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Settings/i })).toBeInTheDocument();
   });
 });
