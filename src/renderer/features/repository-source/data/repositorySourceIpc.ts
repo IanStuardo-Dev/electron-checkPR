@@ -1,6 +1,14 @@
 import type { RepositoryBranch, RepositoryProject, RepositorySummary, ReviewItem } from '../../../../types/repository';
 import type { SavedConnectionConfig } from '../types';
 import { invokeIpcResponse } from '../../../shared/electron/ipcResponse';
+import { hasElectronApi } from '../../../shared/electron/electronBridge';
+import {
+  fetchRepositorySourceBranchesWeb,
+  fetchRepositorySourceProjectsWeb,
+  fetchRepositorySourcePullRequestsWeb,
+  fetchRepositorySourceRepositoriesWeb,
+  openRepositorySourceReviewItemWeb,
+} from '../../../../shared/repository-source-web';
 
 export function getRepositorySourceChannel(operation: 'pullRequests' | 'projects' | 'repositories' | 'branches' | 'openExternal'): string {
   const channelMap = {
@@ -20,27 +28,54 @@ function ensureProviderSelected(config: SavedConnectionConfig): void {
   }
 }
 
-export async function fetchPullRequests(config: SavedConnectionConfig): Promise<ReviewItem[]> {
+function ensureProviderConfig(
+  config: SavedConnectionConfig,
+): asserts config is SavedConnectionConfig & { provider: Exclude<SavedConnectionConfig['provider'], ''> } {
   ensureProviderSelected(config);
+}
+
+export async function fetchPullRequests(config: SavedConnectionConfig): Promise<ReviewItem[]> {
+  ensureProviderConfig(config);
+  if (!hasElectronApi()) {
+    return fetchRepositorySourcePullRequestsWeb(config);
+  }
+
   return invokeIpcResponse<ReviewItem[]>(getRepositorySourceChannel('pullRequests'), config);
 }
 
 export async function fetchProjects(config: SavedConnectionConfig): Promise<RepositoryProject[]> {
-  ensureProviderSelected(config);
+  ensureProviderConfig(config);
+  if (!hasElectronApi()) {
+    return fetchRepositorySourceProjectsWeb(config);
+  }
+
   return invokeIpcResponse<RepositoryProject[]>(getRepositorySourceChannel('projects'), config);
 }
 
 export async function fetchRepositories(config: SavedConnectionConfig): Promise<RepositorySummary[]> {
-  ensureProviderSelected(config);
+  ensureProviderConfig(config);
+  if (!hasElectronApi()) {
+    return fetchRepositorySourceRepositoriesWeb(config);
+  }
+
   return invokeIpcResponse<RepositorySummary[]>(getRepositorySourceChannel('repositories'), config);
 }
 
 export async function fetchBranches(config: SavedConnectionConfig): Promise<RepositoryBranch[]> {
-  ensureProviderSelected(config);
+  ensureProviderConfig(config);
+  if (!hasElectronApi()) {
+    return fetchRepositorySourceBranchesWeb(config);
+  }
+
   return invokeIpcResponse<RepositoryBranch[]>(getRepositorySourceChannel('branches'), config);
 }
 
 export async function openReviewItem(url: string, config: SavedConnectionConfig): Promise<void> {
-  ensureProviderSelected(config);
+  ensureProviderConfig(config);
+  if (!hasElectronApi()) {
+    openRepositorySourceReviewItemWeb(url);
+    return;
+  }
+
   await invokeIpcResponse<void>(getRepositorySourceChannel('openExternal'), url);
 }

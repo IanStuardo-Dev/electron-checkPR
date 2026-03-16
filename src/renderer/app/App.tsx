@@ -33,7 +33,7 @@ const AppShell = () => {
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <TitleBar pathname={location.pathname} />
-          <main key={location.pathname} className="min-w-0 flex-1 overflow-y-auto px-6 py-8 lg:px-10">
+          <main className="min-w-0 flex-1 overflow-y-auto px-6 py-8 lg:px-10">
             <React.Suspense fallback={<RouteLoadingState pathname={location.pathname} />}>
               <Routes location={location}>
                 <Route path="/history" element={<History />} />

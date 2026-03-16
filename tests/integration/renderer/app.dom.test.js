@@ -2,17 +2,29 @@ const React = require('react');
 const { render, screen } = require('@testing-library/react');
 const userEvent = require('@testing-library/user-event').default;
 
+const mockRepositorySourceProviderMount = jest.fn();
+
 jest.mock('../../../src/renderer/app/pages/Dashboard', () => () => React.createElement('div', null, 'Dashboard page'));
 jest.mock('../../../src/renderer/app/pages/History', () => () => React.createElement('div', null, 'History page'));
 jest.mock('../../../src/renderer/app/pages/RepositoryAnalysis', () => () => React.createElement('div', null, 'Repository Analysis page'));
 jest.mock('../../../src/renderer/app/pages/Settings', () => () => React.createElement('div', null, 'Settings page'));
 jest.mock('../../../src/renderer/features/repository-source/presentation/context/RepositorySourceContext', () => ({
-  RepositorySourceProvider: ({ children }) => React.createElement(React.Fragment, null, children),
+  RepositorySourceProvider: ({ children }) => {
+    React.useEffect(() => {
+      mockRepositorySourceProviderMount();
+    }, []);
+
+    return React.createElement(React.Fragment, null, children);
+  },
 }));
 
 const App = require('../../../src/renderer/app/App').default;
 
 describe('App', () => {
+  beforeEach(() => {
+    mockRepositorySourceProviderMount.mockClear();
+  });
+
   test('monta sidebar y dashboard por defecto', async () => {
     window.location.hash = '#/';
 
@@ -33,5 +45,19 @@ describe('App', () => {
 
     await user.click(screen.getByRole('link', { name: /historico/i }));
     expect(await screen.findByText('History page')).toBeInTheDocument();
+  });
+
+  test('mantiene montado el provider compartido al navegar dentro del workspace', async () => {
+    const user = userEvent.setup();
+    window.location.hash = '#/';
+
+    render(React.createElement(App));
+
+    expect(await screen.findByText('Dashboard page')).toBeInTheDocument();
+    expect(mockRepositorySourceProviderMount).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole('link', { name: /settings/i }));
+    expect(await screen.findByText('Settings page')).toBeInTheDocument();
+    expect(mockRepositorySourceProviderMount).toHaveBeenCalledTimes(1);
   });
 });

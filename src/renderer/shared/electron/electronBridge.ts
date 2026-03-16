@@ -1,6 +1,6 @@
 type ElectronApi = NonNullable<Window['electronApi']>;
 
-const ELECTRON_BRIDGE_UNAVAILABLE_MESSAGE = 'Electron bridge is not available in this environment.';
+const ELECTRON_BRIDGE_HELP_MESSAGE = 'No se detecto el bridge de Electron. Algunas capacidades nativas no estaran disponibles en modo web.';
 
 function isElectronApi(value: unknown): value is ElectronApi {
   if (!value || typeof value !== 'object') {
@@ -27,7 +27,7 @@ export async function invokeElectronApi<T>(channel: string, payload?: unknown): 
   const electronApi = getElectronApi();
 
   if (!electronApi) {
-    throw new Error(ELECTRON_BRIDGE_UNAVAILABLE_MESSAGE);
+    throw new Error(ELECTRON_BRIDGE_HELP_MESSAGE);
   }
 
   return electronApi.invoke(channel, payload) as Promise<T>;
@@ -44,5 +44,5 @@ export function subscribeToWindowStateChange(listener: (state: WindowControlsSta
 }
 
 export function getElectronBridgeUnavailableMessage(): string {
-  return ELECTRON_BRIDGE_UNAVAILABLE_MESSAGE;
+  return ELECTRON_BRIDGE_HELP_MESSAGE;
 }
