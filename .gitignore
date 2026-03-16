@@ -29,4 +29,5 @@ Thumbs.db
 test-results/
 coverage/
 
-package-lock.json
+#docs local
+docs/

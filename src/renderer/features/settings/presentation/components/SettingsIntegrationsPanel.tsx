@@ -1,7 +1,7 @@
 import React from 'react';
 import type { RepositoryProviderDefinition } from '../../../../../types/repository';
 import type { DashboardSummary } from '../../../../shared/dashboard/summary.types';
-import type { CodexIntegrationConfig } from '../../';
+import type { CodexIntegrationConfig } from '../../types';
 import CodexIntegrationCard from './CodexIntegrationCard';
 import GlobalSnapshotPolicyCard from './GlobalSnapshotPolicyCard';
 import SettingsIntegrationActionCards from './SettingsIntegrationActionCards';
