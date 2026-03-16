@@ -5,17 +5,7 @@ jest.mock('../../../src/renderer/features/dashboard/history', () => ({
   loadDashboardHistory: jest.fn(),
 }));
 
-jest.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }) => React.createElement('div', null, children),
-  AreaChart: ({ children }) => React.createElement('div', null, children),
-  Area: () => React.createElement('div'),
-  CartesianGrid: () => React.createElement('div'),
-  Tooltip: () => React.createElement('div'),
-  XAxis: () => React.createElement('div'),
-  YAxis: () => React.createElement('div'),
-  BarChart: ({ children }) => React.createElement('div', null, children),
-  Bar: () => React.createElement('div'),
-}));
+jest.mock('../../../src/renderer/features/dashboard/components/HistoryCharts', () => () => React.createElement('div', null, 'History charts'));
 
 const { loadDashboardHistory } = require('../../../src/renderer/features/dashboard/history');
 const History = require('../../../src/renderer/pages/History').default;
@@ -29,7 +19,7 @@ describe('History page', () => {
     expect(screen.getByText((content) => content.includes('Todavía no hay histórico.'))).toBeInTheDocument();
   });
 
-  test('muestra ultimo alcance y tabla cuando hay snapshots', () => {
+  test('muestra ultimo alcance y tabla cuando hay snapshots', async () => {
     loadDashboardHistory.mockReturnValue([
       {
         id: '1',
@@ -50,5 +40,6 @@ describe('History page', () => {
 
     expect(screen.getAllByText('acme / repo-a').length).toBeGreaterThan(0);
     expect(screen.getByText('Últimos snapshots')).toBeInTheDocument();
+    expect(await screen.findByText('History charts')).toBeInTheDocument();
   });
 });

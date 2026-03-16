@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import ConnectionSummary from '../features/dashboard/components/ConnectionSummary';
 import { useRepositorySourceContext } from '../features/dashboard/context/RepositorySourceContext';
 import { useRepositoryAnalysis } from '../features/repository-analysis/hooks/useRepositoryAnalysis';
@@ -78,11 +77,7 @@ const RepositoryAnalysis = () => {
       : 'preparing';
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
-    >
+    <div className="space-y-6">
       <RepositoryAnalysisHero />
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_1.8fr]">
@@ -152,7 +147,7 @@ const RepositoryAnalysis = () => {
       ) : !isRunning && !error ? (
         <RepositoryAnalysisEmptyState />
       ) : null}
-    </motion.div>
+    </div>
   );
 };
 

@@ -1,6 +1,7 @@
 import React from 'react';
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, BarChart, Bar } from 'recharts';
 import { loadDashboardHistory } from '../features/dashboard/history';
+
+const HistoryCharts = React.lazy(() => import('../features/dashboard/components/HistoryCharts'));
 
 const History = () => {
   const history = React.useMemo(() => loadDashboardHistory().slice().reverse(), []);
@@ -26,37 +27,9 @@ const History = () => {
       ) : (
         <>
           <section className="grid gap-6 xl:grid-cols-2">
-            <div className="rounded-3xl bg-white p-6 shadow-lg ring-1 ring-slate-200">
-              <h2 className="text-lg font-semibold text-slate-900">Evolución del backlog</h2>
-              <div className="mt-5 h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={history}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="capturedAt" tickFormatter={formatDateTick} />
-                    <YAxis />
-                    <Tooltip labelFormatter={formatTooltipDate} />
-                    <Area type="monotone" dataKey="activePRs" stroke="#0284c7" fill="#bae6fd" name="PRs activos" />
-                    <Area type="monotone" dataKey="highRiskPRs" stroke="#f59e0b" fill="#fde68a" name="PRs con riesgo" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div className="rounded-3xl bg-white p-6 shadow-lg ring-1 ring-slate-200">
-              <h2 className="text-lg font-semibold text-slate-900">Bloqueos y backlog de review</h2>
-              <div className="mt-5 h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={history}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="capturedAt" tickFormatter={formatDateTick} />
-                    <YAxis />
-                    <Tooltip labelFormatter={formatTooltipDate} />
-                    <Bar dataKey="blockedPRs" fill="#f43f5e" name="Bloqueados" radius={[6, 6, 0, 0]} />
-                    <Bar dataKey="reviewBacklog" fill="#10b981" name="Backlog review" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+            <React.Suspense fallback={<HistoryChartsFallback />}>
+              <HistoryCharts history={history} />
+            </React.Suspense>
           </section>
 
           <section className="rounded-3xl bg-white p-6 shadow-lg ring-1 ring-slate-200">
@@ -96,12 +69,15 @@ const History = () => {
   );
 };
 
-function formatDateTick(value: string): string {
-  return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
+export default History;
+
+const HistoryChartsFallback = () => (
+  <div className="xl:col-span-2 rounded-3xl border border-slate-200 bg-white px-6 py-10 text-center shadow-lg ring-1 ring-slate-200">
+    <p className="text-sm font-medium text-slate-900">Cargando visualizaciones historicas</p>
+    <p className="mt-2 text-sm text-slate-500">Preparando los graficos del backlog y de la cobertura de review.</p>
+  </div>
+);
 
 function formatTooltipDate(value: string): string {
   return new Date(value).toLocaleString();
 }
-
-export default History;

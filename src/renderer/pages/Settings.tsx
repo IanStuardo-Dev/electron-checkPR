@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { useRepositorySourceContext } from '../features/dashboard/context/RepositorySourceContext';
 import { useCodexSettings } from '../features/settings/hooks/useCodexSettings';
 import {
@@ -43,11 +42,7 @@ const Settings = () => {
   const handleRefreshPullRequests = () => void refreshPullRequests();
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="mx-auto max-w-[1220px] space-y-6 lg:space-y-8"
-    >
+    <div className="mx-auto max-w-[1220px] space-y-6 lg:space-y-8">
       <SettingsHero
         isConnectionReady={isConnectionReady}
         isCodexReady={isCodexReady}
@@ -97,7 +92,7 @@ const Settings = () => {
           hasSuccessfulConnection={hasSuccessfulConnection}
         />
       </div>
-    </motion.div>
+    </div>
   );
 };
 
