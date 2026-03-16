@@ -1,8 +1,10 @@
 const loadURL = jest.fn();
 const loadFile = jest.fn();
+const setWindowButtonVisibility = jest.fn();
 const browserWindowMock = jest.fn().mockImplementation(() => ({
   loadURL,
   loadFile,
+  setWindowButtonVisibility,
   on: jest.fn(),
 }));
 
@@ -41,6 +43,21 @@ const {
 } = require('../../../src/services/providers/repository-provider.bootstrap');
 const main = require('../../../src/main');
 
+function withPlatform(platform, callback) {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(process, 'platform');
+
+  Object.defineProperty(process, 'platform', {
+    configurable: true,
+    value: platform,
+  });
+
+  try {
+    callback();
+  } finally {
+    Object.defineProperty(process, 'platform', originalDescriptor);
+  }
+}
+
 describe('main process bootstrap', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -62,6 +79,7 @@ describe('main process bootstrap', () => {
 
     expect(options.frame).toBe(false);
     expect(options.titleBarOverlay).toBe(false);
+    expect(options.titleBarStyle).toBe('hidden');
     expect(options.webPreferences).toEqual(expect.objectContaining({
       nodeIntegration: false,
       contextIsolation: true,
@@ -96,6 +114,14 @@ describe('main process bootstrap', () => {
     process.env.ELECTRON_RENDERER_URL = 'http://localhost:8080';
     main.createWindow();
     expect(loadURL).toHaveBeenCalledWith('http://localhost:8080');
+  });
+
+  test('createWindow oculta los controles nativos en macOS', () => {
+    withPlatform('darwin', () => {
+      main.createWindow();
+    });
+
+    expect(setWindowButtonVisibility).toHaveBeenCalledWith(false);
   });
 
   test('bootstrapMainProcess registra providers, ipc y crea ventana', () => {
