@@ -6,10 +6,12 @@ import {
   SettingsModal,
   SettingsSectionCard,
   SettingsSelectField,
+  SettingsSurfaceCard,
   SettingsStatTile,
   SettingsStatusBadge,
   SettingsTextAreaField,
   SettingsToggleCard,
+  settingsButtonClassName,
 } from './SettingsPrimitives';
 
 interface CodexIntegrationCardProps {
@@ -23,9 +25,10 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
 
   return (
     <SettingsSectionCard
-      eyebrow="AI Integration"
+      eyebrow="Codex"
       title="Codex"
       description="Configuracion base para analisis AI sobre repositorios y sobre la cola priorizada de PRs. La API key vive solo en sesion y las reglas avanzadas quedan fuera de la vista principal."
+      tone="subtle"
       badge={(
         <SettingsStatusBadge
           tone={isReady ? 'emerald' : 'amber'}
@@ -41,7 +44,7 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
           <button
             type="button"
             onClick={() => setIsAdvancedModalOpen(true)}
-            className="inline-flex w-full items-center justify-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600 sm:w-auto"
+            className={`w-full sm:w-auto ${settingsButtonClassName}`}
           >
             Politicas avanzadas
           </button>
@@ -181,7 +184,7 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
         />
       </div>
 
-      <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+      <SettingsSurfaceCard className="mt-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="text-base font-semibold text-slate-900">Politicas avanzadas</h3>
@@ -194,7 +197,7 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
         <p className="mt-3 text-sm leading-6 text-slate-600">
           Las reglas textuales viven en un modal dedicado para que la vista principal se mantenga operativa y no se transforme en un formulario gigante.
         </p>
-      </div>
+      </SettingsSurfaceCard>
 
       <SettingsModal
         isOpen={isAdvancedModalOpen}
@@ -206,7 +209,7 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
             <button
               type="button"
               onClick={() => setIsAdvancedModalOpen(false)}
-              className="inline-flex items-center justify-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600"
+              className={settingsButtonClassName}
             >
               Listo
             </button>
