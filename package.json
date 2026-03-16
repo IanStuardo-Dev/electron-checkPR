@@ -19,10 +19,11 @@
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "analyze:complexity": "cr src/",
+    "analyze:architecture": "node scripts/check-renderer-architecture.js",
     "analyze:duplicates": "jscpd src/ --threshold 3",
     "analyze:security": "eslint . --ext .ts,.tsx",
-    "analyze:all": "npm run lint && npm run analyze:complexity && npm run analyze:duplicates && npm run analyze:security",
-    "quality:check": "npm run lint && npm run typecheck && jest --runInBand && npm run build && npm run analyze:duplicates"
+    "analyze:all": "npm run lint && npm run analyze:complexity && npm run analyze:architecture && npm run analyze:duplicates && npm run analyze:security",
+    "quality:check": "npm run lint && npm run typecheck && npm run analyze:architecture && jest --runInBand && npm run build && npm run analyze:duplicates"
   },
   "author": "",
   "license": "ISC",

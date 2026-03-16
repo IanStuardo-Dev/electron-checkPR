@@ -1,34 +1,34 @@
 const { renderHook, act } = require('@testing-library/react');
 
-jest.mock('../../../src/renderer/features/dashboard/ipc', () => ({
+jest.mock('../../../src/renderer/features/repository-source/data/repositorySourceIpc', () => ({
   fetchProjects: jest.fn(),
   fetchRepositories: jest.fn(),
   fetchPullRequests: jest.fn(),
   openReviewItem: jest.fn(),
 }));
 
-jest.mock('../../../src/renderer/features/dashboard/hooks/useRepositorySourceEffects', () => ({
+jest.mock('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceEffects', () => ({
   useRepositorySourceEffects: jest.fn(),
 }));
 
-jest.mock('../../../src/renderer/features/dashboard/hooks/useRepositorySourceState', () => ({
+jest.mock('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceState', () => ({
   useRepositorySourceState: jest.fn(),
 }));
 
-jest.mock('../../../src/renderer/features/dashboard/hooks/useRepositoryDiagnostics', () => ({
+jest.mock('../../../src/renderer/features/repository-source/presentation/hooks/useRepositoryDiagnostics', () => ({
   useRepositoryDiagnostics: jest.fn(),
 }));
 
-const ipc = require('../../../src/renderer/features/dashboard/ipc');
-const { useRepositorySourceEffects } = require('../../../src/renderer/features/dashboard/hooks/useRepositorySourceEffects');
-const { useRepositorySourceState } = require('../../../src/renderer/features/dashboard/hooks/useRepositorySourceState');
-const { useRepositoryDiagnostics } = require('../../../src/renderer/features/dashboard/hooks/useRepositoryDiagnostics');
-const { useRepositorySourceApi } = require('../../../src/renderer/features/dashboard/hooks/useRepositorySourceApi');
-const { useRepositorySourceActions } = require('../../../src/renderer/features/dashboard/hooks/useRepositorySourceActions');
-const { useRepositorySourceOperations } = require('../../../src/renderer/features/dashboard/hooks/useRepositorySourceOperations');
-const actualStateModule = jest.requireActual('../../../src/renderer/features/dashboard/hooks/useRepositorySourceState');
-const actualDiagnosticsModule = jest.requireActual('../../../src/renderer/features/dashboard/hooks/useRepositoryDiagnostics');
-const actualEffectsModule = jest.requireActual('../../../src/renderer/features/dashboard/hooks/useRepositorySourceEffects');
+const ipc = require('../../../src/renderer/features/repository-source/data/repositorySourceIpc');
+const { useRepositorySourceEffects } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceEffects');
+const { useRepositorySourceState } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceState');
+const { useRepositoryDiagnostics } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositoryDiagnostics');
+const { useRepositorySourceApi } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceApi');
+const { useRepositorySourceActions } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceActions');
+const { useRepositorySourceOperations } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceOperations');
+const actualStateModule = jest.requireActual('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceState');
+const actualDiagnosticsModule = jest.requireActual('../../../src/renderer/features/repository-source/presentation/hooks/useRepositoryDiagnostics');
+const actualEffectsModule = jest.requireActual('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceEffects');
 
 function createStateMock() {
   return {

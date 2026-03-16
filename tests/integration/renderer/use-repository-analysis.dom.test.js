@@ -2,14 +2,14 @@ const { renderHook, act } = require('@testing-library/react');
 
 jest.useFakeTimers();
 
-jest.mock('../../../src/renderer/features/repository-analysis/ipc', () => ({
+jest.mock('../../../src/renderer/features/repository-analysis/data/repositoryAnalysisIpc', () => ({
   previewRepositorySnapshot: jest.fn(),
   runRepositoryAnalysis: jest.fn(),
   cancelRepositoryAnalysis: jest.fn(),
 }));
 
-const ipc = require('../../../src/renderer/features/repository-analysis/ipc');
-const { useRepositoryAnalysis } = require('../../../src/renderer/features/repository-analysis/hooks/useRepositoryAnalysis');
+const ipc = require('../../../src/renderer/features/repository-analysis/data/repositoryAnalysisIpc');
+const { useRepositoryAnalysis } = require('../../../src/renderer/features/repository-analysis/presentation/hooks/useRepositoryAnalysis');
 
 describe('useRepositoryAnalysis', () => {
   beforeEach(() => {

@@ -2,7 +2,7 @@ const React = require('react');
 const { render, screen } = require('@testing-library/react');
 const userEvent = require('@testing-library/user-event').default;
 
-const App = require('../../../src/renderer/App').default;
+const App = require('../../../src/renderer/app/App').default;
 
 describe('App real navigation', () => {
   beforeEach(() => {

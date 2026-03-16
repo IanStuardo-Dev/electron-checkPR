@@ -1,4 +1,4 @@
-const storage = require('../../../src/renderer/features/settings/storage');
+const storage = require('../../../src/renderer/features/settings/data/settingsStorage');
 
 describe('settings storage', () => {
   beforeEach(() => {

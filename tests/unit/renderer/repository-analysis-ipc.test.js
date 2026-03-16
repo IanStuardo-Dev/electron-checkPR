@@ -1,4 +1,4 @@
-const repositoryAnalysisIpc = require('../../../src/renderer/features/repository-analysis/ipc');
+const repositoryAnalysisIpc = require('../../../src/renderer/features/repository-analysis/data/repositoryAnalysisIpc');
 
 describe('repository analysis ipc', () => {
   beforeEach(() => {

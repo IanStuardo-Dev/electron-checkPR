@@ -1,14 +1,14 @@
 const React = require('react');
 const { renderHook, act, waitFor } = require('@testing-library/react');
 
-jest.mock('../../../src/renderer/features/settings/storage', () => ({
+jest.mock('../../../src/renderer/features/settings/data/settingsStorage', () => ({
   loadCodexConfig: jest.fn(),
   persistCodexConfig: jest.fn().mockResolvedValue(undefined),
   hydrateCodexApiKey: jest.fn(),
 }));
 
-const storage = require('../../../src/renderer/features/settings/storage');
-const { useCodexSettings } = require('../../../src/renderer/features/settings/hooks/useCodexSettings');
+const storage = require('../../../src/renderer/features/settings/data/settingsStorage');
+const { useCodexSettings } = require('../../../src/renderer/features/settings/presentation/hooks/useCodexSettings');
 
 describe('useCodexSettings', () => {
   beforeEach(() => {

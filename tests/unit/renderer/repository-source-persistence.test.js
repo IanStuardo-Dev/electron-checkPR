@@ -1,12 +1,12 @@
-jest.mock('../../../src/renderer/features/dashboard/history', () => ({
+jest.mock('../../../src/renderer/features/history/data/historyStorage', () => ({
   persistDashboardSnapshot: jest.fn(),
 }));
 
-jest.mock('../../../src/renderer/features/dashboard/storage', () => ({
+jest.mock('../../../src/renderer/features/repository-source/data/repositorySourceStorage', () => ({
   persistSavedAzureContext: jest.fn(),
 }));
 
-jest.mock('../../../src/renderer/features/dashboard/metrics', () => ({
+jest.mock('../../../src/renderer/shared/dashboard/summary', () => ({
   buildDashboardSummary: jest.fn(() => ({
     activePRs: 4,
     highRiskPRs: 1,
@@ -19,9 +19,9 @@ jest.mock('../../../src/renderer/features/dashboard/metrics', () => ({
   })),
 }));
 
-const { persistDashboardSnapshot } = require('../../../src/renderer/features/dashboard/history');
-const { persistSavedAzureContext } = require('../../../src/renderer/features/dashboard/storage');
-const { persistRepositorySourceSnapshot } = require('../../../src/renderer/features/dashboard/repositorySourcePersistence');
+const { persistDashboardSnapshot } = require('../../../src/renderer/features/history/data/historyStorage');
+const { persistSavedAzureContext } = require('../../../src/renderer/features/repository-source/data/repositorySourceStorage');
+const { persistRepositorySourceSnapshot } = require('../../../src/renderer/features/repository-source/application/repositorySourcePersistence');
 
 describe('repository source persistence', () => {
   test('persiste contexto y snapshot agregado', () => {

@@ -1,4 +1,4 @@
-const { createRepositorySourceApi } = require('../../../src/renderer/features/dashboard/repositorySourceApiService');
+const { createRepositorySourceApi } = require('../../../src/renderer/features/repository-source/data/repositorySourceApiService');
 
 function createStateMock() {
   return {

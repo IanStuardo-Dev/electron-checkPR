@@ -4,7 +4,7 @@ const {
   createSyncPullRequestsUseCase,
   createDiscoverProjectsUseCase,
   createOpenExternalLinkUseCase,
-} = require('../../../src/renderer/features/dashboard/repositorySourceUseCases');
+} = require('../../../src/renderer/features/repository-source/application/repositorySourceUseCases');
 
 function createStateMock() {
   return {

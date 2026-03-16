@@ -1,29 +1,29 @@
 const React = require('react');
 const { render, screen, waitFor } = require('@testing-library/react');
 const { MemoryRouter } = require('react-router-dom');
-const { createDashboardSummary, createRepositorySourceContext } = require('../../support/helpers/dashboard-context');
+const { createDashboardSummary, createRepositorySourceContext } = require('../../support/helpers/renderer-context-factories');
 
-jest.mock('../../../src/renderer/features/dashboard/context/RepositorySourceContext', () => ({
+jest.mock('../../../src/renderer/features/repository-source/presentation/context/RepositorySourceContext', () => ({
   useRepositorySourceContext: jest.fn(),
 }));
 
-jest.mock('../../../src/renderer/features/settings/hooks/useCodexSettings', () => ({
+jest.mock('../../../src/renderer/features/settings/presentation/hooks/useCodexSettings', () => ({
   useCodexSettings: jest.fn(),
 }));
 
-jest.mock('../../../src/renderer/features/repository-analysis/hooks/useRepositoryAnalysis', () => ({
+jest.mock('../../../src/renderer/features/repository-analysis/presentation/hooks/useRepositoryAnalysis', () => ({
   useRepositoryAnalysis: jest.fn(),
 }));
 
-jest.mock('../../../src/renderer/features/dashboard/ipc', () => ({
+jest.mock('../../../src/renderer/features/repository-source/data/repositorySourceIpc', () => ({
   fetchBranches: jest.fn(),
 }));
 
-const { useRepositorySourceContext } = require('../../../src/renderer/features/dashboard/context/RepositorySourceContext');
-const { useCodexSettings } = require('../../../src/renderer/features/settings/hooks/useCodexSettings');
-const { useRepositoryAnalysis } = require('../../../src/renderer/features/repository-analysis/hooks/useRepositoryAnalysis');
-const { fetchBranches } = require('../../../src/renderer/features/dashboard/ipc');
-const RepositoryAnalysis = require('../../../src/renderer/pages/RepositoryAnalysis').default;
+const { useRepositorySourceContext } = require('../../../src/renderer/features/repository-source/presentation/context/RepositorySourceContext');
+const { useCodexSettings } = require('../../../src/renderer/features/settings/presentation/hooks/useCodexSettings');
+const { useRepositoryAnalysis } = require('../../../src/renderer/features/repository-analysis/presentation/hooks/useRepositoryAnalysis');
+const { fetchBranches } = require('../../../src/renderer/features/repository-source/data/repositorySourceIpc');
+const RepositoryAnalysis = require('../../../src/renderer/app/pages/RepositoryAnalysis').default;
 
 function renderWithRouter(element) {
   return render(React.createElement(

@@ -1,22 +1,22 @@
 const React = require('react');
 const { render, screen, waitFor } = require('@testing-library/react');
 
-jest.mock('../../../src/renderer/features/dashboard/storage', () => ({
+jest.mock('../../../src/renderer/features/repository-source/data/repositorySourceStorage', () => ({
   loadConnectionConfig: jest.fn(),
   persistConnectionConfig: jest.fn().mockResolvedValue(undefined),
   hydrateConnectionSecret: jest.fn(),
 }));
 
-jest.mock('../../../src/renderer/features/dashboard/hooks/useRepositorySourceOperations', () => ({
+jest.mock('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceOperations', () => ({
   useRepositorySourceOperations: jest.fn(),
 }));
 
-const storage = require('../../../src/renderer/features/dashboard/storage');
-const { useRepositorySourceOperations } = require('../../../src/renderer/features/dashboard/hooks/useRepositorySourceOperations');
+const storage = require('../../../src/renderer/features/repository-source/data/repositorySourceStorage');
+const { useRepositorySourceOperations } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceOperations');
 const {
   RepositorySourceProvider,
   useRepositorySourceContext,
-} = require('../../../src/renderer/features/dashboard/context/RepositorySourceContext');
+} = require('../../../src/renderer/features/repository-source/presentation/context/RepositorySourceContext');
 
 describe('RepositorySourceProvider integration', () => {
   beforeEach(() => {

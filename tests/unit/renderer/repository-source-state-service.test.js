@@ -1,4 +1,4 @@
-const stateService = require('../../../src/renderer/features/dashboard/repositorySourceStateService');
+const stateService = require('../../../src/renderer/features/repository-source/application/repositorySourceStateService');
 
 function createStateMock() {
   return {

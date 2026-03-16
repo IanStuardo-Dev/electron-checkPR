@@ -2,7 +2,7 @@ const React = require('react');
 const { render, screen } = require('@testing-library/react');
 const userEvent = require('@testing-library/user-event').default;
 
-const CodexIntegrationCard = require('../../../src/renderer/features/settings/components/CodexIntegrationCard').default;
+const CodexIntegrationCard = require('../../../src/renderer/features/settings/presentation/components/CodexIntegrationCard').default;
 
 describe('CodexIntegrationCard', () => {
   test('abre el modal de politicas avanzadas sin sobrecargar la card principal', async () => {

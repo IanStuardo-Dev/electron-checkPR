@@ -2,19 +2,19 @@ const React = require('react');
 const { render, screen } = require('@testing-library/react');
 const userEvent = require('@testing-library/user-event').default;
 const { MemoryRouter } = require('react-router-dom');
-const { createDashboardSummary, createRepositorySourceContext } = require('../../support/helpers/dashboard-context');
+const { createDashboardSummary, createRepositorySourceContext } = require('../../support/helpers/renderer-context-factories');
 
-jest.mock('../../../src/renderer/features/dashboard/context/RepositorySourceContext', () => ({
+jest.mock('../../../src/renderer/features/repository-source/presentation/context/RepositorySourceContext', () => ({
   useRepositorySourceContext: jest.fn(),
 }));
 
-jest.mock('../../../src/renderer/features/settings/hooks/useCodexSettings', () => ({
+jest.mock('../../../src/renderer/features/settings/presentation/hooks/useCodexSettings', () => ({
   useCodexSettings: jest.fn(),
 }));
 
-const { useRepositorySourceContext } = require('../../../src/renderer/features/dashboard/context/RepositorySourceContext');
-const { useCodexSettings } = require('../../../src/renderer/features/settings/hooks/useCodexSettings');
-const Settings = require('../../../src/renderer/pages/Settings').default;
+const { useRepositorySourceContext } = require('../../../src/renderer/features/repository-source/presentation/context/RepositorySourceContext');
+const { useCodexSettings } = require('../../../src/renderer/features/settings/presentation/hooks/useCodexSettings');
+const Settings = require('../../../src/renderer/app/pages/Settings').default;
 
 function renderWithRouter(element) {
   return render(React.createElement(

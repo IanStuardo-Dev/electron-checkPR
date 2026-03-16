@@ -1,14 +1,14 @@
 const React = require('react');
 const { render, screen } = require('@testing-library/react');
 
-jest.mock('../../../src/renderer/features/dashboard/history', () => ({
+jest.mock('../../../src/renderer/features/history/data/historyStorage', () => ({
   loadDashboardHistory: jest.fn(),
 }));
 
-jest.mock('../../../src/renderer/features/dashboard/components/HistoryCharts', () => () => React.createElement('div', null, 'History charts'));
+jest.mock('../../../src/renderer/features/history/presentation/components/HistoryCharts', () => () => React.createElement('div', null, 'History charts'));
 
-const { loadDashboardHistory } = require('../../../src/renderer/features/dashboard/history');
-const History = require('../../../src/renderer/pages/History').default;
+const { loadDashboardHistory } = require('../../../src/renderer/features/history/data/historyStorage');
+const History = require('../../../src/renderer/app/pages/History').default;
 
 describe('History page', () => {
   test('muestra estado vacio cuando no hay snapshots', () => {

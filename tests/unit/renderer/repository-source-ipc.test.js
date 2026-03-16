@@ -1,0 +1,63 @@
+const repositorySourceIpc = require('../../../src/renderer/features/repository-source/data/repositorySourceIpc');
+
+describe('repository source ipc gateway', () => {
+  beforeEach(() => {
+    global.window = {
+      electronApi: {
+        invoke: jest.fn(),
+      },
+    };
+  });
+
+  test('resuelve canales genericos del gateway de repository source', () => {
+    expect(repositorySourceIpc.getRepositorySourceChannel('pullRequests')).toBe('repository-source:fetchPullRequests');
+    expect(repositorySourceIpc.getRepositorySourceChannel('repositories')).toBe('repository-source:fetchRepositories');
+    expect(repositorySourceIpc.getRepositorySourceChannel('openExternal')).toBe('repository-source:openExternal');
+  });
+
+  test('fetchPullRequests usa electronApi.invoke y retorna data', async () => {
+    window.electronApi.invoke.mockResolvedValue({
+      ok: true,
+      data: [{ id: 1, title: 'PR', reviewers: [] }],
+    });
+
+    const result = await repositorySourceIpc.fetchPullRequests({
+      provider: 'github',
+      organization: 'acme',
+      project: 'repo-a',
+      repositoryId: 'repo-a',
+      personalAccessToken: 'secret',
+    });
+
+    expect(window.electronApi.invoke).toHaveBeenCalledWith('repository-source:fetchPullRequests', expect.objectContaining({
+      organization: 'acme',
+      repositoryId: 'repo-a',
+      provider: 'github',
+    }));
+    expect(result).toEqual([{ id: 1, title: 'PR', reviewers: [] }]);
+  });
+
+  test('falla si no hay provider seleccionado', async () => {
+    await expect(repositorySourceIpc.fetchProjects({
+      provider: '',
+      organization: '',
+      project: '',
+      personalAccessToken: '',
+    })).rejects.toThrow('Selecciona un provider');
+  });
+
+  test('openReviewItem propaga errores del canal IPC', async () => {
+    window.electronApi.invoke.mockResolvedValue({
+      ok: false,
+      error: 'blocked',
+    });
+
+    await expect(repositorySourceIpc.openReviewItem('https://github.com/acme/repo/pull/1', {
+      provider: 'github',
+      organization: 'acme',
+      project: 'repo-a',
+      repositoryId: 'repo-a',
+      personalAccessToken: 'secret',
+    })).rejects.toThrow('blocked');
+  });
+});

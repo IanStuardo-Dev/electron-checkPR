@@ -1,7 +1,7 @@
 const React = require('react');
 const { render, screen } = require('@testing-library/react');
 
-const TitleBar = require('../../../src/renderer/components/Layout/TitleBar').default;
+const TitleBar = require('../../../src/renderer/shared/layout/TitleBar').default;
 
 describe('TitleBar', () => {
   test('no explota si el bridge de Electron no esta disponible', () => {

@@ -1,4 +1,4 @@
-const history = require('../../../src/renderer/features/dashboard/history');
+const history = require('../../../src/renderer/features/history/data/historyStorage');
 
 describe('dashboard history storage', () => {
   beforeEach(() => {
