@@ -13,7 +13,7 @@ export function buildMainWindowOptions(): Electron.BrowserWindowConstructorOptio
     minWidth: 1080,
     minHeight: 720,
     frame: false,
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
+    titleBarStyle: 'hidden',
     titleBarOverlay: false,
     backgroundColor: '#e2e8f0',
     webPreferences: {
@@ -23,6 +23,18 @@ export function buildMainWindowOptions(): Electron.BrowserWindowConstructorOptio
       sandbox: true,
     },
   };
+}
+
+function hideNativeMacWindowControls(mainWindow: BrowserWindow): void {
+  if (process.platform !== 'darwin') {
+    return;
+  }
+
+  const macWindow = mainWindow as BrowserWindow & {
+    setWindowButtonVisibility?: (visible: boolean) => void;
+  };
+
+  macWindow.setWindowButtonVisibility?.(false);
 }
 
 export function resolveRendererTarget() {
@@ -38,6 +50,7 @@ export function resolveRendererTarget() {
 
 export function createWindow() {
   const mainWindow = new BrowserWindow(buildMainWindowOptions());
+  hideNativeMacWindowControls(mainWindow);
   attachWindowStateSync(mainWindow);
 
   const { rendererUrl, isDevelopment, productionFile } = resolveRendererTarget();
