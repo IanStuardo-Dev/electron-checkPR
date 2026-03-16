@@ -2,8 +2,7 @@ import React from 'react';
 import type { RepositoryProviderDefinition } from '../../../../types/repository';
 import ConnectionSummary from '../../dashboard/components/ConnectionSummary';
 import type { DashboardSummary, SavedConnectionConfig } from '../../dashboard/types';
-import { BoltIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
-import { SettingsSectionCard, SettingsStatTile, SettingsStatusBadge } from './SettingsPrimitives';
+import { SettingsSectionCard, SettingsStatTile, SettingsStatusBadge, SettingsSurfaceCard } from './SettingsPrimitives';
 
 export function SettingsOperationalSection({
   activeProvider,
@@ -26,24 +25,12 @@ export function SettingsOperationalSection({
 }) {
   return (
     <SettingsSectionCard
-      eyebrow="Prioridad 1"
+      eyebrow="Resumen"
       title="Resumen operativo"
-      description="Empieza aqui: esta vista resume el estado del workspace y deja el detalle tecnico fuera del camino principal."
+      description="El estado esencial del workspace vive aqui. Todo lo demas se abre bajo demanda para que Settings no se convierta en un formulario gigante."
       badge={<SettingsStatusBadge tone={isConnectionReady ? 'emerald' : 'amber'} label={isConnectionReady ? 'Workspace operativo' : 'Faltan pasos'} />}
-      actions={(
-        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-          <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-            <BoltIcon className="h-4 w-4 text-sky-600" />
-            Secrets solo en sesion
-          </span>
-          <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-            <WrenchScrewdriverIcon className="h-4 w-4 text-sky-600" />
-            Diagnostico en panel lateral
-          </span>
-        </div>
-      )}
     >
-      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.9fr)]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)]">
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <SettingsStatTile label="Provider activo" value={config.provider ? activeProviderName : 'No seleccionado'} description="Fuente primaria de repositorios y PRs para esta sesion." />
@@ -51,8 +38,8 @@ export function SettingsOperationalSection({
             <SettingsStatTile label="Scope actual" value={selectedRepositoryName || selectedProjectName || 'Global'} description={summary.scopeLabel} />
             <SettingsStatTile label="Codex" value={isCodexReady ? 'Listo' : 'Pendiente'} description="Disponibilidad de analisis AI sobre ramas exactas y PRs." />
           </div>
-          <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Siguiente accion</p>
+          <SettingsSurfaceCard className="bg-slate-50/80">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Siguiente paso</p>
             <p className="mt-3 text-lg font-semibold text-slate-950">
               {!config.provider
                 ? 'Selecciona un provider'
@@ -68,10 +55,10 @@ export function SettingsOperationalSection({
                 : !isConnectionReady
                   ? 'Autentica el provider activo y ejecuta una sincronizacion inicial.'
                   : !isCodexReady
-                    ? 'Configura la API key y las reglas base de Codex para habilitar PR AI Review y Repository Analysis.'
+                  ? 'Configura la API key y las reglas base de Codex para habilitar PR AI Review y Repository Analysis.'
                     : 'Puedes ir al dashboard para operar la cola de PRs o lanzar un analisis profundo de repositorio.'}
             </p>
-          </div>
+          </SettingsSurfaceCard>
         </div>
 
         <ConnectionSummary

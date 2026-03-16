@@ -20,6 +20,7 @@ interface SettingsSectionCardProps {
   actions?: React.ReactNode;
   children?: React.ReactNode;
   className?: string;
+  tone?: 'default' | 'subtle';
 }
 
 export const SettingsSectionCard = ({
@@ -30,8 +31,13 @@ export const SettingsSectionCard = ({
   actions,
   children,
   className = '',
+  tone = 'default',
 }: SettingsSectionCardProps) => (
-  <section className={`rounded-[24px] border border-slate-200 bg-white/95 p-5 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.45)] backdrop-blur sm:rounded-[28px] sm:p-6 ${className}`}>
+  <section className={`${
+    tone === 'subtle'
+      ? 'rounded-[24px] border border-slate-200/80 bg-slate-50/70 p-5 shadow-none sm:rounded-[28px] sm:p-6'
+      : 'rounded-[24px] border border-slate-200 bg-white/95 p-5 shadow-[0_20px_70px_-45px_rgba(15,23,42,0.45)] backdrop-blur sm:rounded-[28px] sm:p-6'
+  } ${className}`}>
     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div className="min-w-0 flex-1">
         {eyebrow ? (
@@ -51,6 +57,22 @@ export const SettingsSectionCard = ({
     {children ? <div className="mt-6">{children}</div> : null}
   </section>
 );
+
+interface SettingsSurfaceCardProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const SettingsSurfaceCard = ({
+  children,
+  className = '',
+}: SettingsSurfaceCardProps) => (
+  <article className={`rounded-[24px] border border-slate-200/90 bg-slate-50/70 p-5 ${className}`}>
+    {children}
+  </article>
+);
+
+export const settingsButtonClassName = 'inline-flex items-center justify-center rounded-full border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600';
 
 interface SettingsStatusBadgeProps {
   tone: BadgeTone;
@@ -205,14 +227,65 @@ interface SettingsStatTileProps {
   label: string;
   value: string;
   description: string;
+  className?: string;
 }
 
-export const SettingsStatTile = ({ label, value, description }: SettingsStatTileProps) => (
-  <article className="min-w-0 rounded-2xl border border-slate-200 bg-white/70 p-4">
+export const SettingsStatTile = ({ label, value, description, className = '' }: SettingsStatTileProps) => (
+  <article className={`min-w-0 rounded-2xl border border-slate-200 bg-white/70 p-4 ${className}`}>
     <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{label}</p>
     <p className="mt-3 break-words text-2xl font-semibold text-slate-950">{value}</p>
     <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
   </article>
+);
+
+interface SettingsActionCardProps {
+  eyebrow: string;
+  title: string;
+  description: string;
+  badge?: React.ReactNode;
+  summaryLabel: string;
+  summaryValue: string;
+  summaryDescription: string;
+  actionLabel: string;
+  onAction: () => void;
+}
+
+export const SettingsActionCard = ({
+  eyebrow,
+  title,
+  description,
+  badge,
+  summaryLabel,
+  summaryValue,
+  summaryDescription,
+  actionLabel,
+  onAction,
+}: SettingsActionCardProps) => (
+  <SettingsSurfaceCard className="flex h-full flex-col">
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{eyebrow}</p>
+        <h3 className="mt-2 text-lg font-semibold text-slate-950">{title}</h3>
+      </div>
+      {badge}
+    </div>
+    <p className="mt-3 min-h-[4.5rem] text-sm leading-6 text-slate-500">{description}</p>
+    <div className="mt-4 flex-1">
+      <SettingsStatTile
+        label={summaryLabel}
+        value={summaryValue}
+        description={summaryDescription}
+        className="h-full"
+      />
+    </div>
+    <button
+      type="button"
+      onClick={onAction}
+      className={`mt-4 w-full ${settingsButtonClassName}`}
+    >
+      {actionLabel}
+    </button>
+  </SettingsSurfaceCard>
 );
 
 interface SettingsNoticeProps {
@@ -304,7 +377,7 @@ export const SettingsModal = ({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600"
+              className={settingsButtonClassName}
             >
               Cerrar
             </button>

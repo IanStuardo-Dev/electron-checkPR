@@ -25,7 +25,7 @@ function renderWithRouter(element) {
 }
 
 describe('Settings page', () => {
-  test('muestra el resumen operativo y abre modales de soporte y politicas avanzadas', async () => {
+  test('muestra un hub simple y abre modales de configuracion y soporte', async () => {
     const user = userEvent.setup();
     useRepositorySourceContext.mockReturnValue(createRepositorySourceContext({
       activeProvider: { kind: 'github' },
@@ -89,9 +89,20 @@ describe('Settings page', () => {
     expect(screen.getByText('Resumen operativo')).toBeInTheDocument();
     expect(screen.getByText('Workspace operativo')).toBeInTheDocument();
     expect(screen.getAllByText('GitHub').length).toBeGreaterThan(0);
-    expect(screen.getByText('Provider activo y fuentes disponibles')).toBeInTheDocument();
-    expect(screen.getByText('Reglas globales de snapshot')).toBeInTheDocument();
+    expect(screen.getByText('Configuracion simple del workspace')).toBeInTheDocument();
+    expect(screen.getByText('Integraciones y reglas')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /abrir configuracion/i }).length).toBe(2);
+    expect(screen.getByRole('button', { name: /editar reglas/i })).toBeInTheDocument();
+
+    await user.click(screen.getAllByRole('button', { name: /abrir configuracion/i })[0]);
+    expect(screen.getByRole('dialog', { name: /configuracion de provider/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/^provider$/i).length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('button', { name: /^cerrar$/i }));
+
+    await user.click(screen.getAllByRole('button', { name: /abrir configuracion/i })[1]);
+    expect(screen.getByRole('dialog', { name: /configuracion de codex/i })).toBeInTheDocument();
     expect(screen.getAllByText(/politicas avanzadas/i).length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('button', { name: /^cerrar$/i }));
 
     await user.click(screen.getByRole('button', { name: /abrir diagnostico/i }));
     expect(screen.getByRole('dialog', { name: /diagnostico del provider/i })).toBeInTheDocument();
@@ -100,9 +111,13 @@ describe('Settings page', () => {
 
     await user.click(screen.getByRole('button', { name: /editar reglas/i }));
     expect(screen.getByRole('dialog', { name: /reglas globales de snapshot/i })).toBeInTheDocument();
+    await user.click(screen.getAllByRole('button', { name: /editar reglas/i })[1]);
     expect(screen.getByRole('button', { name: /aplicar preset node/i })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /^listo$/i }));
+    await user.click(screen.getAllByRole('button', { name: /^cerrar$/i })[0]);
 
+    await user.click(screen.getAllByRole('button', { name: /abrir configuracion/i })[1]);
+    expect(screen.getByRole('dialog', { name: /configuracion de codex/i })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /politicas avanzadas/i }));
     expect(screen.getByRole('dialog', { name: /politicas avanzadas de codex/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/focus areas para pr ai review/i)).toBeInTheDocument();

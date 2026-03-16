@@ -4,9 +4,11 @@ import {
   SettingsSectionCard,
   SettingsModal,
   SettingsNotice,
+  SettingsSurfaceCard,
   SettingsStatusBadge,
   SettingsTextAreaField,
   SettingsToggleCard,
+  settingsButtonClassName,
 } from './SettingsPrimitives';
 
 interface GlobalSnapshotPolicyCardProps {
@@ -54,9 +56,10 @@ const GlobalSnapshotPolicyCard = ({ snapshotPolicy, onChange }: GlobalSnapshotPo
 
   return (
     <SettingsSectionCard
-      eyebrow="Global Snapshot Policy"
+      eyebrow="Snapshots"
       title="Reglas globales de snapshot"
       description="Estas exclusiones y el modo estricto aplican a cualquier snapshot del producto: preflight de Repository Analysis, PR AI Review y futuras corridas que reutilicen el pipeline."
+      tone="subtle"
       badge={(
         <SettingsStatusBadge
           tone="sky"
@@ -67,7 +70,7 @@ const GlobalSnapshotPolicyCard = ({ snapshotPolicy, onChange }: GlobalSnapshotPo
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex w-full items-center justify-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600 sm:w-auto"
+          className={`w-full sm:w-auto ${settingsButtonClassName}`}
         >
           Editar reglas
         </button>
@@ -84,20 +87,20 @@ const GlobalSnapshotPolicyCard = ({ snapshotPolicy, onChange }: GlobalSnapshotPo
           })}
         />
 
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4 text-sm leading-6 text-slate-600">
+        <SettingsSurfaceCard className="text-sm leading-6 text-slate-600">
           <p className="font-medium text-slate-900">Cobertura global</p>
           <p className="mt-2">
             Las reglas definidas aqui se aplican antes de cualquier preflight y antes de cualquier envio remoto.
             Las exclusiones temporales siguen existiendo, pero se suman a esta base global y no la reemplazan.
           </p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm leading-6 text-slate-600 sm:col-span-2">
+        </SettingsSurfaceCard>
+        <SettingsSurfaceCard className="text-sm leading-6 text-slate-600 sm:col-span-2">
           <p className="font-medium text-slate-900">Preset disponible</p>
           <p className="mt-2">
             Por ahora la pantalla incluye un preset recomendado para <span className="font-medium">Node</span>.
             Puedes aplicarlo y luego ajustarlo desde el editor avanzado.
           </p>
-        </div>
+        </SettingsSurfaceCard>
       </div>
 
       <SettingsModal
@@ -110,7 +113,7 @@ const GlobalSnapshotPolicyCard = ({ snapshotPolicy, onChange }: GlobalSnapshotPo
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="inline-flex items-center justify-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600"
+              className={settingsButtonClassName}
             >
               Listo
             </button>
@@ -128,7 +131,7 @@ const GlobalSnapshotPolicyCard = ({ snapshotPolicy, onChange }: GlobalSnapshotPo
             })}
           />
 
-          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+          <SettingsSurfaceCard>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-sm leading-6 text-slate-600">
                 <p className="font-medium text-slate-900">Preset rapido</p>
@@ -139,12 +142,12 @@ const GlobalSnapshotPolicyCard = ({ snapshotPolicy, onChange }: GlobalSnapshotPo
               <button
                 type="button"
                 onClick={() => onChange(applySnapshotPreset(snapshotPolicy, 'node'))}
-                className="inline-flex items-center justify-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600"
+                className={settingsButtonClassName}
               >
                 Aplicar preset Node
               </button>
             </div>
-          </div>
+          </SettingsSurfaceCard>
 
           <SettingsTextAreaField
             label="Patrones de paths excluidos"

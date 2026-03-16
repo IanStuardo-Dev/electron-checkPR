@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowRightIcon, CheckCircleIcon, ChevronDownIcon, ChevronUpIcon, CircleStackIcon } from '@heroicons/react/24/outline';
 import type { RepositoryProviderDefinition } from '../../../../types/repository';
-import { SettingsSectionCard, SettingsStatusBadge } from './SettingsPrimitives';
+import { SettingsSectionCard, SettingsStatusBadge, SettingsSurfaceCard, settingsButtonClassName } from './SettingsPrimitives';
 
 interface RepositoryProviderCardProps {
   provider: RepositoryProviderDefinition;
@@ -42,9 +42,10 @@ const RepositoryProviderCard = ({
 
   return (
     <SettingsSectionCard
-      eyebrow="Repository Provider"
+      eyebrow="Provider"
       title={provider.name}
       description={provider.description}
+      tone="subtle"
       badge={<SettingsStatusBadge tone={badgeTone} label={statusLabel[provider.status]} />}
       actions={(
         <>
@@ -62,7 +63,7 @@ const RepositoryProviderCard = ({
             <button
               type="button"
               onClick={onActivate}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600 sm:w-auto"
+              className={`w-full gap-2 sm:w-auto ${settingsButtonClassName}`}
             >
               Usar este provider
               <ArrowRightIcon className="h-4 w-4" />
@@ -72,7 +73,7 @@ const RepositoryProviderCard = ({
             <button
               type="button"
               onClick={onToggleExpand}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-600 sm:w-auto"
+              className={`w-full gap-2 sm:w-auto ${settingsButtonClassName}`}
             >
               {expanded ? 'Ocultar configuracion' : 'Configurar'}
               {expanded ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
@@ -81,7 +82,7 @@ const RepositoryProviderCard = ({
         </>
       )}
     >
-      <div className="flex flex-col gap-4 rounded-2xl bg-slate-50/80 p-4 sm:flex-row sm:items-start">
+      <SettingsSurfaceCard className="flex flex-col gap-4 sm:flex-row sm:items-start">
         <div className="rounded-2xl bg-sky-50 p-3 text-sky-700">
           <CircleStackIcon className="h-6 w-6" />
         </div>
@@ -89,7 +90,7 @@ const RepositoryProviderCard = ({
           <p className="text-sm font-medium text-slate-900">Scope y autenticacion</p>
           <p className="mt-1 text-sm leading-6 text-slate-500">{provider.helperText}</p>
         </div>
-      </div>
+      </SettingsSurfaceCard>
 
       {expanded ? (
         <div className="mt-6 border-t border-slate-100 pt-6">
