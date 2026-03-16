@@ -15,9 +15,16 @@ export function useRepositoryAnalysis() {
     setPhase('previewing');
     setError(null);
     setResult(null);
-    const nextPreview = await previewRepositorySnapshot(payload);
-    setPreview(nextPreview);
-    setPhase('idle');
+
+    try {
+      const nextPreview = await previewRepositorySnapshot(payload);
+      setPreview(nextPreview);
+      setPhase('idle');
+    } catch (nextError) {
+      setPreview(null);
+      setError(nextError instanceof Error ? nextError.message : 'No fue posible preparar el snapshot del repositorio.');
+      setPhase('error');
+    }
   }, []);
 
   const execute = React.useCallback(async (payload: RepositoryAnalysisRequest) => {

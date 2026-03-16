@@ -31,6 +31,19 @@ describe('useRepositoryAnalysis', () => {
     expect(result.current.phase).toBe('idle');
   });
 
+  test('captura error de preview y lo refleja en el estado', async () => {
+    ipc.previewRepositorySnapshot.mockRejectedValue(new Error('bridge unavailable'));
+    const { result } = renderHook(() => useRepositoryAnalysis());
+
+    await act(async () => {
+      await result.current.preparePreview({ requestId: 'req-preview-error' });
+    });
+
+    expect(result.current.preview).toBeNull();
+    expect(result.current.error).toBe('bridge unavailable');
+    expect(result.current.phase).toBe('error');
+  });
+
   test('ejecuta analisis y completa resultado', async () => {
     ipc.runRepositoryAnalysis.mockResolvedValue({ summary: 'ok' });
     const { result } = renderHook(() => useRepositoryAnalysis());

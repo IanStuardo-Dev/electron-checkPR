@@ -1,6 +1,6 @@
 type ElectronApi = NonNullable<Window['electronApi']>;
 
-const ELECTRON_BRIDGE_HELP_MESSAGE = 'No se detecto el bridge de Electron. Algunas capacidades nativas no estaran disponibles en modo web.';
+const ELECTRON_BRIDGE_HELP_MESSAGE = 'No se detecto el bridge de Electron. Esta app requiere ejecutarse dentro de Electron.';
 
 function isElectronApi(value: unknown): value is ElectronApi {
   if (!value || typeof value !== 'object') {

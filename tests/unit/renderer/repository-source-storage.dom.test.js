@@ -89,21 +89,21 @@ describe('repository source storage', () => {
     await expect(storage.hydrateConnectionSecret()).rejects.toThrow('missing secret');
   });
 
-  test('persistConnectionConfig usa fallback de sessionStorage sin Electron', async () => {
+  test('persistConnectionConfig falla si no existe Electron', async () => {
     const originalElectronApi = window.electronApi;
     delete window.electronApi;
 
     try {
-      await storage.persistConnectionConfig({
+      await expect(storage.persistConnectionConfig({
         provider: 'github',
         organization: 'acme',
         project: 'repo-a',
         repositoryId: 'repo-a',
         personalAccessToken: 'browser-secret',
         targetReviewer: '',
-      });
+      })).rejects.toThrow('No se detecto el bridge de Electron');
 
-      await expect(storage.hydrateConnectionSecret()).resolves.toBe('browser-secret');
+      await expect(storage.hydrateConnectionSecret()).rejects.toThrow('No se detecto el bridge de Electron');
     } finally {
       window.electronApi = originalElectronApi;
     }

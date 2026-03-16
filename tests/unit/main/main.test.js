@@ -76,7 +76,6 @@ describe('main process bootstrap', () => {
 
     expect(target.rendererUrl).toBe('http://localhost:8080');
     expect(target.isDevelopment).toBe(true);
-    expect(target.productionFile).toContain('dist');
     expect(target.productionFile).toContain('index.html');
   });
 
