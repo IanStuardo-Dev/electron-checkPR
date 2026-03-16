@@ -11,7 +11,7 @@ const navClassName = ({ isActive }: { isActive: boolean }) =>
 
 const Sidebar = () => {
   return (
-    <aside className="sticky top-0 flex h-screen w-72 flex-col border-r border-slate-200 bg-white/95 px-6 py-8 backdrop-blur">
+    <aside className="flex h-full w-72 flex-col border-r border-slate-200 bg-white/95 px-6 py-8 backdrop-blur">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-600">CheckPR</p>
         <h1 className="mt-3 text-2xl font-semibold text-slate-950">Repo Command Center</h1>

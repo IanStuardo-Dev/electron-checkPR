@@ -3,10 +3,13 @@ const loadFile = jest.fn();
 const browserWindowMock = jest.fn().mockImplementation(() => ({
   loadURL,
   loadFile,
+  on: jest.fn(),
 }));
 
 jest.mock('electron', () => ({
   app: {
+    getPath: jest.fn(() => 'C:\\Users\\ianst\\AppData\\Roaming'),
+    setPath: jest.fn(),
     setAppUserModelId: jest.fn(),
     whenReady: jest.fn(() => ({ then: jest.fn() })),
     on: jest.fn(),
@@ -21,12 +24,17 @@ jest.mock('../../../src/main/ipc/register', () => ({
   registerIpcHandlers: jest.fn(),
 }));
 
+jest.mock('../../../src/main/ipc/window-controls', () => ({
+  attachWindowStateSync: jest.fn(),
+}));
+
 jest.mock('../../../src/services/providers/repository-provider.bootstrap', () => ({
   buildDefaultRepositoryProviderPorts: jest.fn(() => []),
   registerDefaultRepositoryProviders: jest.fn(),
 }));
 
 const { registerIpcHandlers } = require('../../../src/main/ipc/register');
+const { attachWindowStateSync } = require('../../../src/main/ipc/window-controls');
 const {
   buildDefaultRepositoryProviderPorts,
   registerDefaultRepositoryProviders,
@@ -36,13 +44,24 @@ const main = require('../../../src/main');
 describe('main process bootstrap', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env.LOCALAPPDATA = 'C:\\Users\\ianst\\AppData\\Local';
     delete process.env.ELECTRON_RENDERER_URL;
     delete process.env.NODE_ENV;
+  });
+
+  test('resolveAppStoragePaths usa LOCALAPPDATA para aislar cache y session data', () => {
+    const storage = main.resolveAppStoragePaths();
+
+    expect(storage.userDataPath).toContain('AppData\\Local');
+    expect(storage.userDataPath).toContain('CheckPR');
+    expect(storage.sessionDataPath).toContain('SessionData');
   });
 
   test('buildMainWindowOptions endurece webPreferences', () => {
     const options = main.buildMainWindowOptions();
 
+    expect(options.frame).toBe(false);
+    expect(options.titleBarOverlay).toBe(false);
     expect(options.webPreferences).toEqual(expect.objectContaining({
       nodeIntegration: false,
       contextIsolation: true,
@@ -57,7 +76,8 @@ describe('main process bootstrap', () => {
 
     expect(target.rendererUrl).toBe('http://localhost:8080');
     expect(target.isDevelopment).toBe(true);
-    expect(target.productionFile).toContain('/dist/index.html');
+    expect(target.productionFile).toContain('dist');
+    expect(target.productionFile).toContain('index.html');
   });
 
   test('createWindow carga el renderer correcto segun entorno', () => {
@@ -70,7 +90,8 @@ describe('main process bootstrap', () => {
         sandbox: true,
       }),
     }));
-    expect(loadFile).toHaveBeenCalledWith(expect.stringContaining('/dist/index.html'));
+    expect(attachWindowStateSync).toHaveBeenCalled();
+    expect(loadFile).toHaveBeenCalledWith(expect.stringContaining('index.html'));
 
     jest.clearAllMocks();
     process.env.ELECTRON_RENDERER_URL = 'http://localhost:8080';

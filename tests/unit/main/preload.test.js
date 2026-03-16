@@ -3,7 +3,9 @@ jest.mock('electron', () => ({
     exposeInMainWorld: jest.fn(),
   },
   ipcRenderer: {
+    on: jest.fn(),
     invoke: jest.fn(),
+    removeListener: jest.fn(),
   },
 }));
 
@@ -21,6 +23,8 @@ describe('preload security bridge', () => {
       'analysis:previewRepositorySnapshot',
       'analysis:runRepositoryAnalysis',
       'analysis:cancelPullRequestAiReviews',
+      'window-controls:get-state',
+      'window-controls:close',
       'session-secrets:get',
       'session-secrets:has',
     ]));
@@ -35,5 +39,19 @@ describe('preload security bridge', () => {
 
     await expect(preload.electronApiBridge.invoke('session-secrets:get', 'key-a')).resolves.toEqual({ ok: true });
     expect(ipcRenderer.invoke).toHaveBeenCalledWith('session-secrets:get', 'key-a');
+  });
+
+  test('permite suscribirse y desuscribirse a cambios de estado de la ventana', () => {
+    const listener = jest.fn();
+    const unsubscribe = preload.electronApiBridge.onWindowStateChange(listener);
+
+    expect(ipcRenderer.on).toHaveBeenCalledWith('window-controls:state-changed', expect.any(Function));
+
+    const wrappedHandler = ipcRenderer.on.mock.calls[0][1];
+    wrappedHandler({}, { isMaximized: true });
+    expect(listener).toHaveBeenCalledWith({ isMaximized: true });
+
+    unsubscribe();
+    expect(ipcRenderer.removeListener).toHaveBeenCalledWith('window-controls:state-changed', wrappedHandler);
   });
 });
