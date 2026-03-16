@@ -1,23 +1,9 @@
 import type { CodexIntegrationConfig } from '../dashboard/types';
 import { CODEX_SESSION_API_KEY } from '../../../constants/session-secrets';
+import { loadStoredObject, saveStoredObject } from '../../shared/storage/jsonStorage';
+import { getSessionSecret, setSessionSecret } from '../../shared/storage/sessionSecrets';
 
 const CODEX_SETTINGS_STORAGE_KEY = 'checkpr.settings.codex';
-
-async function getSessionSecret(key: string): Promise<string> {
-  const response = await window.electronApi.invoke('session-secrets:get', key) as { ok: boolean; data?: string; error?: string };
-  if (!response.ok) {
-    throw new Error(response.error || 'No fue posible leer el secreto de sesion.');
-  }
-
-  return response.data || '';
-}
-
-async function setSessionSecret(key: string, value: string): Promise<void> {
-  const response = await window.electronApi.invoke('session-secrets:set', { key, value }) as { ok: boolean; error?: string };
-  if (!response.ok) {
-    throw new Error(response.error || 'No fue posible persistir el secreto de sesion.');
-  }
-}
 
 export const defaultCodexConfig: CodexIntegrationConfig = {
   enabled: false,
@@ -63,24 +49,10 @@ export const defaultCodexConfig: CodexIntegrationConfig = {
 };
 
 export function loadCodexConfig(): CodexIntegrationConfig {
-  try {
-    const saved = window.localStorage.getItem(CODEX_SETTINGS_STORAGE_KEY);
-
-    if (!saved) {
-      return {
-        ...defaultCodexConfig,
-        apiKey: '',
-      };
-    }
-
-    return {
-      ...defaultCodexConfig,
-      ...(JSON.parse(saved) as Partial<CodexIntegrationConfig>),
-      apiKey: '',
-    };
-  } catch {
-    return defaultCodexConfig;
-  }
+  return {
+    ...loadStoredObject<CodexIntegrationConfig>(window.localStorage, CODEX_SETTINGS_STORAGE_KEY, defaultCodexConfig),
+    apiKey: '',
+  };
 }
 
 export async function hydrateCodexApiKey(): Promise<string> {
@@ -94,5 +66,5 @@ export async function persistCodexConfig(config: CodexIntegrationConfig): Promis
     apiKey: '',
   };
 
-  window.localStorage.setItem(CODEX_SETTINGS_STORAGE_KEY, JSON.stringify(safeConfig));
+  saveStoredObject(window.localStorage, CODEX_SETTINGS_STORAGE_KEY, safeConfig);
 }

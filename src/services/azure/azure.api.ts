@@ -1,4 +1,5 @@
 import type { AzureConnectionConfig } from '../../types/azure';
+import { readJsonResponse } from '../shared/http-response';
 
 const AZURE_API_VERSION = '7.1';
 
@@ -53,31 +54,11 @@ export function getAzureContinuationToken(headers: Headers): string | null {
 }
 
 export async function readAzureResponse<T>(response: Response, context: string): Promise<T> {
-  const contentType = response.headers.get('content-type') || '';
-  const responseText = await response.text();
-  const responsePreview = responseText.replace(/\s+/g, ' ').trim().slice(0, 280);
-
-  if (!response.ok) {
-    const detail = responsePreview || response.statusText;
-
-    if (response.status === 401) {
-      throw new Error(`Azure DevOps ${context} failed (401): unauthorized. Response: ${detail || 'empty body'}`);
-    }
-
-    throw new Error(`Azure DevOps ${context} failed (${response.status}): ${detail}`);
-  }
-
-  if (!contentType.includes('application/json')) {
-    throw new Error(
-      `Azure DevOps ${context} returned unexpected content (${contentType || 'unknown'}). Response: ${responsePreview || 'empty body'}`,
-    );
-  }
-
-  try {
-    return JSON.parse(responseText) as T;
-  } catch {
-    throw new Error(`Azure DevOps ${context} returned invalid JSON. Revisa organization/project y que el endpoint exista.`);
-  }
+  return readJsonResponse<T>(response, {
+    providerLabel: 'Azure DevOps',
+    context,
+    invalidJsonHint: 'Revisa organization/project y que el endpoint exista.',
+  });
 }
 
 export async function requestAzureJson<T>(url: string, personalAccessToken: string, context: string): Promise<T> {

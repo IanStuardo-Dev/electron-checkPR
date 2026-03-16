@@ -11,9 +11,14 @@ jest.mock('../../../src/main/ipc/session-secrets', () => ({
   registerSessionSecretsIpc: jest.fn(),
 }));
 
+jest.mock('../../../src/main/ipc/window-controls', () => ({
+  registerWindowControlsIpc: jest.fn(),
+}));
+
 const { registerRepositoryProviderIpc } = require('../../../src/main/ipc/repository-providers');
 const { registerAnalysisIpc } = require('../../../src/main/ipc/analysis');
 const { SessionSecretsStore, registerSessionSecretsIpc } = require('../../../src/main/ipc/session-secrets');
+const { registerWindowControlsIpc } = require('../../../src/main/ipc/window-controls');
 const { registerIpcHandlers } = require('../../../src/main/ipc/register');
 
 describe('ipc register', () => {
@@ -34,5 +39,6 @@ describe('ipc register', () => {
     );
     expect(SessionSecretsStore).toHaveBeenCalled();
     expect(registerSessionSecretsIpc).toHaveBeenCalledWith(sessionSecretsStoreInstance);
+    expect(registerWindowControlsIpc).toHaveBeenCalled();
   });
 });

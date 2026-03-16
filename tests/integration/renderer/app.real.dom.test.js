@@ -18,8 +18,8 @@ describe('App real navigation', () => {
 
     render(React.createElement(App));
 
-    await user.click(screen.getByRole('link', { name: 'Settings' }));
+    await user.click(screen.getByRole('link', { name: /settings/i }));
 
-    expect(await screen.findByRole('heading', { name: 'Configuracion de fuentes e integraciones' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Configuracion simple del workspace' })).toBeInTheDocument();
   });
 });

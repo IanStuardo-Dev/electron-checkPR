@@ -28,10 +28,10 @@ describe('App', () => {
 
     render(React.createElement(App));
 
-    await user.click(screen.getByRole('link', { name: 'Settings' }));
+    await user.click(screen.getByRole('link', { name: /settings/i }));
     expect(screen.getByText('Settings page')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('link', { name: 'Historico' }));
+    await user.click(screen.getByRole('link', { name: /historico/i }));
     expect(screen.getByText('History page')).toBeInTheDocument();
   });
 });

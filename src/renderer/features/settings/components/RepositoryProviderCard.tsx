@@ -13,12 +13,6 @@ interface RepositoryProviderCardProps {
   children?: React.ReactNode;
 }
 
-const statusStyles: Record<RepositoryProviderDefinition['status'], string> = {
-  available: 'bg-emerald-50 text-emerald-700',
-  planned: 'bg-amber-50 text-amber-700',
-  todo: 'bg-slate-100 text-slate-600',
-};
-
 const statusLabel: Record<RepositoryProviderDefinition['status'], string> = {
   available: 'Operativo',
   planned: 'Planned',

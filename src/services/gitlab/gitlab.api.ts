@@ -1,4 +1,5 @@
 import type { RepositoryConnectionConfig, RepositoryProject, RepositorySummary } from '../../types/repository';
+import { readJsonResponse } from '../shared/http-response';
 
 export const GITLAB_API_BASE_URL = 'https://gitlab.com/api/v4';
 
@@ -18,33 +19,11 @@ export function getGitLabConfig(config: RepositoryConnectionConfig): Required<Pi
 }
 
 export async function readGitLabResponse<T>(response: Response, context: string): Promise<T> {
-  const contentType = response.headers.get('content-type') || '';
-  const responseText = await response.text();
-  const responsePreview = responseText.replace(/\s+/g, ' ').trim().slice(0, 280);
-
-  if (!response.ok) {
-    const detail = responsePreview || response.statusText;
-
-    if (response.status === 401) {
-      throw new Error(`GitLab ${context} failed (401): unauthorized. Response: ${detail || 'empty body'}`);
-    }
-
-    if (response.status === 403) {
-      throw new Error(`GitLab ${context} failed (403): forbidden. Revisa scopes del token. Response: ${detail || 'empty body'}`);
-    }
-
-    throw new Error(`GitLab ${context} failed (${response.status}): ${detail}`);
-  }
-
-  if (!contentType.includes('application/json')) {
-    throw new Error(`GitLab ${context} returned unexpected content (${contentType || 'unknown'}). Response: ${responsePreview || 'empty body'}`);
-  }
-
-  try {
-    return JSON.parse(responseText) as T;
-  } catch {
-    throw new Error(`GitLab ${context} returned invalid JSON.`);
-  }
+  return readJsonResponse<T>(response, {
+    providerLabel: 'GitLab',
+    context,
+    forbiddenHint: 'Revisa scopes del token.',
+  });
 }
 
 export async function requestGitLabJson<T>(url: string, personalAccessToken: string, context: string): Promise<T> {
