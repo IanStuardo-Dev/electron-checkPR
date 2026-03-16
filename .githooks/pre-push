@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+set -e
+
+echo "Running pre-push quality gate..."
+npm run guard:push
