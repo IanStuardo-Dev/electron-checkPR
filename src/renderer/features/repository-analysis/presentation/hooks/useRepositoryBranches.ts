@@ -32,20 +32,37 @@ export function useRepositoryBranches({
 
     setIsLoadingBranches(true);
     setBranchError(null);
+    let cancelled = false;
     void fetchBranches(activeConfig)
       .then((nextBranches) => {
+        if (cancelled) {
+          return;
+        }
+
         setBranches(nextBranches);
         const defaultBranch = nextBranches.find((branch) => branch.isDefault)?.name || nextBranches[0]?.name || '';
         setBranchName(defaultBranch);
       })
       .catch((nextError) => {
+        if (cancelled) {
+          return;
+        }
+
         setBranches([]);
         setBranchName('');
         setBranchError(nextError instanceof Error ? nextError.message : 'No fue posible cargar las ramas.');
       })
       .finally(() => {
+        if (cancelled) {
+          return;
+        }
+
         setIsLoadingBranches(false);
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [config, isConnectionReady, repositoryId]);
 
   return {

@@ -5,6 +5,7 @@ const {
   createDiscoverProjectsUseCase,
   createOpenExternalLinkUseCase,
 } = require('../../../src/renderer/features/repository-source/application/repositorySourceUseCases');
+const diagnosticsService = require('../../../src/renderer/features/repository-source/application/repositorySourceDiagnosticsService');
 
 function createStateMock() {
   return {
@@ -137,6 +138,41 @@ describe('repositorySourceUseCases', () => {
     expect(state.setHasSuccessfulConnection).toHaveBeenCalledWith(false);
   });
 
+  test('syncPullRequests captura errores operativos y limpia loading', async () => {
+    const state = createStateMock();
+    const diagnostics = createDiagnosticsMock();
+    const useCase = createSyncPullRequestsUseCase({
+      fetcher: { fetchPullRequests: jest.fn().mockRejectedValue(new Error('sync fail')) },
+      state,
+      diagnostics,
+      snapshot: { persistSnapshot: jest.fn() },
+      activeProviderName: 'GitHub',
+      scopeLabel: 'acme / repo-a',
+    });
+
+    await useCase(
+      {
+        provider: 'github',
+        organization: 'acme',
+        project: 'repo-a',
+        repositoryId: 'repo-a',
+        personalAccessToken: 'pat',
+        targetReviewer: 'ian',
+      },
+      jest.fn().mockResolvedValue([]),
+      jest.fn().mockResolvedValue([]),
+    );
+
+    expect(diagnostics.updateDiagnostics).toHaveBeenLastCalledWith(
+      'pullRequests',
+      expect.objectContaining({ repositoryId: 'repo-a' }),
+      'sync fail',
+    );
+    expect(state.setPullRequests).toHaveBeenCalledWith([]);
+    expect(state.setHasSuccessfulConnection).toHaveBeenCalledWith(false);
+    expect(state.setIsLoading).toHaveBeenLastCalledWith(false);
+  });
+
   test('discoverProjects valida credenciales minimas', async () => {
     const state = createStateMock();
     const diagnostics = createDiagnosticsMock();
@@ -158,6 +194,32 @@ describe('repositorySourceUseCases', () => {
     expect(state.setError).toHaveBeenCalledWith(
       'El alcance principal y el token son obligatorios para cargar GitHub.',
     );
+  });
+
+  test('discoverProjects delega en fetchProjects cuando la config es valida', async () => {
+    const state = createStateMock();
+    const diagnostics = createDiagnosticsMock();
+    const fetchProjects = jest.fn().mockResolvedValue([{ id: 'repo-a' }]);
+    const useCase = createDiscoverProjectsUseCase({
+      state,
+      diagnostics,
+      activeProviderName: 'GitHub',
+    });
+
+    await useCase({
+      provider: 'github',
+      organization: 'acme',
+      project: '',
+      repositoryId: '',
+      personalAccessToken: 'pat',
+      targetReviewer: '',
+    }, fetchProjects);
+
+    expect(state.setError).toHaveBeenCalledWith(null);
+    expect(fetchProjects).toHaveBeenCalledWith(expect.objectContaining({
+      provider: 'github',
+      organization: 'acme',
+    }));
   });
 
   test('openExternalLink captura error del fetcher', async () => {
@@ -182,5 +244,34 @@ describe('repositorySourceUseCases', () => {
 
     await useCase('https://example.com/pr/1');
     expect(state.setError).toHaveBeenCalledWith('cannot open');
+  });
+
+  test('openExternalLink expone fallback cuando el error no es una instancia de Error', async () => {
+    const state = createStateMock();
+    const fetcher = {
+      openReviewItem: jest.fn().mockRejectedValue('boom'),
+    };
+    const useCase = createOpenExternalLinkUseCase({
+      fetcher,
+      state,
+      configRef: {
+        current: {
+          provider: 'github',
+          organization: 'acme',
+          project: '',
+          repositoryId: '',
+          personalAccessToken: 'pat',
+          targetReviewer: '',
+        },
+      },
+    });
+
+    await useCase('https://example.com/pr/1');
+    expect(state.setError).toHaveBeenCalledWith('Unable to open pull request.');
+  });
+
+  test('diagnostics service usa fallback cuando el error no es Error', () => {
+    expect(diagnosticsService.getRepositorySourceErrorMessage('GitHub', 'boom'))
+      .toBe('Unknown GitHub error.');
   });
 });

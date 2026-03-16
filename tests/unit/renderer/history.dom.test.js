@@ -9,6 +9,11 @@ describe('dashboard history storage', () => {
     expect(history.loadDashboardHistory()).toEqual([]);
   });
 
+  test('loadDashboardHistory devuelve vacio si el storage esta corrupto', () => {
+    window.localStorage.setItem('checkpr.dashboard.history', '{broken-json');
+    expect(history.loadDashboardHistory()).toEqual([]);
+  });
+
   test('persistDashboardSnapshot agrega al inicio y limita el historial', () => {
     for (let index = 0; index < 125; index += 1) {
       history.persistDashboardSnapshot({

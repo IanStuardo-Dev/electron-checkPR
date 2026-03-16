@@ -92,6 +92,83 @@ describe('repository source config hooks', () => {
     expect(result.current.configRef.current.repositoryId).toBe('repo-a');
   });
 
+  test('useRepositorySourceConfig resetea project y repositoryId al cambiar organization', async () => {
+    storage.loadConnectionConfig.mockReturnValue({
+      provider: 'azure-devops',
+      organization: 'acme',
+      project: 'platform',
+      repositoryId: 'repo-a',
+      personalAccessToken: '',
+      targetReviewer: '',
+    });
+
+    const handlers = {
+      onConfigChangeStart: jest.fn(),
+      onProjectSelected: jest.fn(),
+    };
+
+    const { result } = renderHook(() => useRepositorySourceConfig(handlers));
+
+    await act(async () => {
+      result.current.updateConfig('organization', 'other-org');
+    });
+
+    expect(result.current.config).toEqual({
+      provider: 'azure-devops',
+      organization: 'other-org',
+      project: '',
+      repositoryId: '',
+      personalAccessToken: '',
+      targetReviewer: '',
+    });
+  });
+
+  test('useRepositorySourceConfig limpia solo repositoryId al cambiar project', async () => {
+    storage.loadConnectionConfig.mockReturnValue({
+      provider: 'azure-devops',
+      organization: 'acme',
+      project: 'platform',
+      repositoryId: 'repo-a',
+      personalAccessToken: '',
+      targetReviewer: '',
+    });
+
+    const { result } = renderHook(() => useRepositorySourceConfig({
+      onConfigChangeStart: jest.fn(),
+      onProjectSelected: jest.fn(),
+    }));
+
+    await act(async () => {
+      result.current.updateConfig('project', 'platform-v2');
+    });
+
+    expect(result.current.config.project).toBe('platform-v2');
+    expect(result.current.config.repositoryId).toBe('');
+  });
+
+  test('useRepositorySourceConfig mantiene repositoryId vacio al seleccionar proyecto en azure', async () => {
+    storage.loadConnectionConfig.mockReturnValue({
+      provider: 'azure-devops',
+      organization: 'acme',
+      project: '',
+      repositoryId: 'repo-a',
+      personalAccessToken: '',
+      targetReviewer: '',
+    });
+
+    const { result } = renderHook(() => useRepositorySourceConfig({
+      onConfigChangeStart: jest.fn(),
+      onProjectSelected: jest.fn(),
+    }));
+
+    await act(async () => {
+      result.current.selectProjectConfig('platform');
+    });
+
+    expect(result.current.config.project).toBe('platform');
+    expect(result.current.config.repositoryId).toBe('');
+  });
+
   test('useRepositorySourceConfig hidrata el secreto desde storage', async () => {
     storage.hydrateConnectionSecret.mockResolvedValue('pat-session');
 
@@ -159,6 +236,61 @@ describe('repository source config hooks', () => {
     expect(refreshPullRequests).not.toHaveBeenCalled();
   });
 
+  test('useRepositorySourceBootstrap no actualiza ni refresca si el secreto no existe', async () => {
+    const refreshPullRequests = jest.fn();
+    const updateConfig = jest.fn();
+
+    renderHook(() => useRepositorySourceBootstrap({
+      configRef: {
+        current: {
+          provider: 'github',
+          organization: 'acme',
+          project: '',
+          repositoryId: '',
+          personalAccessToken: '',
+          targetReviewer: '',
+        },
+      },
+      hydrateSecret: jest.fn().mockResolvedValue(''),
+      updateConfig,
+      refreshPullRequests,
+    }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(updateConfig).not.toHaveBeenCalled();
+    expect(refreshPullRequests).not.toHaveBeenCalled();
+  });
+
+  test('useRepositorySourceBootstrap restaura secreto pero no refresca si falta config minima', async () => {
+    const refreshPullRequests = jest.fn();
+    const updateConfig = jest.fn();
+
+    renderHook(() => useRepositorySourceBootstrap({
+      configRef: {
+        current: {
+          provider: 'azure-devops',
+          organization: 'acme',
+          project: '',
+          repositoryId: '',
+          personalAccessToken: '',
+          targetReviewer: '',
+        },
+      },
+      hydrateSecret: jest.fn().mockResolvedValue('pat-restored'),
+      updateConfig,
+      refreshPullRequests,
+    }));
+
+    await waitFor(() => {
+      expect(updateConfig).toHaveBeenCalledWith('personalAccessToken', 'pat-restored');
+    });
+
+    expect(refreshPullRequests).not.toHaveBeenCalled();
+  });
+
   test('useRepositorySourceDerived calcula nombres seleccionados y readiness', () => {
     const { result } = renderHook(() => useRepositorySourceDerived({
       config: {
@@ -182,5 +314,31 @@ describe('repository source config hooks', () => {
     expect(result.current.selectedProjectName).toBe('Platform API');
     expect(result.current.selectedRepositoryName).toBe('Platform API');
     expect(result.current.scopeLabel).toContain('acme/platform');
+  });
+
+  test('useRepositorySourceDerived usa fallbacks cuando no hay provider o match seleccionado', () => {
+    const { result } = renderHook(() => useRepositorySourceDerived({
+      config: {
+        provider: '',
+        organization: '',
+        project: 'manual-project',
+        repositoryId: 'manual-repo',
+        personalAccessToken: '',
+        targetReviewer: '',
+      },
+      projects: [],
+      repositories: [],
+      pullRequests: [],
+      lastUpdatedAt: null,
+      hasSuccessfulConnection: false,
+    }));
+
+    expect(result.current.activeProvider).toBeNull();
+    expect(result.current.activeProviderName).toBe('Sin provider seleccionado');
+    expect(result.current.hasCredentialsInSession).toBe(false);
+    expect(result.current.isConnectionReady).toBe(false);
+    expect(result.current.selectedProjectName).toBe('manual-project');
+    expect(result.current.selectedRepositoryName).toBe('manual-repo');
+    expect(result.current.scopeLabel).toBe('Selecciona un provider en Settings');
   });
 });

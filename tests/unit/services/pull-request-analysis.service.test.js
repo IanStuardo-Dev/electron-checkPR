@@ -45,6 +45,73 @@ function createRequest(overrides = {}) {
 }
 
 describe('PullRequestAnalysisService', () => {
+  test('previewBatch construye previews respetando strictMode', async () => {
+    const snapshotProvider = {
+      getSnapshot: jest.fn().mockResolvedValue({
+        provider: 'github',
+        repository: 'repo-a',
+        pullRequestId: 88,
+        title: 'Actualizar auth',
+        description: 'Ajustes de seguridad',
+        author: 'Ian',
+        sourceBranch: 'feature/auth',
+        targetBranch: 'main',
+        reviewers: [],
+        files: [
+          { path: '.env', status: 'modified', patch: '+ SECRET=1' },
+          { path: 'src/auth.ts', status: 'modified', patch: '+ const enabled = true;' },
+        ],
+        totalFilesChanged: 2,
+        truncated: false,
+      }),
+    };
+    const service = new PullRequestAnalysisService({
+      snapshotProvider,
+      promptBuilder: { build: jest.fn() },
+      analysisClient: { analyze: jest.fn() },
+      responseParser: { parse: jest.fn() },
+    });
+
+    const previews = await service.previewBatch(createRequest({
+      snapshotPolicy: {
+        excludedPathPatterns: '',
+        strictMode: true,
+      },
+    }));
+
+    expect(previews).toHaveLength(1);
+    expect(previews[0]).toEqual(expect.objectContaining({
+      repository: 'repo-a',
+      pullRequestId: 88,
+      strictModeWouldBlock: true,
+    }));
+  });
+
+  test('cuando falta apiKey devuelve reviews not-configured sin consultar snapshots', async () => {
+    const snapshotProvider = {
+      getSnapshot: jest.fn(),
+    };
+    const service = new PullRequestAnalysisService({
+      snapshotProvider,
+      promptBuilder: { build: jest.fn() },
+      analysisClient: { analyze: jest.fn() },
+      responseParser: { parse: jest.fn() },
+    });
+
+    const result = await service.analyzeBatch(createRequest({
+      apiKey: '   ',
+    }));
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        pullRequestId: 88,
+        status: 'not-configured',
+        coverageNote: 'Codex no configurado para PR AI review.',
+      }),
+    ]);
+    expect(snapshotProvider.getSnapshot).not.toHaveBeenCalled();
+  });
+
   test('omite PRs sin diff textual suficiente y no llama al cliente remoto', async () => {
     const snapshotProvider = {
       getSnapshot: jest.fn().mockResolvedValue({
@@ -125,6 +192,132 @@ describe('PullRequestAnalysisService', () => {
     expect(analysisClient.analyze).not.toHaveBeenCalled();
   });
 
+  test('en strict mode usa el mensaje de sensibilidad cuando hay secretos en el diff', async () => {
+    const service = new PullRequestAnalysisService({
+      snapshotProvider: {
+        getSnapshot: jest.fn().mockResolvedValue({
+          provider: 'github',
+          repository: 'repo-a',
+          pullRequestId: 88,
+          title: 'Actualizar auth',
+          description: 'Ajustes de seguridad',
+          author: 'Ian',
+          sourceBranch: 'feature/auth',
+          targetBranch: 'main',
+          reviewers: [],
+          files: [
+            { path: 'src/auth.ts', status: 'modified', patch: '+ const access_token = \"abcdefgh123456\";' },
+          ],
+          totalFilesChanged: 1,
+          truncated: false,
+        }),
+      },
+      promptBuilder: { build: jest.fn() },
+      analysisClient: { analyze: jest.fn() },
+      responseParser: { parse: jest.fn() },
+    });
+
+    const result = await service.analyzeBatch(createRequest({
+      snapshotPolicy: {
+        excludedPathPatterns: '',
+        strictMode: true,
+      },
+    }));
+
+    expect(result[0].status).toBe('omitted');
+    expect(result[0].coverageNote).toBe('PR omitido por modo estricto y señales sensibles en el diff.');
+  });
+
+  test('analiza PRs validos, acota el riskScore y conserva coverageNote parcial', async () => {
+    const snapshotProvider = {
+      getSnapshot: jest.fn().mockResolvedValue({
+        provider: 'github',
+        repository: 'repo-a',
+        pullRequestId: 88,
+        title: 'Actualizar auth',
+        description: 'Ajustes de seguridad',
+        author: 'Ian',
+        sourceBranch: 'feature/auth',
+        targetBranch: 'main',
+        reviewers: [],
+        files: [
+          { path: 'src/auth.ts', status: 'modified', patch: '+ const enabled = true;' },
+        ],
+        totalFilesChanged: 1,
+        truncated: false,
+        partialReason: 'Solo se cargo un subconjunto del diff.',
+      }),
+    };
+    const promptBuilder = { build: jest.fn().mockReturnValue('prompt') };
+    const analysisClient = { analyze: jest.fn().mockResolvedValue('raw-output') };
+    const responseParser = {
+      parse: jest.fn().mockReturnValue({
+        riskScore: 999,
+        shortSummary: 'Resumen corto',
+        topConcerns: ['auth'],
+        reviewChecklist: ['agregar tests'],
+      }),
+    };
+    const service = new PullRequestAnalysisService({
+      snapshotProvider,
+      promptBuilder,
+      analysisClient,
+      responseParser,
+    });
+
+    const result = await service.analyzeBatch(createRequest({
+      requestId: 'batch-success',
+    }));
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        pullRequestId: 88,
+        status: 'analyzed',
+        riskScore: 100,
+        shortSummary: 'Resumen corto',
+        coverageNote: 'Solo se cargo un subconjunto del diff.',
+      }),
+    ]);
+    expect(service.activeRuns.size).toBe(0);
+  });
+
+  test('si el cliente remoto falla con un valor no-Error devuelve un mensaje generico', async () => {
+    const service = new PullRequestAnalysisService({
+      snapshotProvider: {
+        getSnapshot: jest.fn().mockResolvedValue({
+          provider: 'github',
+          repository: 'repo-a',
+          pullRequestId: 88,
+          title: 'Actualizar auth',
+          description: 'Ajustes de seguridad',
+          author: 'Ian',
+          sourceBranch: 'feature/auth',
+          targetBranch: 'main',
+          reviewers: [],
+          files: [
+            { path: 'src/auth.ts', status: 'modified', patch: '+ const enabled = true;' },
+          ],
+          totalFilesChanged: 1,
+          truncated: false,
+        }),
+      },
+      promptBuilder: { build: jest.fn().mockReturnValue('prompt') },
+      analysisClient: {
+        analyze: jest.fn().mockRejectedValue('network down'),
+      },
+      responseParser: { parse: jest.fn() },
+    });
+
+    const result = await service.analyzeBatch(createRequest({
+      requestId: 'batch-generic-error',
+    }));
+
+    expect(result[0]).toEqual(expect.objectContaining({
+      status: 'error',
+      error: 'No fue posible analizar el PR.',
+    }));
+  });
+
   test('permite cancelar una corrida en lote y limpia el request activo', async () => {
     const snapshotProvider = {
       getSnapshot: jest.fn().mockResolvedValue({
@@ -170,5 +363,16 @@ describe('PullRequestAnalysisService', () => {
     expect(result[0].status).toBe('error');
     expect(result[0].error).toMatch(/cancelled/i);
     expect(service.activeRuns.size).toBe(0);
+  });
+
+  test('cancelAnalysis ignora requestIds inexistentes', () => {
+    const service = new PullRequestAnalysisService({
+      snapshotProvider: { getSnapshot: jest.fn() },
+      promptBuilder: { build: jest.fn() },
+      analysisClient: { analyze: jest.fn() },
+      responseParser: { parse: jest.fn() },
+    });
+
+    expect(() => service.cancelAnalysis('missing-batch')).not.toThrow();
   });
 });

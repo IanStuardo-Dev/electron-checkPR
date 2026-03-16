@@ -58,6 +58,19 @@ describe('useRepositoryAnalysis', () => {
     expect(result.current.result).toEqual({ summary: 'ok' });
   });
 
+  test('propaga un error controlado cuando falla el analisis', async () => {
+    ipc.runRepositoryAnalysis.mockRejectedValue(new Error('analysis failed'));
+    const { result } = renderHook(() => useRepositoryAnalysis());
+
+    await act(async () => {
+      await result.current.execute({ requestId: 'req-error' });
+    });
+
+    expect(result.current.phase).toBe('error');
+    expect(result.current.error).toBe('analysis failed');
+    expect(result.current.result).toBeNull();
+  });
+
   test('cancela request activa y resetea el estado', async () => {
     ipc.runRepositoryAnalysis.mockImplementation(() => new Promise(() => {}));
     ipc.cancelRepositoryAnalysis.mockResolvedValue(undefined);
@@ -74,5 +87,25 @@ describe('useRepositoryAnalysis', () => {
     expect(ipc.cancelRepositoryAnalysis).toHaveBeenCalledWith('req-2');
     expect(result.current.phase).toBe('idle');
     expect(result.current.result).toBeNull();
+  });
+
+  test('reset limpia preview, resultado y error sin requerir una request activa', async () => {
+    ipc.previewRepositorySnapshot.mockResolvedValue({ repository: 'repo-a', branch: 'main' });
+    const { result } = renderHook(() => useRepositoryAnalysis());
+
+    await act(async () => {
+      await result.current.preparePreview({ requestId: 'req-preview-reset' });
+    });
+
+    expect(result.current.preview).toEqual({ repository: 'repo-a', branch: 'main' });
+
+    act(() => {
+      result.current.reset();
+    });
+
+    expect(result.current.phase).toBe('idle');
+    expect(result.current.preview).toBeNull();
+    expect(result.current.result).toBeNull();
+    expect(result.current.error).toBeNull();
   });
 });
