@@ -7,12 +7,12 @@ jest.mock('../../../src/renderer/features/repository-source/data/repositorySourc
   hydrateConnectionSecret: jest.fn(),
 }));
 
-jest.mock('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceOperations', () => ({
-  useRepositorySourceOperations: jest.fn(),
+jest.mock('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceController', () => ({
+  useRepositorySourceController: jest.fn(),
 }));
 
 const storage = require('../../../src/renderer/features/repository-source/data/repositorySourceStorage');
-const { useRepositorySourceOperations } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceOperations');
+const { useRepositorySourceController } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceController');
 const {
   RepositorySourceProvider,
   useRepositorySourceContext,
@@ -29,7 +29,7 @@ describe('RepositorySourceProvider integration', () => {
       targetReviewer: '',
     });
     storage.hydrateConnectionSecret.mockResolvedValue('gh-token');
-    useRepositorySourceOperations.mockReturnValue({
+    useRepositorySourceController.mockReturnValue({
       pullRequests: [
         {
           id: 1,

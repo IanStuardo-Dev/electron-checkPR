@@ -6,40 +6,28 @@ import { useRepositoryDiagnostics } from './useRepositoryDiagnostics';
 import { useRepositorySourceApi } from './useRepositorySourceApi';
 import { useRepositorySourceState } from './useRepositorySourceState';
 
-interface UseRepositorySourceOperationsOptions {
+interface UseRepositorySourceControllerOptions {
   config: SavedConnectionConfig;
   configRef: React.MutableRefObject<SavedConnectionConfig>;
   activeProviderName: string;
   scopeLabel: string;
   onPersistSnapshot: (pullRequests: ReviewItem[], capturedAt: Date, scopeLabel: string, targetReviewer?: string) => void;
-  dependencies?: {
-    useStateHook?: typeof useRepositorySourceState;
-    useDiagnosticsHook?: typeof useRepositoryDiagnostics;
-    useActionsHook?: typeof useRepositorySourceActions;
-    useApiHook?: typeof useRepositorySourceApi;
-  };
 }
 
-export function useRepositorySourceOperations({
+export function useRepositorySourceController({
   config,
   configRef,
   activeProviderName,
   scopeLabel,
   onPersistSnapshot,
-  dependencies,
-}: UseRepositorySourceOperationsOptions) {
-  const useStateHook = dependencies?.useStateHook ?? useRepositorySourceState;
-  const useDiagnosticsHook = dependencies?.useDiagnosticsHook ?? useRepositoryDiagnostics;
-  const useActionsHook = dependencies?.useActionsHook ?? useRepositorySourceActions;
-  const useApiHook = dependencies?.useApiHook ?? useRepositorySourceApi;
-
-  const state = useStateHook(config.provider);
-  const diagnostics = useDiagnosticsHook(config);
-  const actions = useActionsHook({
+}: UseRepositorySourceControllerOptions) {
+  const state = useRepositorySourceState(config.provider);
+  const diagnostics = useRepositoryDiagnostics(config);
+  const actions = useRepositorySourceActions({
     state,
     diagnostics,
   });
-  const api = useApiHook({
+  const api = useRepositorySourceApi({
     config,
     configRef,
     activeProviderName,

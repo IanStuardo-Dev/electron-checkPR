@@ -2,17 +2,12 @@ import React from 'react';
 import { useRepositorySourceBootstrap } from './useRepositorySourceBootstrap';
 import { useRepositorySourceConfig } from './useRepositorySourceConfig';
 import { useRepositorySourceDerived } from './useRepositorySourceDerived';
-import { useRepositorySourceFacade } from './useRepositorySourceFacade';
-import { useRepositorySourceOperations } from './useRepositorySourceOperations';
+import { useRepositorySourceController } from './useRepositorySourceController';
 import { useRepositorySourceMetadata } from './useRepositorySourceMetadata';
 import { useRepositorySourceSnapshotPersistence } from './useRepositorySourceSnapshotPersistence';
 
 export function useRepositorySource() {
-  const facadeRef = React.useRef<ReturnType<typeof useRepositorySourceFacade> | null>(null);
-  const configHook = useRepositorySourceConfig({
-    onConfigChangeStart: (name, value) => facadeRef.current?.current?.onConfigChangeStart(name, value),
-    onProjectSelected: (project) => facadeRef.current?.current?.onProjectSelected(project),
-  });
+  const configHook = useRepositorySourceConfig();
   const { config, configRef, updateConfig, selectProjectConfig, hydrateSecret } = configHook;
   const { activeProviderName, baseScopeLabel } = useRepositorySourceMetadata(config);
   const persistSnapshot = useRepositorySourceSnapshotPersistence(configRef);
@@ -36,7 +31,7 @@ export function useRepositorySource() {
     selectProject,
     openPullRequest,
     openConnectionPanel,
-  } = useRepositorySourceOperations({
+  } = useRepositorySourceController({
     config,
     configRef,
     activeProviderName,
@@ -44,10 +39,6 @@ export function useRepositorySource() {
     onPersistSnapshot: persistSnapshot,
   });
 
-  facadeRef.current = useRepositorySourceFacade({
-    resetForConfigChange,
-    selectProject,
-  });
   const derived = useRepositorySourceDerived({
     config,
     projects,
@@ -60,9 +51,19 @@ export function useRepositorySource() {
   useRepositorySourceBootstrap({
     configRef,
     hydrateSecret,
-    updateConfig,
     refreshPullRequests,
+    updateConfig,
   });
+
+  const handleConfigChange = React.useCallback((name: keyof typeof config, value: string) => {
+    resetForConfigChange(name, value);
+    updateConfig(name, value);
+  }, [resetForConfigChange, updateConfig]);
+
+  const handleProjectSelect = React.useCallback((project: string) => {
+    selectProject(project);
+    selectProjectConfig(project);
+  }, [selectProject, selectProjectConfig]);
 
   return {
     activeProvider: derived.activeProvider,
@@ -83,12 +84,11 @@ export function useRepositorySource() {
     selectedRepositoryName: derived.selectedRepositoryName,
     summary: derived.summary,
     isConnectionPanelOpen,
-    updateConfig,
+    updateConfig: handleConfigChange,
     discoverProjects,
-    selectProject: selectProjectConfig,
+    selectProject: handleProjectSelect,
     refreshPullRequests,
     openPullRequest,
     openConnectionPanel,
   };
 }
-
