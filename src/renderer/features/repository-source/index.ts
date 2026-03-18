@@ -14,3 +14,4 @@ export {
   RepositorySourceProvider,
   useRepositorySourceContext,
 } from './presentation/context/RepositorySourceContext';
+export { fetchBranches } from './data/repositorySourceIpc';
