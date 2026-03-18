@@ -75,4 +75,25 @@ describe('useRepositoryAnalysis', () => {
     expect(result.current.phase).toBe('idle');
     expect(result.current.result).toBeNull();
   });
+
+  test('cancel limpia la transicion diferida a analyzing', async () => {
+    ipc.runRepositoryAnalysis.mockImplementation(() => new Promise(() => {}));
+    ipc.cancelRepositoryAnalysis.mockResolvedValue(undefined);
+    const { result } = renderHook(() => useRepositoryAnalysis());
+
+    act(() => {
+      result.current.execute({ requestId: 'req-3' });
+    });
+
+    await act(async () => {
+      await result.current.cancel();
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(600);
+    });
+
+    expect(result.current.phase).toBe('idle');
+    expect(result.current.isRunning).toBe(false);
+  });
 });
