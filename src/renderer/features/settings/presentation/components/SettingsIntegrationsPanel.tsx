@@ -6,8 +6,9 @@ import CodexIntegrationCard from './CodexIntegrationCard';
 import GlobalSnapshotPolicyCard from './GlobalSnapshotPolicyCard';
 import SettingsIntegrationActionCards from './SettingsIntegrationActionCards';
 import SettingsProviderModal from './SettingsProviderModal';
+import SettingsSectionModal from './SettingsSectionModal';
 import type { SettingsProviderConnectionProps } from './SettingsProvider.types';
-import { SettingsModal, SettingsSectionCard, SettingsStatusBadge } from '../../../../ui/configuration/ConfigurationPrimitives';
+import { SettingsSectionCard, SettingsStatusBadge } from '../../../../ui/configuration/ConfigurationPrimitives';
 
 export function SettingsIntegrationsSection({
   activeProvider,
@@ -45,6 +46,22 @@ export function SettingsIntegrationsSection({
   const [isSnapshotModalOpen, setIsSnapshotModalOpen] = React.useState(false);
 
   const activeProviderLabel = config.provider ? activeProviderName : 'No seleccionado';
+  const providerConnectionProps: SettingsProviderConnectionProps = {
+    activeProviderName,
+    config,
+    error,
+    isConnectionReady,
+    isLoading,
+    projects,
+    projectsLoading,
+    projectDiscoveryWarning,
+    repositories,
+    repositoriesLoading,
+    discoverProjects,
+    selectProject,
+    updateConfig,
+    refreshPullRequests,
+  };
 
   return (
     <section className="space-y-6">
@@ -72,23 +89,10 @@ export function SettingsIntegrationsSection({
         isOpen={isProviderModalOpen}
         onClose={() => setIsProviderModalOpen(false)}
         activeProvider={activeProvider}
-        activeProviderName={activeProviderName}
-        config={config}
-        error={error}
-        isConnectionReady={isConnectionReady}
-        isLoading={isLoading}
-        projects={projects}
-        projectsLoading={projectsLoading}
-        projectDiscoveryWarning={projectDiscoveryWarning}
-        repositories={repositories}
-        repositoriesLoading={repositoriesLoading}
-        discoverProjects={discoverProjects}
-        selectProject={selectProject}
-        updateConfig={updateConfig}
-        refreshPullRequests={refreshPullRequests}
+        connection={providerConnectionProps}
       />
 
-      <SettingsModal
+      <SettingsSectionModal
         isOpen={isCodexModalOpen}
         onClose={() => setIsCodexModalOpen(false)}
         title="Configuracion de Codex"
@@ -99,9 +103,9 @@ export function SettingsIntegrationsSection({
           isReady={isCodexReady}
           onChange={updateCodexConfig}
         />
-      </SettingsModal>
+      </SettingsSectionModal>
 
-      <SettingsModal
+      <SettingsSectionModal
         isOpen={isSnapshotModalOpen}
         onClose={() => setIsSnapshotModalOpen(false)}
         title="Reglas globales de snapshot"
@@ -111,7 +115,7 @@ export function SettingsIntegrationsSection({
           snapshotPolicy={codexConfig.snapshotPolicy}
           onChange={(value) => updateCodexConfig('snapshotPolicy', value)}
         />
-      </SettingsModal>
+      </SettingsSectionModal>
     </section>
   );
 }
