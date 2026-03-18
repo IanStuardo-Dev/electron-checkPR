@@ -20,7 +20,7 @@ interface ConnectionSummaryProps {
 }
 
 const ConnectionSummary = ({
-  providerKind = 'azure-devops',
+  providerKind,
   providerName,
   scopeLabel,
   projectName,
@@ -59,7 +59,10 @@ const ConnectionSummary = ({
             ? `Repositorio: ${repositoryName || projectName || 'Todos los repositorios del owner'}`
             : providerKind === 'gitlab'
               ? `Proyecto: ${repositoryName || projectName || 'Todos los proyectos del namespace'}`
-              : `Proyecto: ${projectName || 'No seleccionado'} · Repositorio: ${repositoryName || 'Todos los repositorios'}`}
+              : providerKind === 'azure-devops'
+                ? `Proyecto: ${projectName || 'No seleccionado'} · Repositorio: ${repositoryName || 'Todos los repositorios'}`
+                : `Alcance: ${scopeLabel}`
+          }
         </p>
       </div>
 

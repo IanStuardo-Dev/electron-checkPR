@@ -1,7 +1,7 @@
 import React from 'react';
 import type { RepositoryBranch } from '../../../../../types/repository';
-import { fetchBranches } from '../../../repository-source';
 import type { SavedConnectionConfig } from '../../../repository-source';
+import { fetchBranches } from '../../../repository-source/data/repositorySourceIpc';
 
 export function useRepositoryBranches({
   config,

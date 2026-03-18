@@ -1,6 +1,6 @@
 import React from 'react';
 import { CircleStackIcon, CpuChipIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
-import { repositoryProviders } from '../../../repository-source';
+import { countAvailableRepositoryProviders } from '../../../repository-source';
 
 export function SettingsHero({
   isConnectionReady,
@@ -9,7 +9,7 @@ export function SettingsHero({
   isConnectionReady: boolean;
   isCodexReady: boolean;
 }) {
-  const availableProviders = repositoryProviders.filter((provider) => provider.status === 'available').length;
+  const availableProviders = countAvailableRepositoryProviders();
   const configuredIntegrations = Number(isConnectionReady) + Number(isCodexReady);
 
   return (

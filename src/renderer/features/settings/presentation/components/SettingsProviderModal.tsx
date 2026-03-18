@@ -1,6 +1,6 @@
 import React from 'react';
-import type { RepositoryProviderKind, RepositoryProviderDefinition } from '../../../../../types/repository';
-import { ConnectionPanel, repositoryProviders } from '../../../repository-source';
+import type { RepositoryProviderDefinition } from '../../../../../types/repository';
+import { RepositorySourceProviderCatalog } from '../../../repository-source';
 import RepositoryProviderCard from './RepositoryProviderCard';
 import { SettingsModal } from '../../../../ui/configuration/ConfigurationPrimitives';
 import type { SettingsProviderConnectionProps } from './SettingsProvider.types';
@@ -30,12 +30,6 @@ const SettingsProviderModal = ({
   updateConfig,
   refreshPullRequests,
 }: SettingsProviderModalProps) => {
-  const [expandedProviderKind, setExpandedProviderKind] = React.useState<RepositoryProviderKind | ''>(config.provider);
-
-  React.useEffect(() => {
-    setExpandedProviderKind(config.provider);
-  }, [config.provider]);
-
   return (
     <SettingsModal
       isOpen={isOpen}
@@ -44,44 +38,29 @@ const SettingsProviderModal = ({
       description="Selecciona la fuente principal del workspace y completa su conexion sin cargar la vista principal."
     >
       <div className="grid gap-4">
-        {repositoryProviders.map((provider) => (
-          <RepositoryProviderCard
-            key={provider.kind}
-            provider={provider}
-            isActive={provider.kind === activeProvider?.kind}
-            isConfigured={provider.kind === activeProvider?.kind && isConnectionReady}
-            expanded={provider.kind === activeProvider?.kind && expandedProviderKind === provider.kind}
-            onToggleExpand={provider.status === 'available' && provider.kind === activeProvider?.kind
-              ? () => setExpandedProviderKind((current: RepositoryProviderKind | '') => (current === provider.kind ? '' : provider.kind))
-              : undefined}
-            onActivate={provider.status === 'available' && provider.kind !== activeProvider?.kind
-              ? () => {
-                updateConfig('provider', provider.kind);
-                setExpandedProviderKind(provider.kind);
-              }
-              : undefined}
-          >
-            {provider.kind === activeProvider?.kind ? (
-              <ConnectionPanel
-                providerName={activeProviderName}
-                providerKind={provider.kind}
-                isConnected={isConnectionReady}
-                config={config}
-                error={error}
-                projectDiscoveryWarning={projectDiscoveryWarning}
-                isLoading={isLoading}
-                projects={projects}
-                projectsLoading={projectsLoading}
-                repositories={repositories}
-                repositoriesLoading={repositoriesLoading}
-                onDiscoverProjects={discoverProjects}
-                onSelectProject={selectProject}
-                onConfigChange={updateConfig}
-                onRefresh={refreshPullRequests}
-              />
-            ) : null}
-          </RepositoryProviderCard>
-        ))}
+        <RepositorySourceProviderCatalog
+          activeProvider={activeProvider}
+          activeProviderName={activeProviderName}
+          config={config}
+          error={error}
+          isConnectionReady={isConnectionReady}
+          isLoading={isLoading}
+          projects={projects}
+          projectsLoading={projectsLoading}
+          projectDiscoveryWarning={projectDiscoveryWarning}
+          repositories={repositories}
+          repositoriesLoading={repositoriesLoading}
+          discoverProjects={discoverProjects}
+          selectProject={selectProject}
+          updateConfig={updateConfig}
+          refreshPullRequests={refreshPullRequests}
+          renderProviderCard={(providerCardProps) => (
+            <RepositoryProviderCard
+              key={providerCardProps.provider.kind}
+              {...providerCardProps}
+            />
+          )}
+        />
       </div>
     </SettingsModal>
   );
