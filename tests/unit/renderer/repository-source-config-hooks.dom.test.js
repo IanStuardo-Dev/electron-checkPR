@@ -35,18 +35,12 @@ describe('repository source config hooks', () => {
       targetReviewer: 'ian',
     });
 
-    const handlers = {
-      onConfigChangeStart: jest.fn(),
-      onProjectSelected: jest.fn(),
-    };
-
-    const { result } = renderHook(() => useRepositorySourceConfig(handlers));
+    const { result } = renderHook(() => useRepositorySourceConfig());
 
     await act(async () => {
       result.current.updateConfig('provider', 'github');
     });
 
-    expect(handlers.onConfigChangeStart).toHaveBeenCalledWith('provider', 'github');
     expect(result.current.config).toEqual({
       provider: 'github',
       organization: '',
@@ -78,10 +72,7 @@ describe('repository source config hooks', () => {
       targetReviewer: '',
     });
 
-    const { result } = renderHook(() => useRepositorySourceConfig({
-      onConfigChangeStart: jest.fn(),
-      onProjectSelected: jest.fn(),
-    }));
+    const { result } = renderHook(() => useRepositorySourceConfig());
 
     await act(async () => {
       result.current.selectProjectConfig('repo-a');
@@ -102,12 +93,7 @@ describe('repository source config hooks', () => {
       targetReviewer: '',
     });
 
-    const handlers = {
-      onConfigChangeStart: jest.fn(),
-      onProjectSelected: jest.fn(),
-    };
-
-    const { result } = renderHook(() => useRepositorySourceConfig(handlers));
+    const { result } = renderHook(() => useRepositorySourceConfig());
 
     await act(async () => {
       result.current.updateConfig('organization', 'other-org');
@@ -133,10 +119,7 @@ describe('repository source config hooks', () => {
       targetReviewer: '',
     });
 
-    const { result } = renderHook(() => useRepositorySourceConfig({
-      onConfigChangeStart: jest.fn(),
-      onProjectSelected: jest.fn(),
-    }));
+    const { result } = renderHook(() => useRepositorySourceConfig());
 
     await act(async () => {
       result.current.updateConfig('project', 'platform-v2');
@@ -156,10 +139,7 @@ describe('repository source config hooks', () => {
       targetReviewer: '',
     });
 
-    const { result } = renderHook(() => useRepositorySourceConfig({
-      onConfigChangeStart: jest.fn(),
-      onProjectSelected: jest.fn(),
-    }));
+    const { result } = renderHook(() => useRepositorySourceConfig());
 
     await act(async () => {
       result.current.selectProjectConfig('platform');
@@ -172,26 +152,18 @@ describe('repository source config hooks', () => {
   test('useRepositorySourceConfig hidrata el secreto desde storage', async () => {
     storage.hydrateConnectionSecret.mockResolvedValue('pat-session');
 
-    const { result } = renderHook(() => useRepositorySourceConfig({
-      onConfigChangeStart: jest.fn(),
-      onProjectSelected: jest.fn(),
-    }));
+    const { result } = renderHook(() => useRepositorySourceConfig());
 
     await expect(result.current.hydrateSecret()).resolves.toBe('pat-session');
   });
 
   test('useRepositorySourceConfig aplica el secreto hidratado sin disparar resets de config', async () => {
-    const handlers = {
-      onConfigChangeStart: jest.fn(),
-      onProjectSelected: jest.fn(),
-    };
-    const { result } = renderHook(() => useRepositorySourceConfig(handlers));
+    const { result } = renderHook(() => useRepositorySourceConfig());
 
     await act(async () => {
       result.current.applyHydratedSecret('pat-session');
     });
 
-    expect(handlers.onConfigChangeStart).not.toHaveBeenCalled();
     expect(result.current.config.personalAccessToken).toBe('pat-session');
     expect(result.current.configRef.current.personalAccessToken).toBe('pat-session');
   });

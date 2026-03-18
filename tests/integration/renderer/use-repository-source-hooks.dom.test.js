@@ -25,7 +25,7 @@ const { useRepositorySourceState } = require('../../../src/renderer/features/rep
 const { useRepositoryDiagnostics } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositoryDiagnostics');
 const { useRepositorySourceApi } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceApi');
 const { useRepositorySourceActions } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceActions');
-const { useRepositorySourceOperations } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceOperations');
+const { useRepositorySourceController } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceController');
 const actualStateModule = jest.requireActual('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceState');
 const actualDiagnosticsModule = jest.requireActual('../../../src/renderer/features/repository-source/presentation/hooks/useRepositoryDiagnostics');
 const actualEffectsModule = jest.requireActual('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceEffects');
@@ -269,13 +269,13 @@ describe('repository source hooks', () => {
     expect(state.setShouldLoadRepositories).toHaveBeenCalledWith(false);
   });
 
-  test('useRepositorySourceOperations compone estado, acciones y api', () => {
+  test('useRepositorySourceController compone estado, acciones y api', () => {
     const state = createStateMock();
     const diagnostics = createDiagnosticsMock();
     useRepositorySourceState.mockReturnValue(state);
     useRepositoryDiagnostics.mockReturnValue(diagnostics);
 
-    const { result } = renderHook(() => useRepositorySourceOperations({
+    const { result } = renderHook(() => useRepositorySourceController({
       config: {
         provider: 'github',
         organization: 'acme',

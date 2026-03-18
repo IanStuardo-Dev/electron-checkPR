@@ -17,12 +17,7 @@ interface UseRepositorySourceConfigResult {
   hydrateSecret: () => Promise<string>;
 }
 
-export function useRepositorySourceConfig(
-  handlers: {
-    onConfigChangeStart: (name: keyof SavedConnectionConfig, value: string) => void;
-    onProjectSelected: (project: string) => void;
-  },
-): UseRepositorySourceConfigResult {
+export function useRepositorySourceConfig(): UseRepositorySourceConfigResult {
   const initialConfig = React.useMemo(() => loadConnectionConfig(), []);
   const [config, setConfig] = React.useState<SavedConnectionConfig>(initialConfig);
   const configRef = React.useRef<SavedConnectionConfig>(initialConfig);
@@ -33,8 +28,6 @@ export function useRepositorySourceConfig(
   }, [config]);
 
   const updateConfig = React.useCallback((name: keyof SavedConnectionConfig, value: string) => {
-    handlers.onConfigChangeStart(name, value);
-
     setConfig((current) => {
       const nextConfig = getRepositorySourceProviderBehavior(current.provider)?.applyConfigChange(current, name, value)
         ?? (name === 'provider'
@@ -48,11 +41,9 @@ export function useRepositorySourceConfig(
       configRef.current = nextConfig;
       return nextConfig;
     });
-  }, [handlers]);
+  }, []);
 
   const selectProjectConfig = React.useCallback((project: string) => {
-    handlers.onProjectSelected(project);
-
     setConfig((current) => {
       const nextConfig = getRepositorySourceProviderBehavior(current.provider)?.applyProjectSelection(current, project)
         ?? {
@@ -64,7 +55,7 @@ export function useRepositorySourceConfig(
       configRef.current = nextConfig;
       return nextConfig;
     });
-  }, [handlers]);
+  }, []);
 
   const applyHydratedSecret = React.useCallback((value: string) => {
     const nextConfig = {
