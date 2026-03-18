@@ -1,11 +1,11 @@
-import type { PullRequest } from '../../../types/azure';
+import type { ReviewItem } from '../../../types/repository';
 import type { DashboardSummary } from './summary.types';
 import { buildMetrics, buildDeliveryIndicators, buildGovernanceAlerts, buildReviewIndicators } from './summary-indicators';
 import { formatLastUpdate, getAverageAgeHours, hasEmptyDescription, hasMergeConflict, prioritizePullRequests, countPullRequestsOlderThan } from './summary-core';
 import { buildBranchInsights, buildRepositoryInsights, buildReviewerInsights } from './summary-insights';
 
 export function buildDashboardSummary(
-  pullRequests: PullRequest[],
+  pullRequests: ReviewItem[],
   lastUpdatedAt: Date | null,
   scopeLabel: string,
   targetReviewer?: string,
