@@ -1,8 +1,8 @@
 import React from 'react';
 import type { ReviewItem } from '../../../../../types/repository';
+import { createRepositorySourceApi } from '../../application/repositorySourceApiFactory';
 import { repositorySourceFetcher } from '../../data/repositorySourceFetcher';
 import type { RepositorySourceFetcherPort } from '../../data/repositorySourceFetcher';
-import { createRepositorySourceApi } from '../../data/repositorySourceApiService';
 import type { SavedConnectionConfig } from '../../types';
 import type { useRepositoryDiagnostics } from './useRepositoryDiagnostics';
 import { useRepositorySourceEffects } from './useRepositorySourceEffects';

@@ -1,4 +1,4 @@
-const { createRepositorySourceApi } = require('../../../src/renderer/features/repository-source/data/repositorySourceApiService');
+const { createRepositorySourceApi } = require('../../../src/renderer/features/repository-source/application/repositorySourceApiFactory');
 
 function createStateMock() {
   return {
@@ -22,7 +22,7 @@ function createDiagnosticsMock() {
   };
 }
 
-describe('repositorySourceApiService', () => {
+describe('repositorySourceApiFactory', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
