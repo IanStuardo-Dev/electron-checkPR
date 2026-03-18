@@ -1,4 +1,4 @@
-import type { PullRequest } from '../../../types/azure';
+import type { ReviewItem } from '../../../types/repository';
 import type { PrioritizedPullRequest } from './summary.types';
 
 export function getAgeHours(createdAt: string): number {
@@ -6,23 +6,23 @@ export function getAgeHours(createdAt: string): number {
   return Math.max(0, Math.round((Date.now() - created) / (1000 * 60 * 60)));
 }
 
-export function getApprovals(pr: PullRequest): number {
+export function getApprovals(pr: ReviewItem): number {
   return pr.reviewers.filter((reviewer) => reviewer.vote >= 5).length;
 }
 
-export function getPendingReviewers(pr: PullRequest): number {
+export function getPendingReviewers(pr: ReviewItem): number {
   return pr.reviewers.filter((reviewer) => reviewer.vote === 0).length;
 }
 
-export function hasMergeConflict(pr: PullRequest): boolean {
+export function hasMergeConflict(pr: ReviewItem): boolean {
   return pr.mergeStatus.toLowerCase().includes('conflict');
 }
 
-export function hasEmptyDescription(pr: PullRequest): boolean {
+export function hasEmptyDescription(pr: ReviewItem): boolean {
   return !pr.description || pr.description === 'No description provided.';
 }
 
-export function getRiskScore(pr: PullRequest): number {
+export function getRiskScore(pr: ReviewItem): number {
   const ageHours = getAgeHours(pr.createdAt);
   const pendingReviewers = getPendingReviewers(pr);
   let score = 0;
@@ -48,7 +48,7 @@ export function getRiskScore(pr: PullRequest): number {
   return score;
 }
 
-export function prioritizePullRequests(pullRequests: PullRequest[]): PrioritizedPullRequest[] {
+export function prioritizePullRequests(pullRequests: ReviewItem[]): PrioritizedPullRequest[] {
   return pullRequests
     .map((pr) => ({
       ...pr,
