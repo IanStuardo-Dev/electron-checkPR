@@ -4,7 +4,9 @@ import {
   loadConnectionConfig,
   persistConnectionConfig,
 } from '../../data/repositorySourceStorage';
+import { getRepositorySourceProviderBehavior } from '../../application/repositorySourceProviderBehavior';
 import type { SavedConnectionConfig } from '../../types';
+import type { RepositoryProviderSelection } from '../../../../../types/repository';
 
 interface UseRepositorySourceConfigResult {
   config: SavedConnectionConfig;
@@ -34,25 +36,14 @@ export function useRepositorySourceConfig(
     handlers.onConfigChangeStart(name, value);
 
     setConfig((current) => {
-      const nextConfig = {
-        ...current,
-        ...(name === 'provider'
-          ? {
-            organization: '',
-            project: '',
-            repositoryId: '',
-            personalAccessToken: '',
-            targetReviewer: '',
-          }
-          : {}),
-        ...(name === 'organization'
-          ? { project: '', repositoryId: '' }
-          : {}),
-        ...(name === 'project'
-          ? { repositoryId: '' }
-          : {}),
-        [name]: value,
-      };
+      const nextConfig = getRepositorySourceProviderBehavior(current.provider)?.applyConfigChange(current, name, value)
+        ?? (name === 'provider'
+          ? getRepositorySourceProviderBehavior(value as RepositoryProviderSelection)?.applyConfigChange(current, name, value)
+          : null)
+        ?? {
+          ...current,
+          [name]: value,
+        };
 
       configRef.current = nextConfig;
       return nextConfig;
@@ -63,13 +54,8 @@ export function useRepositorySourceConfig(
     handlers.onProjectSelected(project);
 
     setConfig((current) => {
-      const nextConfig = current.provider === 'github' || current.provider === 'gitlab'
-        ? {
-          ...current,
-          project,
-          repositoryId: project,
-        }
-        : {
+      const nextConfig = getRepositorySourceProviderBehavior(current.provider)?.applyProjectSelection(current, project)
+        ?? {
           ...current,
           project,
           repositoryId: '',

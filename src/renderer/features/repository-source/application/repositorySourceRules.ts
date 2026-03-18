@@ -1,4 +1,5 @@
 import type { SavedConnectionConfig } from '../types';
+import { getRepositorySourceProviderBehavior } from './repositorySourceProviderBehavior';
 
 export function hasMinimumProjectDiscoveryConfig(config: SavedConnectionConfig): boolean {
   return Boolean(config.provider && config.organization.trim() && config.personalAccessToken.trim());
@@ -9,11 +10,7 @@ export function hasMinimumRepositoryConfig(config: SavedConnectionConfig): boole
     return false;
   }
 
-  if (config.provider === 'github' || config.provider === 'gitlab') {
-    return Boolean(config.organization && config.personalAccessToken);
-  }
-
-  return Boolean(config.organization && config.project && config.personalAccessToken);
+  return getRepositorySourceProviderBehavior(config.provider)?.hasMinimumRepositoryConfig(config) || false;
 }
 
 export function hasMinimumPullRequestSyncConfig(config: SavedConnectionConfig): boolean {
