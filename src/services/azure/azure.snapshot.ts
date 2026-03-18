@@ -1,7 +1,7 @@
 import type { AzureConnectionConfig } from '../../types/azure';
 import type { RepositorySnapshot } from '../../types/analysis';
 import type { RepositorySnapshotOptions } from '../../types/repository';
-import { mapWithConcurrency, retryWithBackoff } from '../shared/request-control';
+import { mapWithConcurrency, retryWithBackoff } from '../../shared/request-control';
 import {
   buildRepositoryFileSnapshot,
   buildRepositorySnapshot,

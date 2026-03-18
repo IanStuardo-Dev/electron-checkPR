@@ -2,7 +2,7 @@ const {
   isRetryableHttpError,
   mapWithConcurrency,
   retryWithBackoff,
-} = require('../../../src/services/shared/request-control');
+} = require('../../../src/shared/request-control');
 
 describe('request-control', () => {
   afterEach(() => {

@@ -1,5 +1,5 @@
 import type { RepositoryConnectionConfig, ReviewItem, ReviewItemReviewer } from '../../types/repository';
-import { mapWithConcurrency } from '../shared/request-control';
+import { mapWithConcurrency } from '../../shared/request-control';
 import { getGitHubConfig, requestGitHubJson, requestGitHubPaginated } from './github.api';
 import { getGitHubRepositories } from './github.repositories';
 import type { GitHubPullRequestListResponseItem, GitHubReviewResponseItem } from './github.types';

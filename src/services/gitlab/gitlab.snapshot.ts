@@ -1,6 +1,6 @@
 import type { RepositoryConnectionConfig, RepositorySnapshotOptions } from '../../types/repository';
 import type { RepositorySnapshot } from '../../types/analysis';
-import { mapWithConcurrency, retryWithBackoff } from '../shared/request-control';
+import { mapWithConcurrency, retryWithBackoff } from '../../shared/request-control';
 import {
   buildRepositoryFileSnapshot,
   buildRepositorySnapshot,

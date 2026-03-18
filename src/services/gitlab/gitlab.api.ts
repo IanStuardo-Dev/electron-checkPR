@@ -1,5 +1,5 @@
 import type { RepositoryConnectionConfig, RepositoryProject, RepositorySummary } from '../../types/repository';
-import { readJsonResponse } from '../shared/http-response';
+import { readJsonResponse } from '../../shared/http-response';
 
 export const GITLAB_API_BASE_URL = 'https://gitlab.com/api/v4';
 
