@@ -20,6 +20,21 @@ const {
   registerWindowControlsIpc,
 } = require('../../../src/main/ipc/window-controls');
 
+function withPlatform(platform, callback) {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(process, 'platform');
+
+  Object.defineProperty(process, 'platform', {
+    configurable: true,
+    value: platform,
+  });
+
+  try {
+    callback();
+  } finally {
+    Object.defineProperty(process, 'platform', originalDescriptor);
+  }
+}
+
 function createTargetWindow(overrides = {}) {
   const listeners = {};
   const targetWindow = {
@@ -32,6 +47,7 @@ function createTargetWindow(overrides = {}) {
     minimize: jest.fn(),
     maximize: jest.fn(),
     unmaximize: jest.fn(),
+    setFullScreen: jest.fn(),
     close: jest.fn(),
     webContents: {
       send: jest.fn(),
@@ -133,15 +149,19 @@ describe('window controls ipc', () => {
     });
     fromWebContents.mockReturnValue(targetWindow);
 
-    registerWindowControlsIpc();
-    const state = registeredHandlers['window-controls:toggle-maximize']({ sender: {} });
+    let state;
+    withPlatform('win32', () => {
+      registerWindowControlsIpc();
+      state = registeredHandlers['window-controls:toggle-maximize']({ sender: {} });
+    });
 
     expect(targetWindow.maximize).toHaveBeenCalled();
     expect(targetWindow.unmaximize).not.toHaveBeenCalled();
+    expect(targetWindow.setFullScreen).not.toHaveBeenCalled();
     expect(state).toEqual({
       isMaximized: false,
       isFullScreen: false,
-      platform: process.platform,
+      platform: 'win32',
     });
   });
 
@@ -151,15 +171,41 @@ describe('window controls ipc', () => {
     });
     fromWebContents.mockReturnValue(targetWindow);
 
-    registerWindowControlsIpc();
-    const state = registeredHandlers['window-controls:toggle-maximize']({ sender: {} });
+    let state;
+    withPlatform('win32', () => {
+      registerWindowControlsIpc();
+      state = registeredHandlers['window-controls:toggle-maximize']({ sender: {} });
+    });
 
     expect(targetWindow.unmaximize).toHaveBeenCalled();
     expect(targetWindow.maximize).not.toHaveBeenCalled();
+    expect(targetWindow.setFullScreen).not.toHaveBeenCalled();
     expect(state).toEqual({
       isMaximized: true,
       isFullScreen: false,
-      platform: process.platform,
+      platform: 'win32',
+    });
+  });
+
+  test('toggle-maximize usa full screen en macOS', () => {
+    const { targetWindow } = createTargetWindow({
+      isFullScreen: jest.fn(() => false),
+    });
+    fromWebContents.mockReturnValue(targetWindow);
+
+    let state;
+    withPlatform('darwin', () => {
+      registerWindowControlsIpc();
+      state = registeredHandlers['window-controls:toggle-maximize']({ sender: {} });
+    });
+
+    expect(targetWindow.setFullScreen).toHaveBeenCalledWith(true);
+    expect(targetWindow.maximize).not.toHaveBeenCalled();
+    expect(targetWindow.unmaximize).not.toHaveBeenCalled();
+    expect(state).toEqual({
+      isMaximized: false,
+      isFullScreen: false,
+      platform: 'darwin',
     });
   });
 
