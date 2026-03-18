@@ -1,4 +1,5 @@
 import React from 'react';
+import { hasMinimumRepositoryConfig } from '../../application/repositorySourceRules';
 import type { SavedConnectionConfig } from '../../types';
 import type { useRepositorySourceState } from './useRepositorySourceState';
 
@@ -22,11 +23,7 @@ export function useRepositorySourceEffects({
   } = state;
 
   React.useEffect(() => {
-    const hasMinimumConfig = config.provider === 'github' || config.provider === 'gitlab'
-      ? Boolean(config.organization && config.personalAccessToken)
-      : Boolean(config.provider && config.organization && config.project && config.personalAccessToken);
-
-    if (!hasMinimumConfig) {
+    if (!hasMinimumRepositoryConfig(config)) {
       resetDisconnectedState();
     }
   }, [config.organization, config.personalAccessToken, config.project, config.provider, resetDisconnectedState]);
@@ -36,10 +33,7 @@ export function useRepositorySourceEffects({
       return;
     }
 
-    if (
-      (config.provider && (config.provider === 'github' || config.provider === 'gitlab') && config.organization && config.personalAccessToken)
-      || (config.provider !== 'github' && config.provider !== 'gitlab' && config.organization && config.project && config.personalAccessToken)
-    ) {
+    if (hasMinimumRepositoryConfig(config)) {
       void refreshRepositories(configRef.current).finally(() => {
         setShouldLoadRepositories(false);
       });

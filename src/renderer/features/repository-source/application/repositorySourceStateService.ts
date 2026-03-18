@@ -1,5 +1,6 @@
-import type { RepositoryProject, ReviewItem } from '../../../../types/repository';
+import type { RepositoryProject, RepositoryProviderSelection, ReviewItem } from '../../../../types/repository';
 import type { RepositorySourceStatePort } from './repositorySourceApiPorts';
+import { getRepositorySourceProviderBehavior } from './repositorySourceProviderBehavior';
 
 export function clearProjectsState(state: RepositorySourceStatePort) {
   state.setProjects([]);
@@ -7,11 +8,11 @@ export function clearProjectsState(state: RepositorySourceStatePort) {
 
 export function applyProjectsSuccess(
   state: RepositorySourceStatePort,
-  provider: string,
+  provider: RepositoryProviderSelection,
   projects: RepositoryProject[],
 ) {
   state.setProjects(projects);
-  if (provider === 'github' || provider === 'gitlab') {
+  if (getRepositorySourceProviderBehavior(provider)?.mirrorsProjectsAsRepositories) {
     state.setRepositories(projects.map((project) => ({
       id: project.id,
       name: project.name,

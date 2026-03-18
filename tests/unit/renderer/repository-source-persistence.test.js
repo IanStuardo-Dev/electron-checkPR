@@ -1,7 +1,3 @@
-jest.mock('../../../src/renderer/features/history/data/historyStorage', () => ({
-  persistDashboardSnapshot: jest.fn(),
-}));
-
 jest.mock('../../../src/renderer/shared/dashboard/summary', () => ({
   buildDashboardSummary: jest.fn(() => ({
     activePRs: 4,
