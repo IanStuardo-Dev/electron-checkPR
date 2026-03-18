@@ -8,7 +8,7 @@ import { XAxis } from 'recharts/es6/cartesian/XAxis';
 import { YAxis } from 'recharts/es6/cartesian/YAxis';
 import { ResponsiveContainer } from 'recharts/es6/component/ResponsiveContainer';
 import { Tooltip } from 'recharts/es6/component/Tooltip';
-import type { DashboardHistorySnapshot } from '../../data/historyStorage';
+import type { DashboardHistorySnapshot } from '../../../../shared/storage/dashboardHistoryStorage';
 
 interface HistoryChartsProps {
   history: DashboardHistorySnapshot[];
