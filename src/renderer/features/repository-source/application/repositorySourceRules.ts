@@ -16,3 +16,6 @@ export function hasMinimumRepositoryConfig(config: SavedConnectionConfig): boole
   return Boolean(config.organization && config.project && config.personalAccessToken);
 }
 
+export function hasMinimumPullRequestSyncConfig(config: SavedConnectionConfig): boolean {
+  return hasMinimumRepositoryConfig(config);
+}
