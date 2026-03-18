@@ -2,10 +2,6 @@ jest.mock('../../../src/renderer/features/history/data/historyStorage', () => ({
   persistDashboardSnapshot: jest.fn(),
 }));
 
-jest.mock('../../../src/renderer/features/repository-source/data/repositorySourceStorage', () => ({
-  persistSavedAzureContext: jest.fn(),
-}));
-
 jest.mock('../../../src/renderer/shared/dashboard/summary', () => ({
   buildDashboardSummary: jest.fn(() => ({
     activePRs: 4,
@@ -19,15 +15,13 @@ jest.mock('../../../src/renderer/shared/dashboard/summary', () => ({
   })),
 }));
 
-const { persistDashboardSnapshot } = require('../../../src/renderer/features/history/data/historyStorage');
-const { persistSavedAzureContext } = require('../../../src/renderer/features/repository-source/data/repositorySourceStorage');
-const { persistRepositorySourceSnapshot } = require('../../../src/renderer/features/repository-source/application/repositorySourcePersistence');
+const { buildRepositorySourceSnapshotRecord } = require('../../../src/renderer/features/repository-source/application/repositorySourcePersistence');
 
 describe('repository source persistence', () => {
-  test('persiste contexto y snapshot agregado', () => {
+  test('construye un snapshot derivado sin depender de la feature history', () => {
     const timestamp = new Date('2026-03-11T12:00:00.000Z');
 
-    persistRepositorySourceSnapshot({
+    const snapshot = buildRepositorySourceSnapshotRecord({
       provider: 'github',
       organization: 'acme',
       project: '',
@@ -36,8 +30,7 @@ describe('repository source persistence', () => {
       targetReviewer: '',
     }, [], timestamp);
 
-    expect(persistSavedAzureContext).toHaveBeenCalled();
-    expect(persistDashboardSnapshot).toHaveBeenCalledWith(expect.objectContaining({
+    expect(snapshot).toEqual(expect.objectContaining({
       id: `${timestamp.toISOString()}-acme / Todos los repositorios`,
       activePRs: 4,
       highRiskPRs: 1,

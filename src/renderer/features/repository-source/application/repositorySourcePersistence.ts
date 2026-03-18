@@ -1,21 +1,32 @@
 import type { ReviewItem } from '../../../../types/repository';
-import { persistDashboardSnapshot } from '../../history';
 import { buildDashboardSummary } from '../../../shared/dashboard/summary';
 import { buildScopeLabel } from './repositorySourceDiagnostics';
-import { persistSavedAzureContext } from '../data/repositorySourceStorage';
 import type { SavedConnectionConfig } from '../types';
 
-export function persistRepositorySourceSnapshot(
+export interface RepositorySourceSnapshotRecord {
+  id: string;
+  capturedAt: string;
+  scopeLabel: string;
+  activePRs: number;
+  highRiskPRs: number;
+  blockedPRs: number;
+  reviewBacklog: number;
+  averageAgeHours: number;
+  stalePRs: number;
+  repositoryCount: number;
+  hotfixPRs: number;
+}
+
+export function buildRepositorySourceSnapshotRecord(
   config: SavedConnectionConfig,
   result: ReviewItem[],
   snapshotTimestamp: Date,
   targetReviewer?: string,
-): void {
+): RepositorySourceSnapshotRecord {
   const effectiveScopeLabel = buildScopeLabel(config, null, null);
-  persistSavedAzureContext(config);
   const snapshotSummary = buildDashboardSummary(result, snapshotTimestamp, effectiveScopeLabel, targetReviewer);
 
-  persistDashboardSnapshot({
+  return {
     id: `${snapshotTimestamp.toISOString()}-${effectiveScopeLabel}`,
     capturedAt: snapshotTimestamp.toISOString(),
     scopeLabel: effectiveScopeLabel,
@@ -27,5 +38,5 @@ export function persistRepositorySourceSnapshot(
     stalePRs: snapshotSummary.stalePRs,
     repositoryCount: snapshotSummary.repositoryCount,
     hotfixPRs: snapshotSummary.hotfixPRs,
-  });
+  };
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ReviewItem } from '../../../../../types/repository';
-import { persistRepositorySourceSnapshot } from '../../application/repositorySourcePersistence';
+import { persistRepositorySourceHistorySnapshot } from '../../data/repositorySourceSnapshotStorage';
 import type { SavedConnectionConfig } from '../../types';
 
 export function useRepositorySourceSnapshotPersistence(
@@ -12,6 +12,6 @@ export function useRepositorySourceSnapshotPersistence(
     _scopeLabel: string,
     targetReviewer?: string,
   ) => {
-    persistRepositorySourceSnapshot(configRef.current, result, snapshotTimestamp, targetReviewer);
+    persistRepositorySourceHistorySnapshot(configRef.current, result, snapshotTimestamp, targetReviewer);
   }, [configRef]);
 }
