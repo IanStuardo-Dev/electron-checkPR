@@ -9,7 +9,7 @@ import {
   SettingsTextAreaField,
   SettingsToggleCard,
   settingsButtonClassName,
-} from '../../../../shared/ui/settings/SettingsPrimitives';
+} from '../../../../ui/configuration/ConfigurationPrimitives';
 
 interface GlobalSnapshotPolicyCardProps {
   snapshotPolicy: CodexIntegrationConfig['snapshotPolicy'];

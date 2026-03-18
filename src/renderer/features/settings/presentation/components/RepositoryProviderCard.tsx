@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowRightIcon, CheckCircleIcon, ChevronDownIcon, ChevronUpIcon, CircleStackIcon } from '@heroicons/react/24/outline';
 import type { RepositoryProviderDefinition } from '../../../../../types/repository';
-import { SettingsSectionCard, SettingsStatusBadge, SettingsSurfaceCard, settingsButtonClassName } from '../../../../shared/ui/settings/SettingsPrimitives';
+import { SettingsSectionCard, SettingsStatusBadge, SettingsSurfaceCard, settingsButtonClassName } from '../../../../ui/configuration/ConfigurationPrimitives';
 
 interface RepositoryProviderCardProps {
   provider: RepositoryProviderDefinition;

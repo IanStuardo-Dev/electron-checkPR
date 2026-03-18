@@ -7,7 +7,7 @@ import GlobalSnapshotPolicyCard from './GlobalSnapshotPolicyCard';
 import SettingsIntegrationActionCards from './SettingsIntegrationActionCards';
 import SettingsProviderModal from './SettingsProviderModal';
 import type { SettingsProviderConnectionProps } from './SettingsProvider.types';
-import { SettingsModal, SettingsSectionCard, SettingsStatusBadge } from '../../../../shared/ui/settings/SettingsPrimitives';
+import { SettingsModal, SettingsSectionCard, SettingsStatusBadge } from '../../../../ui/configuration/ConfigurationPrimitives';
 
 export function SettingsIntegrationsSection({
   activeProvider,

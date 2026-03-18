@@ -1,6 +1,6 @@
 import React from 'react';
-import type { BadgeTone } from './SettingsPrimitives.shared';
-import { badgeToneClassName, settingsButtonClassName } from './SettingsPrimitives.shared';
+import type { BadgeTone } from './ConfigurationPrimitives.shared';
+import { badgeToneClassName, settingsButtonClassName } from './ConfigurationPrimitives.shared';
 
 interface SettingsSectionCardProps {
   eyebrow?: string;
