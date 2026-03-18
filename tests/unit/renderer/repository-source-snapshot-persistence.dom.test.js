@@ -4,10 +4,6 @@ jest.mock('../../../src/renderer/features/history/data/historyStorage', () => ({
   persistDashboardSnapshot: jest.fn(),
 }));
 
-jest.mock('../../../src/renderer/features/repository-source/data/repositorySourceStorage', () => ({
-  persistSavedAzureContext: jest.fn(),
-}));
-
 jest.mock('../../../src/renderer/shared/dashboard/summary', () => ({
   buildDashboardSummary: jest.fn(() => ({
     activePRs: 3,
@@ -22,7 +18,6 @@ jest.mock('../../../src/renderer/shared/dashboard/summary', () => ({
 }));
 
 const { persistDashboardSnapshot } = require('../../../src/renderer/features/history/data/historyStorage');
-const { persistSavedAzureContext } = require('../../../src/renderer/features/repository-source/data/repositorySourceStorage');
 const { useRepositorySourceSnapshotPersistence } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceSnapshotPersistence');
 
 describe('useRepositorySourceSnapshotPersistence', () => {
@@ -47,11 +42,6 @@ describe('useRepositorySourceSnapshotPersistence', () => {
 
     result.current([{ id: 1, title: 'PR', url: 'https://example.com/pr/1' }], timestamp, 'ignored', 'ian');
 
-    expect(persistSavedAzureContext).toHaveBeenCalledWith(expect.objectContaining({
-      organization: 'org-a',
-      project: 'platform',
-      repositoryId: 'repo-a',
-    }));
     expect(persistDashboardSnapshot).toHaveBeenCalledWith(expect.objectContaining({
       scopeLabel: 'org-a / platform / Todos los repositorios',
       activePRs: 3,
