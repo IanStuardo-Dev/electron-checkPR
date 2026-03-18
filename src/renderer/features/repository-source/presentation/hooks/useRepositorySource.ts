@@ -13,7 +13,7 @@ export function useRepositorySource() {
     onConfigChangeStart: (name, value) => facadeRef.current?.current?.onConfigChangeStart(name, value),
     onProjectSelected: (project) => facadeRef.current?.current?.onProjectSelected(project),
   });
-  const { config, configRef, updateConfig, selectProjectConfig, hydrateSecret } = configHook;
+  const { config, configRef, updateConfig, selectProjectConfig, applyHydratedSecret, hydrateSecret } = configHook;
   const { activeProviderName, baseScopeLabel } = useRepositorySourceMetadata(config);
   const persistSnapshot = useRepositorySourceSnapshotPersistence(configRef);
 
@@ -58,9 +58,8 @@ export function useRepositorySource() {
   });
 
   useRepositorySourceBootstrap({
-    configRef,
+    applyHydratedSecret,
     hydrateSecret,
-    updateConfig,
     refreshPullRequests,
   });
 
@@ -91,4 +90,3 @@ export function useRepositorySource() {
     openConnectionPanel,
   };
 }
-
