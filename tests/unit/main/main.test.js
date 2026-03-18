@@ -162,7 +162,10 @@ describe('main process bootstrap', () => {
 
   test('window-all-closed cierra la app fuera de macOS', () => {
     const windowAllClosedHandler = registeredAppEvents.get('window-all-closed');
-    windowAllClosedHandler();
+
+    withPlatform('win32', () => {
+      windowAllClosedHandler();
+    });
 
     expect(appQuit).toHaveBeenCalled();
   });
