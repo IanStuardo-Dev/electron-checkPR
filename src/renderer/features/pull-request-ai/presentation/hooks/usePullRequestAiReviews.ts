@@ -1,5 +1,6 @@
 import React from 'react';
 import type { PullRequestAiReview, PullRequestAnalysisPreview } from '../../../../../types/analysis';
+import type { RepositoryAnalysisSnapshotPolicy } from '../../../../../types/analysis/snapshot';
 import type { PrioritizedPullRequest } from '../../../../../types/repository';
 import {
   cancelPullRequestAiReviews,
@@ -25,10 +26,7 @@ interface UsePullRequestAiReviewsOptions {
   codexConfig: {
     apiKey: string;
     model: string;
-    snapshotPolicy: {
-      excludedPathPatterns: string;
-      strictMode: boolean;
-    };
+    snapshotPolicy: RepositoryAnalysisSnapshotPolicy;
     prReview: {
       enabled: boolean;
       maxPullRequests: number;

@@ -1,4 +1,5 @@
 import type { RepositoryProviderKind } from '../../types/repository';
+import type { RepositoryAnalysisSnapshotPolicy } from '../../types/analysis/snapshot';
 
 export function readRequiredString(value: unknown, fieldName: string): string {
   if (typeof value !== 'string' || !value.trim()) {
@@ -26,9 +27,9 @@ export function clampNumber(value: unknown, minimum: number, maximum: number, fa
   return Math.min(maximum, Math.max(minimum, Math.floor(Number(value) || fallback)));
 }
 
-export function readSnapshotPolicy(payload: unknown): { excludedPathPatterns: string; strictMode: boolean } {
+export function readSnapshotPolicy(payload: unknown): RepositoryAnalysisSnapshotPolicy {
   const policy = payload && typeof payload === 'object'
-    ? payload as { excludedPathPatterns?: unknown; strictMode?: unknown }
+    ? payload as Partial<Record<keyof RepositoryAnalysisSnapshotPolicy, unknown>>
     : {};
 
   return {
