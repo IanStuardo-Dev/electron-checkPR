@@ -9,6 +9,7 @@ import { useRepositorySourceSnapshotPersistence } from './useRepositorySourceSna
 export function useRepositorySource() {
   const configHook = useRepositorySourceConfig();
   const { config, configRef, updateConfig, selectProjectConfig, hydrateSecret } = configHook;
+  const { applyHydratedSecret } = configHook;
   const { activeProviderName, baseScopeLabel } = useRepositorySourceMetadata(config);
   const persistSnapshot = useRepositorySourceSnapshotPersistence(configRef);
 
@@ -49,10 +50,9 @@ export function useRepositorySource() {
   });
 
   useRepositorySourceBootstrap({
-    configRef,
+    applyHydratedSecret,
     hydrateSecret,
     refreshPullRequests,
-    updateConfig,
   });
 
   const handleConfigChange = React.useCallback((name: keyof typeof config, value: string) => {

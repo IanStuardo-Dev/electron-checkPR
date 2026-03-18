@@ -157,51 +157,47 @@ describe('repository source config hooks', () => {
     await expect(result.current.hydrateSecret()).resolves.toBe('pat-session');
   });
 
+  test('useRepositorySourceConfig aplica el secreto hidratado sin disparar resets de config', async () => {
+    const { result } = renderHook(() => useRepositorySourceConfig());
+
+    await act(async () => {
+      result.current.applyHydratedSecret('pat-session');
+    });
+
+    expect(result.current.config.personalAccessToken).toBe('pat-session');
+    expect(result.current.configRef.current.personalAccessToken).toBe('pat-session');
+  });
+
   test('useRepositorySourceBootstrap restaura PAT y refresca cuando el config minimo existe', async () => {
     const refreshPullRequests = jest.fn().mockResolvedValue(undefined);
-    const updateConfig = jest.fn();
-    const configRef = {
-      current: {
-        provider: 'github',
-        organization: 'acme',
-        project: '',
-        repositoryId: '',
-        personalAccessToken: '',
-        targetReviewer: '',
-      },
-    };
+    const applyHydratedSecret = jest.fn((value) => ({
+      provider: 'github',
+      organization: 'acme',
+      project: '',
+      repositoryId: '',
+      personalAccessToken: value,
+      targetReviewer: '',
+    }));
 
     renderHook(() => useRepositorySourceBootstrap({
-      configRef,
       hydrateSecret: jest.fn().mockResolvedValue('pat-restored'),
-      updateConfig,
+      applyHydratedSecret,
       refreshPullRequests,
     }));
 
     await waitFor(() => {
-      expect(updateConfig).toHaveBeenCalledWith('personalAccessToken', 'pat-restored');
+      expect(applyHydratedSecret).toHaveBeenCalledWith('pat-restored');
       expect(refreshPullRequests).toHaveBeenCalled();
-      expect(configRef.current.personalAccessToken).toBe('pat-restored');
     });
   });
 
   test('useRepositorySourceBootstrap ignora errores de hidratacion y no refresca', async () => {
     const refreshPullRequests = jest.fn();
-    const updateConfig = jest.fn();
+    const applyHydratedSecret = jest.fn();
 
     renderHook(() => useRepositorySourceBootstrap({
-      configRef: {
-        current: {
-          provider: 'azure-devops',
-          organization: 'org-a',
-          project: 'project-a',
-          repositoryId: '',
-          personalAccessToken: '',
-          targetReviewer: '',
-        },
-      },
       hydrateSecret: jest.fn().mockRejectedValue(new Error('boom')),
-      updateConfig,
+      applyHydratedSecret,
       refreshPullRequests,
     }));
 
@@ -209,27 +205,17 @@ describe('repository source config hooks', () => {
       await Promise.resolve();
     });
 
-    expect(updateConfig).not.toHaveBeenCalled();
+    expect(applyHydratedSecret).not.toHaveBeenCalled();
     expect(refreshPullRequests).not.toHaveBeenCalled();
   });
 
   test('useRepositorySourceBootstrap no actualiza ni refresca si el secreto no existe', async () => {
     const refreshPullRequests = jest.fn();
-    const updateConfig = jest.fn();
+    const applyHydratedSecret = jest.fn();
 
     renderHook(() => useRepositorySourceBootstrap({
-      configRef: {
-        current: {
-          provider: 'github',
-          organization: 'acme',
-          project: '',
-          repositoryId: '',
-          personalAccessToken: '',
-          targetReviewer: '',
-        },
-      },
       hydrateSecret: jest.fn().mockResolvedValue(''),
-      updateConfig,
+      applyHydratedSecret,
       refreshPullRequests,
     }));
 
@@ -237,32 +223,29 @@ describe('repository source config hooks', () => {
       await Promise.resolve();
     });
 
-    expect(updateConfig).not.toHaveBeenCalled();
+    expect(applyHydratedSecret).not.toHaveBeenCalled();
     expect(refreshPullRequests).not.toHaveBeenCalled();
   });
 
   test('useRepositorySourceBootstrap restaura secreto pero no refresca si falta config minima', async () => {
     const refreshPullRequests = jest.fn();
-    const updateConfig = jest.fn();
+    const applyHydratedSecret = jest.fn((value) => ({
+      provider: 'azure-devops',
+      organization: 'acme',
+      project: '',
+      repositoryId: '',
+      personalAccessToken: value,
+      targetReviewer: '',
+    }));
 
     renderHook(() => useRepositorySourceBootstrap({
-      configRef: {
-        current: {
-          provider: 'azure-devops',
-          organization: 'acme',
-          project: '',
-          repositoryId: '',
-          personalAccessToken: '',
-          targetReviewer: '',
-        },
-      },
       hydrateSecret: jest.fn().mockResolvedValue('pat-restored'),
-      updateConfig,
+      applyHydratedSecret,
       refreshPullRequests,
     }));
 
     await waitFor(() => {
-      expect(updateConfig).toHaveBeenCalledWith('personalAccessToken', 'pat-restored');
+      expect(applyHydratedSecret).toHaveBeenCalledWith('pat-restored');
     });
 
     expect(refreshPullRequests).not.toHaveBeenCalled();

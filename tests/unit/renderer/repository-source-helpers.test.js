@@ -1,4 +1,5 @@
 const diagnostics = require('../../../src/renderer/features/repository-source/application/repositorySourceDiagnostics');
+const providerBehavior = require('../../../src/renderer/features/repository-source/application/repositorySourceProviderBehavior');
 const rules = require('../../../src/renderer/features/repository-source/application/repositorySourceRules');
 
 describe('repository source helpers', () => {
@@ -86,6 +87,54 @@ describe('repository source helpers', () => {
       personalAccessToken: '',
       targetReviewer: '',
     }, null, null)).toBe('org / Sin proyecto / Todos los repositorios');
+  });
+
+  test('provider behavior centraliza el cambio de config y la seleccion de proyecto', () => {
+    const githubBehavior = providerBehavior.getRepositorySourceProviderBehavior('github');
+    const azureBehavior = providerBehavior.getRepositorySourceProviderBehavior('azure-devops');
+
+    expect(githubBehavior.applyProjectSelection({
+      provider: 'github',
+      organization: 'acme',
+      project: '',
+      repositoryId: '',
+      personalAccessToken: '',
+      targetReviewer: '',
+    }, 'repo-a')).toEqual(expect.objectContaining({
+      project: 'repo-a',
+      repositoryId: 'repo-a',
+    }));
+
+    expect(azureBehavior.applyProjectSelection({
+      provider: 'azure-devops',
+      organization: 'org',
+      project: '',
+      repositoryId: 'repo-a',
+      personalAccessToken: '',
+      targetReviewer: '',
+    }, 'platform')).toEqual(expect.objectContaining({
+      project: 'platform',
+      repositoryId: '',
+    }));
+
+    expect(githubBehavior.mirrorsProjectsAsRepositories).toBe(true);
+    expect(azureBehavior.mirrorsProjectsAsRepositories).toBe(false);
+    expect(githubBehavior.hasMinimumRepositoryConfig({
+      provider: 'github',
+      organization: 'acme',
+      project: '',
+      repositoryId: '',
+      personalAccessToken: 'pat',
+      targetReviewer: '',
+    })).toBe(true);
+    expect(azureBehavior.hasMinimumRepositoryConfig({
+      provider: 'azure-devops',
+      organization: 'org',
+      project: '',
+      repositoryId: '',
+      personalAccessToken: 'pat',
+      targetReviewer: '',
+    })).toBe(false);
   });
 
   test('hasMinimumProjectDiscoveryConfig y hasMinimumRepositoryConfig validan por provider', () => {

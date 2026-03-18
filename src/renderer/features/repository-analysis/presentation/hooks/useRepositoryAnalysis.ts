@@ -10,6 +10,16 @@ export function useRepositoryAnalysis() {
   const [preview, setPreview] = React.useState<RepositorySnapshotPreview | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const activeRequestIdRef = React.useRef<string | null>(null);
+  const analysisTimerRef = React.useRef<number | null>(null);
+
+  const clearAnalysisTimer = React.useCallback(() => {
+    if (analysisTimerRef.current !== null) {
+      window.clearTimeout(analysisTimerRef.current);
+      analysisTimerRef.current = null;
+    }
+  }, []);
+
+  React.useEffect(() => clearAnalysisTimer, [clearAnalysisTimer]);
 
   const preparePreview = React.useCallback(async (payload: RepositoryAnalysisRequest) => {
     setPhase('previewing');
@@ -28,29 +38,30 @@ export function useRepositoryAnalysis() {
   }, []);
 
   const execute = React.useCallback(async (payload: RepositoryAnalysisRequest) => {
+    clearAnalysisTimer();
     setPhase('preparing');
     setError(null);
     setResult(null);
     activeRequestIdRef.current = payload.requestId;
 
-    const timer = window.setTimeout(() => {
+    analysisTimerRef.current = window.setTimeout(() => {
       setPhase('analyzing');
     }, 500);
 
     try {
       const nextResult = await runRepositoryAnalysis(payload);
-      window.clearTimeout(timer);
+      clearAnalysisTimer();
       activeRequestIdRef.current = null;
       setPreview(null);
       setResult(nextResult);
       setPhase('completed');
     } catch (nextError) {
-      window.clearTimeout(timer);
+      clearAnalysisTimer();
       activeRequestIdRef.current = null;
       setError(nextError instanceof Error ? nextError.message : 'No fue posible ejecutar el analisis.');
       setPhase('error');
     }
-  }, []);
+  }, [clearAnalysisTimer]);
 
   const cancel = React.useCallback(async () => {
     const requestId = activeRequestIdRef.current;
@@ -58,6 +69,7 @@ export function useRepositoryAnalysis() {
       return;
     }
 
+    clearAnalysisTimer();
     setPhase('cancelling');
 
     try {
@@ -69,15 +81,16 @@ export function useRepositoryAnalysis() {
       setResult(null);
       setPreview(null);
     }
-  }, []);
+  }, [clearAnalysisTimer]);
 
   const reset = React.useCallback(() => {
+    clearAnalysisTimer();
     activeRequestIdRef.current = null;
     setPhase('idle');
     setPreview(null);
     setResult(null);
     setError(null);
-  }, []);
+  }, [clearAnalysisTimer]);
 
   return {
     phase,
