@@ -57,10 +57,14 @@ export function registerWindowControlsIpc(): void {
   ipcMain.handle(TOGGLE_MAXIMIZE_CHANNEL, (event) => {
     const targetWindow = resolveSenderWindow(event.sender);
 
-    if (targetWindow.isMaximized()) {
-      targetWindow.unmaximize();
+    if (process.platform === 'darwin') {
+      targetWindow.setFullScreen(!targetWindow.isFullScreen());
     } else {
-      targetWindow.maximize();
+      if (targetWindow.isMaximized()) {
+        targetWindow.unmaximize();
+      } else {
+        targetWindow.maximize();
+      }
     }
 
     return buildWindowState(targetWindow);
