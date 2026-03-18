@@ -18,8 +18,8 @@ describe('repository source storage', () => {
       project: 'repo-a',
       repositoryId: 'repo-a',
     }));
-    window.localStorage.setItem(storage.REPOSITORY_SOURCE_STORAGE_KEY, 'legacy');
-    window.localStorage.setItem(storage.REPOSITORY_SOURCE_SAVED_CONTEXTS_KEY, 'legacy-contexts');
+    window.localStorage.setItem('checkpr.azure.config', 'legacy');
+    window.localStorage.setItem('checkpr.azure.saved-contexts', 'legacy-contexts');
 
     const config = storage.loadConnectionConfig();
 
@@ -30,8 +30,8 @@ describe('repository source storage', () => {
       repositoryId: 'repo-a',
       personalAccessToken: '',
     });
-    expect(window.localStorage.getItem(storage.REPOSITORY_SOURCE_STORAGE_KEY)).toBeNull();
-    expect(window.localStorage.getItem(storage.REPOSITORY_SOURCE_SAVED_CONTEXTS_KEY)).toBeNull();
+    expect(window.localStorage.getItem('checkpr.azure.config')).toBeNull();
+    expect(window.localStorage.getItem('checkpr.azure.saved-contexts')).toBeNull();
   });
 
   test('persistConnectionConfig guarda config segura y secreto en sesion', async () => {
@@ -55,15 +55,45 @@ describe('repository source storage', () => {
       targetReviewer: 'ian',
     });
     expect(window.electronApi.invoke).toHaveBeenCalledWith('session-secrets:set', {
-      key: storage.REPOSITORY_SOURCE_SESSION_PAT_KEY,
+      key: storage.REPOSITORY_SOURCE_SESSION_SECRET_KEY,
       value: 'secret',
     });
   });
 
   test('hydrateConnectionSecret lee el secreto desde ipc', async () => {
-    window.electronApi.invoke.mockResolvedValue({ ok: true, data: 'stored-secret' });
+    window.electronApi.invoke.mockImplementation(async (channel, key) => {
+      if (channel === 'session-secrets:get' && key === storage.REPOSITORY_SOURCE_SESSION_SECRET_KEY) {
+        return { ok: true, data: 'stored-secret' };
+      }
+
+      return { ok: true, data: '' };
+    });
 
     await expect(storage.hydrateConnectionSecret()).resolves.toBe('stored-secret');
+  });
+
+  test('hydrateConnectionSecret migra el secreto legacy si existe', async () => {
+    window.electronApi.invoke.mockImplementation(async (channel, payload) => {
+      if (channel === 'session-secrets:get' && payload === storage.REPOSITORY_SOURCE_SESSION_SECRET_KEY) {
+        return { ok: true, data: '' };
+      }
+
+      if (channel === 'session-secrets:get' && payload === 'checkpr.azure.session.pat') {
+        return { ok: true, data: 'legacy-secret' };
+      }
+
+      return { ok: true, data: null };
+    });
+
+    await expect(storage.hydrateConnectionSecret()).resolves.toBe('legacy-secret');
+    expect(window.electronApi.invoke).toHaveBeenCalledWith('session-secrets:set', {
+      key: storage.REPOSITORY_SOURCE_SESSION_SECRET_KEY,
+      value: 'legacy-secret',
+    });
+    expect(window.electronApi.invoke).toHaveBeenCalledWith('session-secrets:set', {
+      key: 'checkpr.azure.session.pat',
+      value: '',
+    });
   });
 
   test('loadConnectionConfig tolera JSON invalido en sesion', () => {
@@ -109,12 +139,23 @@ describe('repository source storage', () => {
     }
   });
 
-  test('saved azure contexts sigue deshabilitado y limpia legacy', () => {
-    window.localStorage.setItem(storage.REPOSITORY_SOURCE_SAVED_CONTEXTS_KEY, 'legacy-contexts');
+  test('persistConnectionConfig limpia storage legacy y el secreto azure anterior', async () => {
+    window.localStorage.setItem('checkpr.azure.config', 'legacy');
+    window.localStorage.setItem('checkpr.azure.saved-contexts', 'legacy-contexts');
+    window.electronApi.invoke.mockResolvedValue({ ok: true, data: null });
 
-    expect(storage.loadSavedAzureContexts()).toEqual([]);
-    storage.persistSavedAzureContext(storage.defaultConnectionConfig);
+    await storage.persistConnectionConfig({
+      ...storage.defaultConnectionConfig,
+      provider: 'github',
+      organization: 'acme',
+      personalAccessToken: 'secret',
+    });
 
-    expect(window.localStorage.getItem(storage.REPOSITORY_SOURCE_SAVED_CONTEXTS_KEY)).toBeNull();
+    expect(window.localStorage.getItem('checkpr.azure.config')).toBeNull();
+    expect(window.localStorage.getItem('checkpr.azure.saved-contexts')).toBeNull();
+    expect(window.electronApi.invoke).toHaveBeenCalledWith('session-secrets:set', {
+      key: 'checkpr.azure.session.pat',
+      value: '',
+    });
   });
 });
