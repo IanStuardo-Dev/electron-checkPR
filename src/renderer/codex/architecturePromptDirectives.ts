@@ -7,7 +7,7 @@ export interface ArchitecturePromptDirectivesLike {
   customInstructions: string;
 }
 
-export function countActiveArchitectureDirectives(promptDirectives: ArchitecturePromptDirectivesLike): number {
+export function countConfiguredArchitectureDirectives(promptDirectives: ArchitecturePromptDirectivesLike): number {
   return [
     promptDirectives.architectureReviewEnabled,
     Boolean(promptDirectives.architecturePattern.trim()),
