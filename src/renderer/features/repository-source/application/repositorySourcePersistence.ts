@@ -2,7 +2,6 @@ import type { ReviewItem } from '../../../../types/repository';
 import { persistDashboardSnapshot } from '../../history';
 import { buildDashboardSummary } from '../../../shared/dashboard/summary';
 import { buildScopeLabel } from './repositorySourceDiagnostics';
-import { persistSavedAzureContext } from '../data/repositorySourceStorage';
 import type { SavedConnectionConfig } from '../types';
 
 export function persistRepositorySourceSnapshot(
@@ -12,7 +11,6 @@ export function persistRepositorySourceSnapshot(
   targetReviewer?: string,
 ): void {
   const effectiveScopeLabel = buildScopeLabel(config, null, null);
-  persistSavedAzureContext(config);
   const snapshotSummary = buildDashboardSummary(result, snapshotTimestamp, effectiveScopeLabel, targetReviewer);
 
   persistDashboardSnapshot({

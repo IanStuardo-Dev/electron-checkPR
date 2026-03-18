@@ -2,10 +2,12 @@ import type { SavedConnectionConfig } from '../types';
 import { loadStoredObject, removeStoredKeys, saveStoredObject } from '../../../shared/storage/jsonStorage';
 import { getSessionSecret, setSessionSecret } from '../../../shared/storage/sessionSecrets';
 
-export const REPOSITORY_SOURCE_STORAGE_KEY = 'checkpr.azure.config';
 export const REPOSITORY_SOURCE_SESSION_CONFIG_KEY = 'checkpr.repository.session.config';
-export const REPOSITORY_SOURCE_SESSION_PAT_KEY = 'checkpr.azure.session.pat';
-export const REPOSITORY_SOURCE_SAVED_CONTEXTS_KEY = 'checkpr.azure.saved-contexts';
+export const REPOSITORY_SOURCE_SESSION_SECRET_KEY = 'checkpr.repository.session.pat';
+
+const LEGACY_REPOSITORY_SOURCE_LOCAL_CONFIG_KEY = 'checkpr.azure.config';
+const LEGACY_REPOSITORY_SOURCE_SESSION_SECRET_KEY = 'checkpr.azure.session.pat';
+const LEGACY_REPOSITORY_SOURCE_SAVED_CONTEXTS_KEY = 'checkpr.azure.saved-contexts';
 
 export const defaultConnectionConfig: SavedConnectionConfig = {
   provider: '',
@@ -16,8 +18,15 @@ export const defaultConnectionConfig: SavedConnectionConfig = {
   targetReviewer: '',
 };
 
+function clearLegacyRepositorySourceStorage(): void {
+  removeStoredKeys(window.localStorage, [
+    LEGACY_REPOSITORY_SOURCE_LOCAL_CONFIG_KEY,
+    LEGACY_REPOSITORY_SOURCE_SAVED_CONTEXTS_KEY,
+  ]);
+}
+
 export function loadConnectionConfig(): SavedConnectionConfig {
-  removeStoredKeys(window.localStorage, [REPOSITORY_SOURCE_STORAGE_KEY, REPOSITORY_SOURCE_SAVED_CONTEXTS_KEY]);
+  clearLegacyRepositorySourceStorage();
 
   return {
     ...loadStoredObject<SavedConnectionConfig>(window.sessionStorage, REPOSITORY_SOURCE_SESSION_CONFIG_KEY, defaultConnectionConfig),
@@ -26,7 +35,20 @@ export function loadConnectionConfig(): SavedConnectionConfig {
 }
 
 export async function hydrateConnectionSecret(): Promise<string> {
-  return getSessionSecret(REPOSITORY_SOURCE_SESSION_PAT_KEY);
+  const storedSecret = await getSessionSecret(REPOSITORY_SOURCE_SESSION_SECRET_KEY);
+
+  if (storedSecret) {
+    return storedSecret;
+  }
+
+  const legacySecret = await getSessionSecret(LEGACY_REPOSITORY_SOURCE_SESSION_SECRET_KEY);
+  if (!legacySecret) {
+    return '';
+  }
+
+  await setSessionSecret(REPOSITORY_SOURCE_SESSION_SECRET_KEY, legacySecret);
+  await setSessionSecret(LEGACY_REPOSITORY_SOURCE_SESSION_SECRET_KEY, '');
+  return legacySecret;
 }
 
 export async function persistConnectionConfig(config: SavedConnectionConfig): Promise<void> {
@@ -35,16 +57,7 @@ export async function persistConnectionConfig(config: SavedConnectionConfig): Pr
     personalAccessToken: '',
   };
   saveStoredObject(window.sessionStorage, REPOSITORY_SOURCE_SESSION_CONFIG_KEY, safeConfig);
-  await setSessionSecret(REPOSITORY_SOURCE_SESSION_PAT_KEY, config.personalAccessToken);
-  removeStoredKeys(window.localStorage, [REPOSITORY_SOURCE_STORAGE_KEY]);
-}
-
-export function loadSavedAzureContexts(): never[] {
-  removeStoredKeys(window.localStorage, [REPOSITORY_SOURCE_SAVED_CONTEXTS_KEY]);
-  return [];
-}
-
-export function persistSavedAzureContext(config: SavedConnectionConfig): void {
-  void config;
-  removeStoredKeys(window.localStorage, [REPOSITORY_SOURCE_SAVED_CONTEXTS_KEY]);
+  await setSessionSecret(REPOSITORY_SOURCE_SESSION_SECRET_KEY, config.personalAccessToken);
+  await setSessionSecret(LEGACY_REPOSITORY_SOURCE_SESSION_SECRET_KEY, '');
+  clearLegacyRepositorySourceStorage();
 }

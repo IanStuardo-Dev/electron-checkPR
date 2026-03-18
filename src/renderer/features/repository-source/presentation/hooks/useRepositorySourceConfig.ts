@@ -13,6 +13,7 @@ interface UseRepositorySourceConfigResult {
   configRef: React.MutableRefObject<SavedConnectionConfig>;
   updateConfig: (name: keyof SavedConnectionConfig, value: string) => void;
   selectProjectConfig: (project: string) => void;
+  applyHydratedSecret: (value: string) => SavedConnectionConfig;
   hydrateSecret: () => Promise<string>;
 }
 
@@ -65,6 +66,17 @@ export function useRepositorySourceConfig(
     });
   }, [handlers]);
 
+  const applyHydratedSecret = React.useCallback((value: string) => {
+    const nextConfig = {
+      ...configRef.current,
+      personalAccessToken: value,
+    };
+
+    configRef.current = nextConfig;
+    setConfig(nextConfig);
+    return nextConfig;
+  }, []);
+
   const hydrateSecret = React.useCallback(() => hydrateConnectionSecret(), []);
 
   return {
@@ -72,6 +84,7 @@ export function useRepositorySourceConfig(
     configRef,
     updateConfig,
     selectProjectConfig,
+    applyHydratedSecret,
     hydrateSecret,
   };
 }

@@ -12,3 +12,7 @@ export function hasMinimumRepositoryConfig(config: SavedConnectionConfig): boole
 
   return getRepositorySourceProviderBehavior(config.provider)?.hasMinimumRepositoryConfig(config) || false;
 }
+
+export function hasMinimumPullRequestSyncConfig(config: SavedConnectionConfig): boolean {
+  return hasMinimumRepositoryConfig(config);
+}

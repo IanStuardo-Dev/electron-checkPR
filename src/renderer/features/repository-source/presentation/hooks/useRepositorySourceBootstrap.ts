@@ -1,41 +1,36 @@
 import React from 'react';
+import { hasMinimumPullRequestSyncConfig } from '../../application/repositorySourceRules';
 import type { SavedConnectionConfig } from '../../types';
 
 interface UseRepositorySourceBootstrapOptions {
-  configRef: React.MutableRefObject<SavedConnectionConfig>;
   hydrateSecret: () => Promise<string>;
-  updateConfig: (name: keyof SavedConnectionConfig, value: string) => void;
+  applyHydratedSecret: (value: string) => SavedConnectionConfig;
   refreshPullRequests: () => Promise<void>;
 }
 
 export function useRepositorySourceBootstrap({
-  configRef,
   hydrateSecret,
-  updateConfig,
+  applyHydratedSecret,
   refreshPullRequests,
 }: UseRepositorySourceBootstrapOptions) {
   React.useEffect(() => {
-    void hydrateSecret().then((personalAccessToken) => {
-      if (!personalAccessToken) {
-        return;
-      }
+    let isMounted = true;
 
-      updateConfig('personalAccessToken', personalAccessToken);
+    void hydrateSecret()
+      .then((personalAccessToken) => {
+        if (!personalAccessToken || !isMounted) {
+          return;
+        }
 
-      const nextConfig = {
-        ...configRef.current,
-        personalAccessToken,
-      };
-      configRef.current = nextConfig;
+        const nextConfig = applyHydratedSecret(personalAccessToken);
+        if (hasMinimumPullRequestSyncConfig(nextConfig)) {
+          void refreshPullRequests();
+        }
+      })
+      .catch(() => undefined);
 
-      const hasMinimumConfig = nextConfig.provider === 'github' || nextConfig.provider === 'gitlab'
-        ? Boolean(nextConfig.organization && nextConfig.personalAccessToken)
-        : Boolean(nextConfig.provider && nextConfig.organization && nextConfig.project && nextConfig.personalAccessToken);
-
-      if (hasMinimumConfig) {
-        void refreshPullRequests();
-      }
-    }).catch(() => undefined);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => {
+      isMounted = false;
+    };
+  }, [applyHydratedSecret, hydrateSecret, refreshPullRequests]);
 }
