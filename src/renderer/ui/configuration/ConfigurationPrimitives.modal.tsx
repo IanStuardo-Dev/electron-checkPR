@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { settingsButtonClassName } from './SettingsPrimitives.shared';
+import { settingsButtonClassName } from './ConfigurationPrimitives.shared';
 
 interface SettingsModalProps {
   isOpen: boolean;

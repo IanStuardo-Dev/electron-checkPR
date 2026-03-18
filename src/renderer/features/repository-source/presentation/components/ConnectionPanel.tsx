@@ -12,7 +12,7 @@ import {
   SettingsField,
   SettingsSectionCard,
   SettingsStatusBadge,
-} from '../../../../shared/ui/settings/SettingsPrimitives';
+} from '../../../../ui/configuration/ConfigurationPrimitives';
 
 interface ConnectionPanelProps {
   providerName: string;

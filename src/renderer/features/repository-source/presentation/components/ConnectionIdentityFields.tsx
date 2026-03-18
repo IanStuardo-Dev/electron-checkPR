@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   SettingsField,
-} from '../../../../shared/ui/settings/SettingsPrimitives';
+} from '../../../../ui/configuration/ConfigurationPrimitives';
 import type { SavedConnectionConfig } from '../../types';
 
 interface ConnectionIdentityFieldsProps {

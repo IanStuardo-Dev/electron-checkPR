@@ -11,7 +11,9 @@ describe('repository source ipc gateway', () => {
 
   test('resuelve canales genericos del gateway de repository source', () => {
     expect(repositorySourceIpc.getRepositorySourceChannel('pullRequests')).toBe('repository-source:fetchPullRequests');
+    expect(repositorySourceIpc.getRepositorySourceChannel('projects')).toBe('repository-source:fetchProjects');
     expect(repositorySourceIpc.getRepositorySourceChannel('repositories')).toBe('repository-source:fetchRepositories');
+    expect(repositorySourceIpc.getRepositorySourceChannel('branches')).toBe('repository-source:fetchBranches');
     expect(repositorySourceIpc.getRepositorySourceChannel('openExternal')).toBe('repository-source:openExternal');
   });
 
@@ -44,6 +46,36 @@ describe('repository source ipc gateway', () => {
       project: '',
       personalAccessToken: '',
     })).rejects.toThrow('Selecciona un provider');
+  });
+
+  test('fetchRepositories y fetchBranches usan los canales correctos', async () => {
+    window.electronApi.invoke
+      .mockResolvedValueOnce({
+        ok: true,
+        data: [{ id: 'repo-a', name: 'Repo A' }],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        data: [{ name: 'main', objectId: '1', isDefault: true }],
+      });
+
+    const config = {
+      provider: 'github',
+      organization: 'acme',
+      project: 'repo-a',
+      repositoryId: 'repo-a',
+      personalAccessToken: 'secret',
+    };
+
+    await expect(repositorySourceIpc.fetchRepositories(config)).resolves.toEqual([
+      { id: 'repo-a', name: 'Repo A' },
+    ]);
+    await expect(repositorySourceIpc.fetchBranches(config)).resolves.toEqual([
+      { name: 'main', objectId: '1', isDefault: true },
+    ]);
+
+    expect(window.electronApi.invoke).toHaveBeenNthCalledWith(1, 'repository-source:fetchRepositories', config);
+    expect(window.electronApi.invoke).toHaveBeenNthCalledWith(2, 'repository-source:fetchBranches', config);
   });
 
   test('openReviewItem propaga errores del canal IPC', async () => {

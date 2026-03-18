@@ -96,6 +96,26 @@ describe('repository source hooks', () => {
       result.current.markProjectSelection('repo-a');
     });
     expect(result.current.shouldLoadRepositories).toBe(true);
+
+    act(() => {
+      result.current.resetForConfigChange('project', '');
+    });
+    expect(result.current.repositories).toEqual([]);
+    expect(result.current.shouldLoadRepositories).toBe(false);
+
+    act(() => {
+      result.current.resetForConfigChange('provider', 'gitlab');
+    });
+    expect(result.current.projects).toEqual([]);
+    expect(result.current.repositories).toEqual([]);
+    expect(result.current.projectDiscoveryWarning).toBeNull();
+
+    act(() => {
+      result.current.resetDisconnectedState();
+    });
+    expect(result.current.projects).toEqual([]);
+    expect(result.current.repositories).toEqual([]);
+    expect(result.current.hasSuccessfulConnection).toBe(false);
   });
 
   test('useRepositoryDiagnostics actualiza request path y limpia error', () => {
@@ -124,6 +144,18 @@ describe('repository source hooks', () => {
       result.current.resetDiagnosticsError();
     });
     expect(result.current.diagnostics.lastError).toBeNull();
+
+    act(() => {
+      result.current.updateDiagnostics(null, {
+        provider: '',
+        organization: '',
+        project: '',
+        repositoryId: '',
+        personalAccessToken: '',
+        targetReviewer: '',
+      });
+    });
+    expect(result.current.diagnostics.requestPath).toBe('');
   });
 
   test('useRepositorySourceActions delega en state y diagnostics', () => {
@@ -210,6 +242,31 @@ describe('repository source hooks', () => {
     renderHook(() => actualEffectsModule.useRepositorySourceEffects({ config, configRef, state, refreshRepositories }));
     await Promise.resolve();
     expect(refreshRepositories).toHaveBeenCalled();
+    expect(state.setShouldLoadRepositories).toHaveBeenCalledWith(false);
+  });
+
+  test('useRepositorySourceEffects apaga la carga pendiente si falta config minima', () => {
+    const state = createStateMock();
+    state.shouldLoadRepositories = true;
+    const refreshRepositories = jest.fn();
+    const config = {
+      provider: 'azure-devops',
+      organization: 'acme',
+      project: '',
+      repositoryId: '',
+      personalAccessToken: '',
+      targetReviewer: '',
+    };
+
+    renderHook(() => actualEffectsModule.useRepositorySourceEffects({
+      config,
+      configRef: { current: { ...config } },
+      state,
+      refreshRepositories,
+    }));
+
+    expect(refreshRepositories).not.toHaveBeenCalled();
+    expect(state.setShouldLoadRepositories).toHaveBeenCalledWith(false);
   });
 
   test('useRepositorySourceOperations compone estado, acciones y api', () => {

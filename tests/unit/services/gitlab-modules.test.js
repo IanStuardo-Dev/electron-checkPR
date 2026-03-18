@@ -75,4 +75,57 @@ describe('gitlab modules', () => {
       expect.objectContaining({ uniqueName: 'luis', vote: 0 }),
     ]));
   });
+
+  test('getGitLabPullRequests soporta fallback a getGitLabProjects y normaliza author/draft', async () => {
+    gitlabApi.requestGitLabPaginated
+      .mockResolvedValueOnce([
+        { path_with_namespace: 'acme/repo-a', name: 'Repo A', web_url: 'https://gitlab.com/acme/repo-a' },
+      ])
+      .mockResolvedValueOnce([
+        {
+          iid: 11,
+          title: 'MR fallback',
+          description: '',
+          state: 'opened',
+          created_at: '2026-03-11T10:00:00.000Z',
+          source_branch: 'feature/y',
+          target_branch: 'main',
+          web_url: 'https://gitlab.com/acme/repo-a/-/merge_requests/11',
+          draft: false,
+          work_in_progress: true,
+          detailed_merge_status: '',
+          author: {},
+          reviewers: [],
+          assignees: [],
+        },
+      ]);
+    gitlabApi.requestGitLabJson.mockResolvedValue({
+      approved_by: [{ user: null }],
+    });
+
+    const prs = await getGitLabPullRequests({
+      organization: 'acme',
+      personalAccessToken: 'pat',
+      project: '',
+    });
+
+    expect(prs).toHaveLength(1);
+    expect(prs[0]).toEqual(expect.objectContaining({
+      repository: 'Repo A',
+      isDraft: true,
+      mergeStatus: 'unknown',
+      createdBy: expect.objectContaining({
+        displayName: 'Unknown author',
+      }),
+    }));
+  });
+
+  test('gitlab modules rechazan configuracion incompleta', async () => {
+    await expect(getGitLabRepositories({ organization: '', personalAccessToken: 'pat' }))
+      .rejects.toThrow('Namespace/group y token son obligatorios para GitLab.');
+    await expect(getGitLabBranches({ project: '', personalAccessToken: 'pat' }))
+      .rejects.toThrow('Proyecto y token son obligatorios para GitLab.');
+    await expect(getGitLabPullRequests({ organization: '', personalAccessToken: 'pat' }))
+      .rejects.toThrow('Namespace/group y token son obligatorios para GitLab.');
+  });
 });

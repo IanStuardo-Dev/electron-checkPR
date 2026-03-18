@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowPathIcon, ShieldExclamationIcon, SparklesIcon } from '@heroicons/react/24/outline';
-import { countActiveArchitectureDirectives } from '../../../../shared/codex/prompt-directives';
+import { countConfiguredArchitectureDirectives } from '../../../../codex/architecturePromptDirectives';
 
 export function countActiveDirectives(config: {
   promptDirectives: {
@@ -12,7 +12,7 @@ export function countActiveDirectives(config: {
     customInstructions: string;
   };
 }): number {
-  return countActiveArchitectureDirectives(config.promptDirectives);
+  return countConfiguredArchitectureDirectives(config.promptDirectives);
 }
 
 export const StatusRow = ({ label, value, ok }: { label: string; value: string; ok: boolean }) => (

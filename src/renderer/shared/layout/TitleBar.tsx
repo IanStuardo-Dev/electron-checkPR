@@ -96,6 +96,7 @@ interface TitleBarProps {
 
 interface WindowControlButtonsProps {
   isMaximized: boolean;
+  isFullScreen: boolean;
   onMinimize: () => Promise<void>;
   onToggleMaximize: () => Promise<void>;
   onClose: () => Promise<void>;
@@ -142,7 +143,7 @@ const DesktopTitleBarButton = ({
 );
 
 const MacWindowControls = ({
-  isMaximized,
+  isFullScreen,
   onMinimize,
   onToggleMaximize,
   onClose,
@@ -159,7 +160,7 @@ const MacWindowControls = ({
       toneClassName: 'bg-amber-400 ring-1 ring-amber-500/20 hover:bg-amber-500 focus-visible:outline-amber-500',
     },
     {
-      label: isMaximized ? 'Restore window' : 'Maximize window',
+      label: isFullScreen ? 'Exit full screen' : 'Enter full screen',
       onClick: onToggleMaximize,
       toneClassName: 'bg-emerald-400 ring-1 ring-emerald-500/20 hover:bg-emerald-500 focus-visible:outline-emerald-500',
     },
@@ -277,6 +278,7 @@ const TitleBar = ({ pathname }: TitleBarProps) => {
           {isMacOS ? (
             <MacWindowControls
               isMaximized={windowState.isMaximized}
+              isFullScreen={windowState.isFullScreen}
               onMinimize={handleMinimize}
               onToggleMaximize={handleToggleMaximize}
               onClose={handleClose}
@@ -289,6 +291,7 @@ const TitleBar = ({ pathname }: TitleBarProps) => {
         {supportsWindowControls && !isMacOS ? (
           <DesktopWindowControls
             isMaximized={windowState.isMaximized}
+            isFullScreen={windowState.isFullScreen}
             onMinimize={handleMinimize}
             onToggleMaximize={handleToggleMaximize}
             onClose={handleClose}

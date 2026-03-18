@@ -97,10 +97,10 @@ export function normalizeNamespace(value: string): string {
   return value.toLowerCase();
 }
 
-export function buildProject(project: { path_with_namespace: string }): RepositoryProject {
+export function buildProject(project: { path_with_namespace: string; name?: string }): RepositoryProject {
   return {
     id: project.path_with_namespace,
-    name: project.path_with_namespace,
+    name: project.name || project.path_with_namespace,
     state: 'active',
   };
 }

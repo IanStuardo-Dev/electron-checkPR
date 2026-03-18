@@ -43,7 +43,7 @@ describe('TitleBar', () => {
     await waitFor(() => {
       expect(
         screen.getAllByRole('button').map((button) => button.getAttribute('aria-label')),
-      ).toEqual(['Close window', 'Minimize window', 'Maximize window']);
+      ).toEqual(['Close window', 'Minimize window', 'Enter full screen']);
     });
   });
 });

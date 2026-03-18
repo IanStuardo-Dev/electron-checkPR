@@ -86,6 +86,37 @@ describe('provider PR snapshots', () => {
     expect(snapshot.partialReason).toMatch(/Azure DevOps no entrego patch textual/i);
   });
 
+  test('azure snapshot falla si no puede resolver la iteracion activa', async () => {
+    requestAzureJson.mockResolvedValueOnce({ value: [] });
+
+    await expect(getAzurePullRequestSnapshot(
+      { organization: 'acme', project: 'repo-a', personalAccessToken: 'pat' },
+      basePullRequest,
+      { excludedPathPatterns: '' },
+    )).rejects.toThrow('No fue posible resolver la iteracion activa');
+  });
+
+  test('azure snapshot usa repository del PR y status modified por defecto', async () => {
+    requestAzureJson
+      .mockResolvedValueOnce({ value: [{ id: 3 }] })
+      .mockResolvedValueOnce({
+        changeEntries: [
+          { item: { path: '/src/auth.ts' } },
+        ],
+      });
+
+    const snapshot = await getAzurePullRequestSnapshot(
+      { organization: 'acme', project: 'repo-a', personalAccessToken: 'pat', repositoryId: '   ' },
+      basePullRequest,
+      { excludedPathPatterns: '' },
+    );
+
+    expect(requestAzureJson.mock.calls[0][0]).toContain('/repositories/repo-a/pullRequests/7/iterations');
+    expect(snapshot.files).toEqual([
+      expect.objectContaining({ path: 'src/auth.ts', status: 'modified' }),
+    ]);
+  });
+
   test('gitlab snapshot marca diffs ausentes y respeta exclusiones', async () => {
     requestGitLabJson.mockResolvedValue({
       changes: [
@@ -104,5 +135,27 @@ describe('provider PR snapshots', () => {
     expect(snapshot.files[0].path).toBe('src/auth.ts');
     expect(snapshot.partialReason).toMatch(/Se excluyeron 1 archivos/i);
     expect(snapshot.partialReason).toMatch(/no incluyen diff textual/i);
+  });
+
+  test('gitlab snapshot normaliza estados added, removed y renamed', async () => {
+    requestGitLabJson.mockResolvedValue({
+      changes: [
+        { new_path: 'src/new.ts', old_path: 'src/new.ts', diff: '+const ok = true;', new_file: true, deleted_file: false, renamed_file: false },
+        { new_path: 'src/removed.ts', old_path: 'src/removed.ts', diff: '-const old = true;', new_file: false, deleted_file: true, renamed_file: false },
+        { new_path: 'src/renamed.ts', old_path: 'src/legacy.ts', diff: '@@', new_file: false, deleted_file: false, renamed_file: true },
+      ],
+    });
+
+    const snapshot = await getGitLabPullRequestSnapshot(
+      { project: 'group/repo-a', personalAccessToken: 'pat' },
+      basePullRequest,
+      { excludedPathPatterns: '' },
+    );
+
+    expect(snapshot.files).toEqual([
+      expect.objectContaining({ path: 'src/new.ts', status: 'added' }),
+      expect.objectContaining({ path: 'src/removed.ts', status: 'removed' }),
+      expect.objectContaining({ path: 'src/renamed.ts', status: 'renamed' }),
+    ]);
   });
 });

@@ -8,7 +8,7 @@ import {
   SettingsTextAreaField,
   SettingsToggleCard,
   settingsButtonClassName,
-} from '../../../../shared/ui/settings/SettingsPrimitives';
+} from '../../../../ui/configuration/ConfigurationPrimitives';
 import { countConfiguredPolicies } from './CodexIntegration.shared';
 import type { CodexIntegrationChangeHandler } from './CodexIntegration.shared';
 

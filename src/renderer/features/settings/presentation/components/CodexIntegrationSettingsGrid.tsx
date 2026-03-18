@@ -5,7 +5,7 @@ import {
   SettingsSelectField,
   SettingsStatTile,
   SettingsToggleCard,
-} from '../../../../shared/ui/settings/SettingsPrimitives';
+} from '../../../../ui/configuration/ConfigurationPrimitives';
 import type { CodexIntegrationChangeHandler } from './CodexIntegration.shared';
 
 interface CodexIntegrationSettingsGridProps {

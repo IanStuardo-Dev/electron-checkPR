@@ -1,5 +1,5 @@
 import React from 'react';
-import { SettingsNotice } from '../../../../shared/ui/settings/SettingsPrimitives';
+import { SettingsNotice } from '../../../../ui/configuration/ConfigurationPrimitives';
 
 interface ConnectionFeedbackProps {
   providerName: string;

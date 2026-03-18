@@ -54,10 +54,48 @@ describe('pull request analysis parts', () => {
     }))).toMatchObject({ riskScore: 55, shortSummary: 'Desde output_text' });
   });
 
+  test('response parser acepta payload estructurado dentro de output content', () => {
+    const parser = new PullRequestAnalysisResponseParser();
+
+    expect(parser.parse(JSON.stringify({
+      output: [
+        {
+          content: [
+            { text: 'not-json' },
+            {
+              text: JSON.stringify({
+                riskScore: 42,
+                shortSummary: 'Desde content',
+                topConcerns: ['auth'],
+                reviewChecklist: ['tests'],
+              }),
+            },
+          ],
+        },
+      ],
+    }))).toMatchObject({
+      riskScore: 42,
+      shortSummary: 'Desde content',
+      topConcerns: ['auth'],
+      reviewChecklist: ['tests'],
+    });
+  });
+
   test('response parser falla con payload invalido', () => {
     const parser = new PullRequestAnalysisResponseParser();
     expect(() => parser.parse('not-json')).toThrow(/respuesta invalida/i);
     expect(() => parser.parse(JSON.stringify({ foo: 'bar' }))).toThrow(/no devolvio salida estructurada/i);
+    expect(() => parser.parse(JSON.stringify({
+      output_text: '{"riskScore":"bad"}',
+      output: [
+        {
+          content: [
+            { text: '' },
+            { text: '{"riskScore":12}' },
+          ],
+        },
+      ],
+    }))).toThrow(/no devolvio salida estructurada/i);
   });
 
   test('openai client reintenta 429 y envia schema json', async () => {
@@ -94,6 +132,77 @@ describe('pull request analysis parts', () => {
     expect(lastCall[1].headers.Authorization).toBe('Bearer sk-test');
     expect(JSON.parse(lastCall[1].body).text.format.name).toBe('pull_request_analysis');
 
+    global.fetch = originalFetch;
+  });
+
+  test('openai client no reintenta si el signal ya fue abortado', async () => {
+    const originalFetch = global.fetch;
+    const controller = new AbortController();
+    controller.abort();
+    global.fetch = jest.fn().mockRejectedValue(new Error('Codex PR analysis failed (500): aborted upstream'));
+
+    const client = new OpenAIPullRequestAnalysisClient();
+
+    await expect(client.analyze({
+      request: {
+        apiKey: 'sk-test',
+        model: 'gpt-5.2-codex',
+      },
+      prompt: {
+        systemPrompt: 'system',
+        userPrompt: 'user',
+      },
+      signal: controller.signal,
+    })).rejects.toThrow('Codex PR analysis failed (500): aborted upstream');
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    global.fetch = originalFetch;
+  });
+
+  test('openai client no reintenta errores que no son instancias de Error', async () => {
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn().mockRejectedValue('boom');
+    const client = new OpenAIPullRequestAnalysisClient();
+
+    await expect(client.analyze({
+      request: {
+        apiKey: 'sk-test',
+        model: 'gpt-5.2-codex',
+      },
+      prompt: {
+        systemPrompt: 'system',
+        userPrompt: 'user',
+      },
+      signal: new AbortController().signal,
+    })).rejects.toBe('boom');
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    global.fetch = originalFetch;
+  });
+
+  test('openai client usa statusText cuando la respuesta de error llega vacia', async () => {
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      text: async () => '',
+      statusText: 'Bad Request',
+    });
+    const client = new OpenAIPullRequestAnalysisClient();
+
+    await expect(client.analyze({
+      request: {
+        apiKey: 'sk-test',
+        model: 'gpt-5.2-codex',
+      },
+      prompt: {
+        systemPrompt: 'system',
+        userPrompt: 'user',
+      },
+      signal: new AbortController().signal,
+    })).rejects.toThrow('Codex PR analysis failed (400): Bad Request');
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
     global.fetch = originalFetch;
   });
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { RepositorySourceDiagnostics, SavedConnectionConfig } from '../../../repository-source';
-import { SettingsModal, SettingsSectionCard, SettingsStatusBadge, SettingsSurfaceCard, settingsButtonClassName } from '../../../../shared/ui/settings/SettingsPrimitives';
+import { SettingsModal, SettingsSectionCard, SettingsStatusBadge, SettingsSurfaceCard, settingsButtonClassName } from '../../../../ui/configuration/ConfigurationPrimitives';
 
 export function SettingsDiagnosticsSection({
   activeProviderName,
