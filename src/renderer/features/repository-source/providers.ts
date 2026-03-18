@@ -38,3 +38,7 @@ export function getRepositoryProvider(kind: RepositoryProviderSelection): Reposi
 
   return repositoryProviders.find((provider) => provider.kind === kind) || null;
 }
+
+export function countAvailableRepositoryProviders(): number {
+  return repositoryProviders.filter((provider) => provider.status === 'available').length;
+}

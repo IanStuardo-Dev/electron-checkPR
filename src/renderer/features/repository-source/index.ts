@@ -1,19 +1,17 @@
-export { repositoryProviders, getRepositoryProvider } from './providers';
+export {
+  repositoryProviders,
+  getRepositoryProvider,
+  countAvailableRepositoryProviders,
+} from './providers';
 export type {
   RepositorySourceDiagnostics,
   RepositorySourceScope,
   SavedConnectionConfig,
 } from './types';
-export { default as ConnectionPanel } from './presentation/components/ConnectionPanel';
 export { default as ConnectionSummary } from './presentation/components/ConnectionSummary';
+export { RepositorySourceProviderCatalog } from './presentation/components/RepositorySourceProviderCatalog';
 export {
   RepositorySourceProvider,
   useRepositorySourceContext,
 } from './presentation/context/RepositorySourceContext';
-export {
-  fetchBranches,
-  fetchProjects,
-  fetchPullRequests,
-  fetchRepositories,
-  openReviewItem,
-} from './data/repositorySourceIpc';
+export { fetchBranches } from './data/repositorySourceIpc';
