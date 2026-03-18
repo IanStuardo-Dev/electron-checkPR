@@ -3,7 +3,7 @@ import type { RepositoryProject, RepositorySummary } from '../../../../../types/
 import {
   SettingsField,
   SettingsSelectField,
-} from '../../../../shared/ui/settings/SettingsPrimitives';
+} from '../../../../ui/configuration/ConfigurationPrimitives';
 import type { SavedConnectionConfig } from '../../types';
 
 interface ConnectionProjectScopeProps {

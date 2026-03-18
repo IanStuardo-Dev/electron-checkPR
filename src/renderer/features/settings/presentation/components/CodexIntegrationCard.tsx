@@ -5,7 +5,7 @@ import {
   SettingsSectionCard,
   SettingsStatusBadge,
   settingsButtonClassName,
-} from '../../../../shared/ui/settings/SettingsPrimitives';
+} from '../../../../ui/configuration/ConfigurationPrimitives';
 import { CodexIntegrationPoliciesModal } from './CodexIntegrationPoliciesModal';
 import { CodexIntegrationSettingsGrid } from './CodexIntegrationSettingsGrid';
 

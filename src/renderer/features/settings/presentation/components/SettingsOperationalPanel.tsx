@@ -3,7 +3,7 @@ import type { RepositoryProviderDefinition } from '../../../../../types/reposito
 import type { DashboardSummary } from '../../../../shared/dashboard/summary.types';
 import { ConnectionSummary } from '../../../repository-source';
 import type { SavedConnectionConfig } from '../../../repository-source';
-import { SettingsSectionCard, SettingsStatTile, SettingsStatusBadge, SettingsSurfaceCard } from '../../../../shared/ui/settings/SettingsPrimitives';
+import { SettingsSectionCard, SettingsStatTile, SettingsStatusBadge, SettingsSurfaceCard } from '../../../../ui/configuration/ConfigurationPrimitives';
 
 export function SettingsOperationalSection({
   activeProvider,

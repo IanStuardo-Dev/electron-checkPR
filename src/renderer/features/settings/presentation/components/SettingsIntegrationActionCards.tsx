@@ -1,7 +1,7 @@
 import React from 'react';
 import type { DashboardSummary } from '../../../../shared/dashboard/summary.types';
 import type { CodexIntegrationConfig } from '../../types';
-import { SettingsActionCard, SettingsStatusBadge } from '../../../../shared/ui/settings/SettingsPrimitives';
+import { SettingsActionCard, SettingsStatusBadge } from '../../../../ui/configuration/ConfigurationPrimitives';
 
 interface SettingsIntegrationActionCardsProps {
   activeProviderLabel: string;

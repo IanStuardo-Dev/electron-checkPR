@@ -2,7 +2,7 @@ import React from 'react';
 import type { RepositoryProviderKind, RepositoryProviderDefinition } from '../../../../../types/repository';
 import { ConnectionPanel, repositoryProviders } from '../../../repository-source';
 import RepositoryProviderCard from './RepositoryProviderCard';
-import { SettingsModal } from '../../../../shared/ui/settings/SettingsPrimitives';
+import { SettingsModal } from '../../../../ui/configuration/ConfigurationPrimitives';
 import type { SettingsProviderConnectionProps } from './SettingsProvider.types';
 
 interface SettingsProviderModalProps extends SettingsProviderConnectionProps {
