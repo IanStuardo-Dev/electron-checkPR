@@ -1,101 +1,23 @@
-import React from 'react';
-import { getRepositoryProvider } from '../../providers';
-import { buildScopeLabel, getProviderDisplayName } from '../../application/repositorySourceDiagnostics';
-import { repositorySourceConfigStorageAdapter } from '../../data/repositorySourceConfigStorageAdapter';
-import { useRepositorySourceBootstrap } from './useRepositorySourceBootstrap';
-import { useRepositorySourceConfig } from './useRepositorySourceConfig';
 import { useRepositorySourceDerived } from './useRepositorySourceDerived';
-import { useRepositorySourceController } from './useRepositorySourceController';
-import { useRepositorySourceSnapshotPersistence } from './useRepositorySourceSnapshotPersistence';
+import { useRepositorySourceCoordinator } from './useRepositorySourceCoordinator';
+import { useRepositorySourceViewModel } from './useRepositorySourceViewModel';
+import { useRepositorySourceWiring } from './useRepositorySourceWiring';
 
 export function useRepositorySource() {
-  const configHook = useRepositorySourceConfig({
-    storage: repositorySourceConfigStorageAdapter,
-  });
-  const { config, configRef, updateConfig, selectProjectConfig, hydrateSecret, migrateLegacyStorage } = configHook;
-  const { applyHydratedSecret } = configHook;
-  const persistSnapshot = useRepositorySourceSnapshotPersistence(configRef);
-  const activeProvider = React.useMemo(() => getRepositoryProvider(config.provider), [config.provider]);
-  const activeProviderName = React.useMemo(() => getProviderDisplayName(activeProvider), [activeProvider]);
-  const baseScopeLabel = React.useMemo(() => buildScopeLabel(config, null, null), [config]);
-
-  const {
-    pullRequests,
-    projects,
-    repositories,
-    error,
-    projectDiscoveryWarning,
-    isLoading,
-    projectsLoading,
-    repositoriesLoading,
-    lastUpdatedAt,
-    hasSuccessfulConnection,
-    diagnostics,
-    isConnectionPanelOpen,
-    resetForConfigChange,
-    refreshPullRequests,
-    discoverProjects,
-    selectProject,
-    openPullRequest,
-    openConnectionPanel,
-  } = useRepositorySourceController({
-    config,
-    configRef,
-    activeProviderName,
-    scopeLabel: baseScopeLabel,
-    onPersistSnapshot: persistSnapshot,
-  });
+  const wiring = useRepositorySourceWiring();
+  const controller = useRepositorySourceCoordinator({ wiring });
 
   const derived = useRepositorySourceDerived({
-    config,
-    projects,
-    repositories,
-    pullRequests,
-    lastUpdatedAt,
-    hasSuccessfulConnection,
+    config: wiring.config,
+    projects: controller.projects,
+    repositories: controller.repositories,
+    pullRequests: controller.pullRequests,
+    lastUpdatedAt: controller.lastUpdatedAt,
+    hasSuccessfulConnection: controller.hasSuccessfulConnection,
   });
-
-  useRepositorySourceBootstrap({
-    migrateLegacyStorage,
-    applyHydratedSecret,
-    hydrateSecret,
-    refreshPullRequests,
+  return useRepositorySourceViewModel({
+    wiring,
+    controller,
+    derived,
   });
-
-  const handleConfigChange = React.useCallback((name: keyof typeof config, value: string) => {
-    resetForConfigChange(name, value);
-    updateConfig(name, value);
-  }, [resetForConfigChange, updateConfig]);
-
-  const handleProjectSelect = React.useCallback((project: string) => {
-    selectProject(project);
-    selectProjectConfig(project);
-  }, [selectProject, selectProjectConfig]);
-
-  return {
-    activeProvider,
-    activeProviderName,
-    config,
-    error,
-    isLoading,
-    projects,
-    projectsLoading,
-    projectDiscoveryWarning,
-    repositories,
-    repositoriesLoading,
-    hasCredentialsInSession: derived.hasCredentialsInSession,
-    hasSuccessfulConnection,
-    isConnectionReady: derived.isConnectionReady,
-    diagnostics,
-    selectedProjectName: derived.selectedProjectName,
-    selectedRepositoryName: derived.selectedRepositoryName,
-    summary: derived.summary,
-    isConnectionPanelOpen,
-    updateConfig: handleConfigChange,
-    discoverProjects,
-    selectProject: handleProjectSelect,
-    refreshPullRequests,
-    openPullRequest,
-    openConnectionPanel,
-  };
 }
