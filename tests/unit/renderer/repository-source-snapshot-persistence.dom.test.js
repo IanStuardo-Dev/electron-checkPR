@@ -1,6 +1,6 @@
 const { renderHook } = require('@testing-library/react');
 
-jest.mock('../../../src/renderer/features/history/data/historyStorage', () => ({
+jest.mock('../../../src/renderer/shared/storage/dashboardHistoryStorage', () => ({
   persistDashboardSnapshot: jest.fn(),
 }));
 
@@ -17,7 +17,7 @@ jest.mock('../../../src/renderer/shared/dashboard/summary', () => ({
   })),
 }));
 
-const { persistDashboardSnapshot } = require('../../../src/renderer/features/history/data/historyStorage');
+const { persistDashboardSnapshot } = require('../../../src/renderer/shared/storage/dashboardHistoryStorage');
 const { useRepositorySourceSnapshotPersistence } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceSnapshotPersistence');
 
 describe('useRepositorySourceSnapshotPersistence', () => {

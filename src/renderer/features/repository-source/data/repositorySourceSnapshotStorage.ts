@@ -1,5 +1,5 @@
 import type { ReviewItem } from '../../../../types/repository';
-import { persistDashboardSnapshot } from '../../history';
+import { persistDashboardSnapshot } from '../../../shared/storage/dashboardHistoryStorage';
 import { buildRepositorySourceSnapshotRecord } from '../application/repositorySourcePersistence';
 import type { SavedConnectionConfig } from '../types';
 
