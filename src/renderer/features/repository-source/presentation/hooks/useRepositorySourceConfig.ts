@@ -2,6 +2,7 @@ import React from 'react';
 import {
   hydrateConnectionSecret,
   loadConnectionConfig,
+  migrateLegacyRepositorySourceStorage,
   persistConnectionConfig,
 } from '../../data/repositorySourceStorage';
 import { getRepositorySourceProviderBehavior } from '../../application/repositorySourceProviderBehavior';
@@ -15,6 +16,7 @@ interface UseRepositorySourceConfigResult {
   selectProjectConfig: (project: string) => void;
   applyHydratedSecret: (value: string) => SavedConnectionConfig;
   hydrateSecret: () => Promise<string>;
+  migrateLegacyStorage: () => Promise<void>;
 }
 
 export function useRepositorySourceConfig(): UseRepositorySourceConfigResult {
@@ -69,6 +71,7 @@ export function useRepositorySourceConfig(): UseRepositorySourceConfigResult {
   }, []);
 
   const hydrateSecret = React.useCallback(() => hydrateConnectionSecret(), []);
+  const migrateLegacyStorage = React.useCallback(() => migrateLegacyRepositorySourceStorage(), []);
 
   return {
     config,
@@ -77,5 +80,6 @@ export function useRepositorySourceConfig(): UseRepositorySourceConfigResult {
     selectProjectConfig,
     applyHydratedSecret,
     hydrateSecret,
+    migrateLegacyStorage,
   };
 }

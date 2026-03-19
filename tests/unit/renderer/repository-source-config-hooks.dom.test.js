@@ -4,6 +4,7 @@ jest.mock('../../../src/renderer/features/repository-source/data/repositorySourc
   loadConnectionConfig: jest.fn(),
   persistConnectionConfig: jest.fn().mockResolvedValue(undefined),
   hydrateConnectionSecret: jest.fn(),
+  migrateLegacyRepositorySourceStorage: jest.fn().mockResolvedValue(undefined),
 }));
 
 const storage = require('../../../src/renderer/features/repository-source/data/repositorySourceStorage');
@@ -180,6 +181,7 @@ describe('repository source config hooks', () => {
     }));
 
     renderHook(() => useRepositorySourceBootstrap({
+      migrateLegacyStorage: jest.fn().mockResolvedValue(undefined),
       hydrateSecret: jest.fn().mockResolvedValue('pat-restored'),
       applyHydratedSecret,
       refreshPullRequests,
@@ -196,6 +198,7 @@ describe('repository source config hooks', () => {
     const applyHydratedSecret = jest.fn();
 
     renderHook(() => useRepositorySourceBootstrap({
+      migrateLegacyStorage: jest.fn().mockResolvedValue(undefined),
       hydrateSecret: jest.fn().mockRejectedValue(new Error('boom')),
       applyHydratedSecret,
       refreshPullRequests,
@@ -214,6 +217,7 @@ describe('repository source config hooks', () => {
     const applyHydratedSecret = jest.fn();
 
     renderHook(() => useRepositorySourceBootstrap({
+      migrateLegacyStorage: jest.fn().mockResolvedValue(undefined),
       hydrateSecret: jest.fn().mockResolvedValue(''),
       applyHydratedSecret,
       refreshPullRequests,
@@ -239,6 +243,7 @@ describe('repository source config hooks', () => {
     }));
 
     renderHook(() => useRepositorySourceBootstrap({
+      migrateLegacyStorage: jest.fn().mockResolvedValue(undefined),
       hydrateSecret: jest.fn().mockResolvedValue('pat-restored'),
       applyHydratedSecret,
       refreshPullRequests,
@@ -249,6 +254,25 @@ describe('repository source config hooks', () => {
     });
 
     expect(refreshPullRequests).not.toHaveBeenCalled();
+  });
+
+  test('useRepositorySourceBootstrap corre la migracion legacy antes de hidratar el secreto', async () => {
+    const migrateLegacyStorage = jest.fn().mockResolvedValue(undefined);
+    const hydrateSecret = jest.fn().mockResolvedValue('');
+
+    renderHook(() => useRepositorySourceBootstrap({
+      migrateLegacyStorage,
+      hydrateSecret,
+      applyHydratedSecret: jest.fn(),
+      refreshPullRequests: jest.fn(),
+    }));
+
+    await waitFor(() => {
+      expect(migrateLegacyStorage).toHaveBeenCalled();
+      expect(hydrateSecret).toHaveBeenCalled();
+    });
+
+    expect(migrateLegacyStorage.mock.invocationCallOrder[0]).toBeLessThan(hydrateSecret.mock.invocationCallOrder[0]);
   });
 
   test('useRepositorySourceDerived calcula nombres seleccionados y readiness', () => {

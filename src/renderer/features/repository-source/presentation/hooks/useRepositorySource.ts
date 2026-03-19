@@ -8,7 +8,7 @@ import { useRepositorySourceSnapshotPersistence } from './useRepositorySourceSna
 
 export function useRepositorySource() {
   const configHook = useRepositorySourceConfig();
-  const { config, configRef, updateConfig, selectProjectConfig, hydrateSecret } = configHook;
+  const { config, configRef, updateConfig, selectProjectConfig, hydrateSecret, migrateLegacyStorage } = configHook;
   const { applyHydratedSecret } = configHook;
   const { activeProviderName, baseScopeLabel } = useRepositorySourceMetadata(config);
   const persistSnapshot = useRepositorySourceSnapshotPersistence(configRef);
@@ -50,6 +50,7 @@ export function useRepositorySource() {
   });
 
   useRepositorySourceBootstrap({
+    migrateLegacyStorage,
     applyHydratedSecret,
     hydrateSecret,
     refreshPullRequests,
