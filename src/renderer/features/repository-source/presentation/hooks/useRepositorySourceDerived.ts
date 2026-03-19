@@ -1,8 +1,7 @@
 import React from 'react';
 import type { RepositoryProject, RepositorySummary, ReviewItem } from '../../../../../types/repository';
-import { getRepositoryProvider } from '../../providers';
 import { buildDashboardSummary } from '../../../../shared/dashboard/summary';
-import { buildScopeLabel, getProviderDisplayName } from '../../application/repositorySourceDiagnostics';
+import { buildScopeLabel } from '../../application/repositorySourceDiagnostics';
 import type { SavedConnectionConfig } from '../../types';
 
 interface UseRepositorySourceDerivedOptions {
@@ -22,9 +21,6 @@ export function useRepositorySourceDerived({
   lastUpdatedAt,
   hasSuccessfulConnection,
 }: UseRepositorySourceDerivedOptions) {
-  const activeProvider = React.useMemo(() => getRepositoryProvider(config.provider), [config.provider]);
-  const activeProviderName = getProviderDisplayName(activeProvider);
-
   const hasCredentialsInSession = Boolean(
     config.provider && config.organization && config.personalAccessToken,
   );
@@ -57,8 +53,6 @@ export function useRepositorySourceDerived({
   );
 
   return {
-    activeProvider,
-    activeProviderName,
     hasCredentialsInSession,
     isConnectionReady,
     selectedProjectName,

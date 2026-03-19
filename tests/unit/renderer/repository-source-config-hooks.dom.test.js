@@ -292,7 +292,6 @@ describe('repository source config hooks', () => {
       hasSuccessfulConnection: true,
     }));
 
-    expect(result.current.activeProviderName).toBe('GitLab');
     expect(result.current.hasCredentialsInSession).toBe(true);
     expect(result.current.isConnectionReady).toBe(true);
     expect(result.current.selectedProjectName).toBe('Platform API');
@@ -317,8 +316,6 @@ describe('repository source config hooks', () => {
       hasSuccessfulConnection: false,
     }));
 
-    expect(result.current.activeProvider).toBeNull();
-    expect(result.current.activeProviderName).toBe('Sin provider seleccionado');
     expect(result.current.hasCredentialsInSession).toBe(false);
     expect(result.current.isConnectionReady).toBe(false);
     expect(result.current.selectedProjectName).toBe('manual-project');
