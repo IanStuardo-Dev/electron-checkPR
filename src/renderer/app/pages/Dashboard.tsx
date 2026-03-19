@@ -14,8 +14,7 @@ import {
   PullRequestAiReviewModal,
   usePullRequestAiReviews,
 } from '../../features/pull-request-ai';
-import { ConnectionSummary } from '../../features/repository-source/summary';
-import { useRepositorySourceContext } from '../../features/repository-source/context';
+import { ConnectionSummary, useRepositorySourceContext } from '../../features/repository-source';
 import { useCodexSettings } from '../../features/settings';
 
 const Dashboard = () => {

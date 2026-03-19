@@ -9,7 +9,7 @@ import {
   canRunRepositoryAnalysis,
   isRepositoryAnalysisStrictModeBlocked,
 } from '../../application/repositoryAnalysisGuards';
-import type { SavedConnectionConfig } from '../../../repository-source/contracts';
+import type { SavedConnectionConfig } from '../../../repository-source';
 import type { CodexIntegrationConfig } from '../../../settings';
 import { useRepositoryBranches } from './useRepositoryBranches';
 

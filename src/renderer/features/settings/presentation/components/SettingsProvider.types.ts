@@ -1,5 +1,5 @@
 import type { RepositoryProject, RepositorySummary } from '../../../../../types/repository';
-import type { SavedConnectionConfig } from '../../../repository-source/contracts';
+import type { SavedConnectionConfig } from '../../../repository-source';
 
 export interface SettingsProviderConnectionProps {
   activeProviderName: string;

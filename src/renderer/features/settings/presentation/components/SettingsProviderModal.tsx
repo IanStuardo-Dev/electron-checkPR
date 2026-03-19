@@ -1,6 +1,6 @@
 import React from 'react';
 import type { RepositoryProviderDefinition } from '../../../../../types/repository';
-import { RepositorySourceProviderCatalog } from '../../../repository-source/provider-catalog';
+import { RepositorySourceProviderCatalog } from '../../../repository-source';
 import RepositoryProviderCard from './RepositoryProviderCard';
 import SettingsSectionModal from './SettingsSectionModal';
 import type { SettingsProviderConnectionProps } from './SettingsProvider.types';

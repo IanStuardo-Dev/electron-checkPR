@@ -1,5 +1,5 @@
 import React from 'react';
-import { useRepositorySourceContext } from '../../features/repository-source/context';
+import { useRepositorySourceContext } from '../../features/repository-source';
 import {
   SettingsDiagnosticsSection,
   SettingsHero,

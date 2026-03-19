@@ -1,8 +1,8 @@
 import React from 'react';
 import type { RepositoryProviderDefinition } from '../../../../../types/repository';
 import type { DashboardSummary } from '../../../../shared/dashboard/summary.types';
-import { ConnectionSummary } from '../../../repository-source/summary';
-import type { SavedConnectionConfig } from '../../../repository-source/contracts';
+import { ConnectionSummary } from '../../../repository-source';
+import type { SavedConnectionConfig } from '../../../repository-source';
 import { SettingsSectionCard, SettingsStatTile, SettingsStatusBadge, SettingsSurfaceCard } from '../../../../ui/configuration/ConfigurationPrimitives';
 
 export function SettingsOperationalSection({

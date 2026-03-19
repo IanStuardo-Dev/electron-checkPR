@@ -1,6 +1,6 @@
 import React from 'react';
 import { CircleStackIcon, CpuChipIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
-import { countAvailableRepositoryProviders } from '../../../repository-source/providers.public';
+import { countAvailableRepositoryProviders } from '../../../repository-source';
 
 export function SettingsHero({
   isConnectionReady,
