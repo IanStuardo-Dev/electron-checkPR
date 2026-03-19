@@ -1,7 +1,6 @@
 import type { AzureBranch, AzureConnectionConfig, AzureProject, AzureRepository, PullRequest } from '../../types/azure';
 import type { PullRequestSnapshot, RepositorySnapshot } from '../../types/analysis';
 import type { PullRequestSnapshotOptions, RepositorySnapshotOptions } from '../../types/repository';
-import { normalizeOrganization, normalizeProject, readAzureResponse } from './azure.api';
 import { getAzureBranches, getAzureProjects, getAzureRepositories } from './azure.repositories';
 import { getAzurePullRequests } from './azure.pull-requests';
 import { getAzurePullRequestSnapshot } from './azure.pr-snapshot';
@@ -39,11 +38,3 @@ export class PullRequestService {
     return getAzureRepositorySnapshot(config, options);
   }
 }
-
-export const pullRequestServiceInternals = {
-  normalizeOrganization,
-  normalizeProject,
-  readAzureResponse,
-};
-
-export const pullRequestService = new PullRequestService();
