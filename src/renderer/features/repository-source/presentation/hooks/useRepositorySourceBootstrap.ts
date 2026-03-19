@@ -15,6 +15,12 @@ export function useRepositorySourceBootstrap({
   applyHydratedSecret,
   refreshPullRequests,
 }: UseRepositorySourceBootstrapOptions) {
+  const refreshPullRequestsRef = React.useRef(refreshPullRequests);
+
+  React.useEffect(() => {
+    refreshPullRequestsRef.current = refreshPullRequests;
+  }, [refreshPullRequests]);
+
   React.useEffect(() => {
     let isMounted = true;
 
@@ -27,7 +33,7 @@ export function useRepositorySourceBootstrap({
 
         const nextConfig = applyHydratedSecret(personalAccessToken);
         if (hasMinimumPullRequestSyncConfig(nextConfig)) {
-          void refreshPullRequests();
+          void refreshPullRequestsRef.current();
         }
       })
       .catch(() => undefined);
@@ -35,5 +41,5 @@ export function useRepositorySourceBootstrap({
     return () => {
       isMounted = false;
     };
-  }, [applyHydratedSecret, hydrateSecret, migrateLegacyStorage, refreshPullRequests]);
+  }, [applyHydratedSecret, hydrateSecret, migrateLegacyStorage]);
 }
