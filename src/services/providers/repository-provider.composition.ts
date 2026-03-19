@@ -1,4 +1,5 @@
 import type { RepositoryProviderPort } from './repository-provider.port';
+import type { RepositoryProviderModule } from './repository-provider.module';
 import { RepositoryProviderRegistry } from './repository-provider.registry';
 
 export function createRepositoryProviderRegistry(providers: RepositoryProviderPort[] = []) {
@@ -7,3 +8,6 @@ export function createRepositoryProviderRegistry(providers: RepositoryProviderPo
   return registry;
 }
 
+export function createRepositoryProviderRegistryFromModules(modules: RepositoryProviderModule[] = []) {
+  return createRepositoryProviderRegistry(modules.map((module) => module.createPort()));
+}

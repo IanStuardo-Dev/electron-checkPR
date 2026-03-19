@@ -1,14 +1,14 @@
 import { registerIpcHandlers } from './ipc/register';
 import { createWindow } from './main-window';
-import { buildDefaultRepositoryProviderPorts } from '../services/providers/repository-provider.bootstrap';
-import { createRepositoryProviderRegistry } from '../services/providers/repository-provider.composition';
+import { buildDefaultRepositoryProviderModules } from '../services/providers/repository-provider.bootstrap';
+import { createRepositoryProviderRegistryFromModules } from '../services/providers/repository-provider.composition';
 import { RepositoryAnalysisSnapshotProvider } from '../services/analysis/repository-analysis.snapshot-provider';
 import { PullRequestAnalysisSnapshotProvider } from '../services/analysis/pull-request-analysis.snapshot-provider';
 import { createRepositoryAnalysisService } from '../services/analysis/repository-analysis.factory';
 import { createPullRequestAnalysisService } from '../services/analysis/pull-request-analysis.factory';
 
 export function createApplicationServices() {
-  const providerRegistry = createRepositoryProviderRegistry(buildDefaultRepositoryProviderPorts());
+  const providerRegistry = createRepositoryProviderRegistryFromModules(buildDefaultRepositoryProviderModules());
   const repositoryAnalysisService = createRepositoryAnalysisService({
     snapshotProvider: new RepositoryAnalysisSnapshotProvider(providerRegistry),
   });

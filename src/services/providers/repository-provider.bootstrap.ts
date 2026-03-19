@@ -1,22 +1,17 @@
-import { pullRequestService } from '../azure/pr.service';
-import { gitHubRepositoryService } from '../github/repository.service';
-import { gitLabRepositoryService } from '../gitlab/repository.service';
-import type { RepositoryProviderKind } from '../../types/repository';
-import type { RepositoryProviderPort, RepositoryProviderService } from './repository-provider.port';
+import { azureProviderModule } from '../azure/azure.provider-module';
+import { githubProviderModule } from '../github/github.provider-module';
+import { gitlabProviderModule } from '../gitlab/gitlab.provider-module';
+import type { RepositoryProviderPort } from './repository-provider.port';
+import type { RepositoryProviderModule } from './repository-provider.module';
 
-function createProviderPort(
-  kind: RepositoryProviderKind,
-  service: RepositoryProviderService,
-): RepositoryProviderPort {
-  return Object.assign(service, {
-    kind,
-  });
+export function buildDefaultRepositoryProviderModules(): RepositoryProviderModule[] {
+  return [
+    azureProviderModule,
+    githubProviderModule,
+    gitlabProviderModule,
+  ];
 }
 
 export function buildDefaultRepositoryProviderPorts(): RepositoryProviderPort[] {
-  return [
-    createProviderPort('azure-devops', pullRequestService),
-    createProviderPort('github', gitHubRepositoryService),
-    createProviderPort('gitlab', gitLabRepositoryService),
-  ];
+  return buildDefaultRepositoryProviderModules().map((module) => module.createPort());
 }

@@ -2,6 +2,13 @@ const bootstrap = require('../../../src/services/providers/repository-provider.b
 const { pullRequestService } = require('../../../src/services/azure/pr.service');
 
 describe('repository provider bootstrap', () => {
+  test('construye los modules por defecto sin depender de estado global', () => {
+    const modules = bootstrap.buildDefaultRepositoryProviderModules();
+
+    expect(modules).toHaveLength(3);
+    expect(modules.map((module) => module.kind)).toEqual(['azure-devops', 'github', 'gitlab']);
+  });
+
   test('construye los providers por defecto sin depender de estado global', () => {
     const providers = bootstrap.buildDefaultRepositoryProviderPorts();
 
@@ -10,7 +17,7 @@ describe('repository provider bootstrap', () => {
   });
 
   test('cada provider port expone las funciones del servicio subyacente', () => {
-    const [azureProvider] = bootstrap.buildDefaultRepositoryProviderPorts();
+    const [azureProvider] = bootstrap.buildDefaultRepositoryProviderModules().map((module) => module.createPort());
 
     expect(typeof azureProvider.getProjects).toBe('function');
     expect(typeof azureProvider.getRepositories).toBe('function');
@@ -21,7 +28,7 @@ describe('repository provider bootstrap', () => {
   });
 
   test('el provider delega las llamadas al servicio concreto', async () => {
-    const [azureProvider] = bootstrap.buildDefaultRepositoryProviderPorts();
+    const [azureProvider] = bootstrap.buildDefaultRepositoryProviderModules().map((module) => module.createPort());
     jest.spyOn(pullRequestService, 'getProjects').mockResolvedValueOnce([{ id: '1', name: 'Core' }]);
     jest.spyOn(pullRequestService, 'getRepositories').mockResolvedValueOnce([{ id: 'repo', name: 'repo' }]);
     jest.spyOn(pullRequestService, 'getBranches').mockResolvedValueOnce([{ name: 'main', objectId: '1', isDefault: true }]);
