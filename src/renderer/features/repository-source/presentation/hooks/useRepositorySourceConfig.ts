@@ -1,13 +1,12 @@
 import React from 'react';
-import {
-  hydrateConnectionSecret,
-  loadConnectionConfig,
-  migrateLegacyRepositorySourceStorage,
-  persistConnectionConfig,
-} from '../../data/repositorySourceStorage';
 import { getRepositorySourceProviderBehavior } from '../../application/repositorySourceProviderBehavior';
+import type { RepositorySourceConfigStoragePort } from '../../application/repositorySourceConfigStoragePort';
 import type { SavedConnectionConfig } from '../../types';
 import type { RepositoryProviderSelection } from '../../../../../types/repository';
+
+interface UseRepositorySourceConfigOptions {
+  storage: RepositorySourceConfigStoragePort;
+}
 
 interface UseRepositorySourceConfigResult {
   config: SavedConnectionConfig;
@@ -19,15 +18,17 @@ interface UseRepositorySourceConfigResult {
   migrateLegacyStorage: () => Promise<void>;
 }
 
-export function useRepositorySourceConfig(): UseRepositorySourceConfigResult {
-  const initialConfig = React.useMemo(() => loadConnectionConfig(), []);
+export function useRepositorySourceConfig({
+  storage,
+}: UseRepositorySourceConfigOptions): UseRepositorySourceConfigResult {
+  const initialConfig = React.useMemo(() => storage.loadConfig(), [storage]);
   const [config, setConfig] = React.useState<SavedConnectionConfig>(initialConfig);
   const configRef = React.useRef<SavedConnectionConfig>(initialConfig);
 
   React.useEffect(() => {
     configRef.current = config;
-    void persistConnectionConfig(config);
-  }, [config]);
+    void storage.persistConfig(config);
+  }, [config, storage]);
 
   const updateConfig = React.useCallback((name: keyof SavedConnectionConfig, value: string) => {
     setConfig((current) => {
@@ -70,8 +71,8 @@ export function useRepositorySourceConfig(): UseRepositorySourceConfigResult {
     return nextConfig;
   }, []);
 
-  const hydrateSecret = React.useCallback(() => hydrateConnectionSecret(), []);
-  const migrateLegacyStorage = React.useCallback(() => migrateLegacyRepositorySourceStorage(), []);
+  const hydrateSecret = React.useCallback(() => storage.hydrateSecret(), [storage]);
+  const migrateLegacyStorage = React.useCallback(() => storage.migrateLegacyStorage(), [storage]);
 
   return {
     config,

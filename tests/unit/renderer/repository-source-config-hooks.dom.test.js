@@ -1,33 +1,30 @@
 const { renderHook, act, waitFor } = require('@testing-library/react');
 
-jest.mock('../../../src/renderer/features/repository-source/data/repositorySourceStorage', () => ({
-  loadConnectionConfig: jest.fn(),
-  persistConnectionConfig: jest.fn().mockResolvedValue(undefined),
-  hydrateConnectionSecret: jest.fn(),
-  migrateLegacyRepositorySourceStorage: jest.fn().mockResolvedValue(undefined),
-}));
-
-const storage = require('../../../src/renderer/features/repository-source/data/repositorySourceStorage');
 const { useRepositorySourceConfig } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceConfig');
 const { useRepositorySourceBootstrap } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceBootstrap');
 const { useRepositorySourceDerived } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceDerived');
 
 describe('repository source config hooks', () => {
+  let storage;
+
   beforeEach(() => {
-    jest.clearAllMocks();
-    storage.loadConnectionConfig.mockReturnValue({
-      provider: '',
-      organization: '',
-      project: '',
-      repositoryId: '',
-      personalAccessToken: '',
-      targetReviewer: '',
-    });
-    storage.hydrateConnectionSecret.mockResolvedValue('');
+    storage = {
+      loadConfig: jest.fn().mockReturnValue({
+        provider: '',
+        organization: '',
+        project: '',
+        repositoryId: '',
+        personalAccessToken: '',
+        targetReviewer: '',
+      }),
+      persistConfig: jest.fn().mockResolvedValue(undefined),
+      hydrateSecret: jest.fn().mockResolvedValue(''),
+      migrateLegacyStorage: jest.fn().mockResolvedValue(undefined),
+    };
   });
 
   test('useRepositorySourceConfig resetea scope al cambiar provider y persiste config segura', async () => {
-    storage.loadConnectionConfig.mockReturnValue({
+    storage.loadConfig.mockReturnValue({
       provider: 'azure-devops',
       organization: 'org-a',
       project: 'project-a',
@@ -36,7 +33,7 @@ describe('repository source config hooks', () => {
       targetReviewer: 'ian',
     });
 
-    const { result } = renderHook(() => useRepositorySourceConfig());
+    const { result } = renderHook(() => useRepositorySourceConfig({ storage }));
 
     await act(async () => {
       result.current.updateConfig('provider', 'github');
@@ -52,7 +49,7 @@ describe('repository source config hooks', () => {
     });
 
     await waitFor(() => {
-      expect(storage.persistConnectionConfig).toHaveBeenLastCalledWith({
+      expect(storage.persistConfig).toHaveBeenLastCalledWith({
         provider: 'github',
         organization: '',
         project: '',
@@ -64,7 +61,7 @@ describe('repository source config hooks', () => {
   });
 
   test('useRepositorySourceConfig asigna repositoryId segun provider al seleccionar proyecto', async () => {
-    storage.loadConnectionConfig.mockReturnValue({
+    storage.loadConfig.mockReturnValue({
       provider: 'github',
       organization: 'acme',
       project: '',
@@ -73,7 +70,7 @@ describe('repository source config hooks', () => {
       targetReviewer: '',
     });
 
-    const { result } = renderHook(() => useRepositorySourceConfig());
+    const { result } = renderHook(() => useRepositorySourceConfig({ storage }));
 
     await act(async () => {
       result.current.selectProjectConfig('repo-a');
@@ -85,7 +82,7 @@ describe('repository source config hooks', () => {
   });
 
   test('useRepositorySourceConfig resetea project y repositoryId al cambiar organization', async () => {
-    storage.loadConnectionConfig.mockReturnValue({
+    storage.loadConfig.mockReturnValue({
       provider: 'azure-devops',
       organization: 'acme',
       project: 'platform',
@@ -94,7 +91,7 @@ describe('repository source config hooks', () => {
       targetReviewer: '',
     });
 
-    const { result } = renderHook(() => useRepositorySourceConfig());
+    const { result } = renderHook(() => useRepositorySourceConfig({ storage }));
 
     await act(async () => {
       result.current.updateConfig('organization', 'other-org');
@@ -111,7 +108,7 @@ describe('repository source config hooks', () => {
   });
 
   test('useRepositorySourceConfig limpia solo repositoryId al cambiar project', async () => {
-    storage.loadConnectionConfig.mockReturnValue({
+    storage.loadConfig.mockReturnValue({
       provider: 'azure-devops',
       organization: 'acme',
       project: 'platform',
@@ -120,7 +117,7 @@ describe('repository source config hooks', () => {
       targetReviewer: '',
     });
 
-    const { result } = renderHook(() => useRepositorySourceConfig());
+    const { result } = renderHook(() => useRepositorySourceConfig({ storage }));
 
     await act(async () => {
       result.current.updateConfig('project', 'platform-v2');
@@ -131,7 +128,7 @@ describe('repository source config hooks', () => {
   });
 
   test('useRepositorySourceConfig mantiene repositoryId vacio al seleccionar proyecto en azure', async () => {
-    storage.loadConnectionConfig.mockReturnValue({
+    storage.loadConfig.mockReturnValue({
       provider: 'azure-devops',
       organization: 'acme',
       project: '',
@@ -140,7 +137,7 @@ describe('repository source config hooks', () => {
       targetReviewer: '',
     });
 
-    const { result } = renderHook(() => useRepositorySourceConfig());
+    const { result } = renderHook(() => useRepositorySourceConfig({ storage }));
 
     await act(async () => {
       result.current.selectProjectConfig('platform');
@@ -151,15 +148,15 @@ describe('repository source config hooks', () => {
   });
 
   test('useRepositorySourceConfig hidrata el secreto desde storage', async () => {
-    storage.hydrateConnectionSecret.mockResolvedValue('pat-session');
+    storage.hydrateSecret.mockResolvedValue('pat-session');
 
-    const { result } = renderHook(() => useRepositorySourceConfig());
+    const { result } = renderHook(() => useRepositorySourceConfig({ storage }));
 
     await expect(result.current.hydrateSecret()).resolves.toBe('pat-session');
   });
 
   test('useRepositorySourceConfig aplica el secreto hidratado sin disparar resets de config', async () => {
-    const { result } = renderHook(() => useRepositorySourceConfig());
+    const { result } = renderHook(() => useRepositorySourceConfig({ storage }));
 
     await act(async () => {
       result.current.applyHydratedSecret('pat-session');
