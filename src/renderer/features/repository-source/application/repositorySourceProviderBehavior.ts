@@ -150,11 +150,10 @@ const namespaceBehavior: RepositorySourceProviderBehavior = {
   },
 };
 
-const providerBehaviorMap: Record<Exclude<RepositoryProviderSelection, ''>, RepositorySourceProviderBehavior> = {
+const providerBehaviorMap: Partial<Record<Exclude<RepositoryProviderSelection, ''>, RepositorySourceProviderBehavior>> = {
   'azure-devops': azureBehavior,
   github: namespaceBehavior,
   gitlab: namespaceBehavior,
-  bitbucket: azureBehavior,
 };
 
 export function getRepositorySourceProviderBehavior(

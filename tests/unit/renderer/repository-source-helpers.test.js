@@ -135,6 +135,7 @@ describe('repository source helpers', () => {
       personalAccessToken: 'pat',
       targetReviewer: '',
     })).toBe(false);
+    expect(providerBehavior.getRepositorySourceProviderBehavior('bitbucket')).toBeNull();
   });
 
   test('hasMinimumProjectDiscoveryConfig y hasMinimumRepositoryConfig validan por provider', () => {
