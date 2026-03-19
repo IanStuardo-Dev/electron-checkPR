@@ -1,7 +1,6 @@
 import React from 'react';
 import type { ReviewItem } from '../../../../../types/repository';
 import { createRepositorySourceApi } from '../../application/repositorySourceApiFactory';
-import { repositorySourceFetcher } from '../../data/repositorySourceFetcher';
 import type { RepositorySourceFetcherPort } from '../../data/repositorySourceFetcher';
 import type { SavedConnectionConfig } from '../../types';
 import type { useRepositoryDiagnostics } from './useRepositoryDiagnostics';
@@ -16,7 +15,7 @@ interface UseRepositorySourceApiOptions {
   state: ReturnType<typeof useRepositorySourceState>;
   diagnostics: ReturnType<typeof useRepositoryDiagnostics>;
   onPersistSnapshot: (pullRequests: ReviewItem[], capturedAt: Date, scopeLabel: string, targetReviewer?: string) => void;
-  fetcher?: RepositorySourceFetcherPort;
+  fetcher: RepositorySourceFetcherPort;
 }
 
 export function useRepositorySourceApi({
@@ -27,7 +26,7 @@ export function useRepositorySourceApi({
   state,
   diagnostics,
   onPersistSnapshot,
-  fetcher = repositorySourceFetcher,
+  fetcher,
 }: UseRepositorySourceApiOptions) {
   const api = React.useMemo(() => createRepositorySourceApi({
     configRef,

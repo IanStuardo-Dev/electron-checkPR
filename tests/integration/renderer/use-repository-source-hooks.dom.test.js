@@ -20,6 +20,7 @@ jest.mock('../../../src/renderer/features/repository-source/presentation/hooks/u
 }));
 
 const ipc = require('../../../src/renderer/features/repository-source/data/repositorySourceIpc');
+const { repositorySourceFetcher } = require('../../../src/renderer/features/repository-source/data/repositorySourceFetcher');
 const { useRepositorySourceEffects } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceEffects');
 const { useRepositorySourceState } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceState');
 const { useRepositoryDiagnostics } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositoryDiagnostics');
@@ -223,6 +224,7 @@ describe('repository source hooks', () => {
       state,
       diagnostics,
       onPersistSnapshot,
+      fetcher: repositorySourceFetcher,
     }));
 
     await act(async () => {
