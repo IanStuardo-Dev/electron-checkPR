@@ -1,37 +1,29 @@
 import type { PullRequestAnalysisPreview, RepositorySnapshotPreview } from '../../types/analysis';
-import type { RepositoryAnalysisService } from '../../services/analysis/repository-analysis.service';
-import type { PullRequestAnalysisService } from '../../services/analysis/pull-request-analysis.service';
-import type { SessionSecretsStore } from './session-secrets';
-import { CODEX_SESSION_API_KEY } from '../../constants/session-secrets';
 import { registerHandle } from './shared';
+import type { AnalysisIpcHandlers } from './analysis-handlers';
 import { sanitizePullRequestAnalysisPayload } from './pull-request-analysis.sanitizer';
 import { sanitizeRepositoryAnalysisPayload } from './repository-analysis.sanitizer';
 
 export const sanitizeAnalysisPayload = sanitizeRepositoryAnalysisPayload;
 export { sanitizePullRequestAnalysisPayload };
 
-export function registerAnalysisIpc(
-  repositoryAnalysisService: RepositoryAnalysisService,
-  pullRequestAnalysisService: PullRequestAnalysisService,
-  sessionSecretsStore: SessionSecretsStore,
-): void {
-  const readCodexApiKey = () => sessionSecretsStore.get(CODEX_SESSION_API_KEY);
+export function registerAnalysisIpc(handlers: AnalysisIpcHandlers): void {
   registerHandle<unknown, RepositorySnapshotPreview>('analysis:previewRepositorySnapshot', async (payload) => (
-    repositoryAnalysisService.previewSnapshot(sanitizeRepositoryAnalysisPayload(payload, readCodexApiKey()))
+    handlers.previewRepositorySnapshot(payload)
   ));
   registerHandle<unknown, unknown>('analysis:runRepositoryAnalysis', async (payload) => (
-    repositoryAnalysisService.runAnalysis(sanitizeRepositoryAnalysisPayload(payload, readCodexApiKey()))
+    handlers.runRepositoryAnalysis(payload)
   ));
   registerHandle<string, void>('analysis:cancelRepositoryAnalysis', async (requestId) => {
-    repositoryAnalysisService.cancelAnalysis(requestId);
+    await handlers.cancelRepositoryAnalysis(requestId);
   });
   registerHandle<unknown, PullRequestAnalysisPreview[]>('analysis:previewPullRequestAiReviews', async (payload) => (
-    pullRequestAnalysisService.previewBatch(sanitizePullRequestAnalysisPayload(payload, readCodexApiKey()))
+    handlers.previewPullRequestAiReviews(payload)
   ));
   registerHandle<unknown, unknown>('analysis:runPullRequestAiReviews', async (payload) => (
-    pullRequestAnalysisService.analyzeBatch(sanitizePullRequestAnalysisPayload(payload, readCodexApiKey()))
+    handlers.runPullRequestAiReviews(payload)
   ));
   registerHandle<string, void>('analysis:cancelPullRequestAiReviews', async (requestId) => {
-    pullRequestAnalysisService.cancelAnalysis(requestId);
+    await handlers.cancelPullRequestAiReviews(requestId);
   });
 }
