@@ -12,7 +12,8 @@ import {
   useRepositoryAnalysis,
   useRepositoryAnalysisScope,
 } from '../../features/repository-analysis';
-import { ConnectionSummary, useRepositorySourceContext } from '../../features/repository-source';
+import { ConnectionSummary } from '../../features/repository-source/summary';
+import { useRepositorySourceContext } from '../../features/repository-source/context';
 
 const RepositoryAnalysis = () => {
   const {

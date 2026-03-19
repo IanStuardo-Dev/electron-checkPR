@@ -17,7 +17,7 @@ import {
   getEligiblePullRequests,
   upsertReviews,
 } from '../../application/pullRequestAiReviews.helpers';
-import type { SavedConnectionConfig } from '../../../repository-source';
+import type { SavedConnectionConfig } from '../../../repository-source/contracts';
 
 interface UsePullRequestAiReviewsOptions {
   config: SavedConnectionConfig;

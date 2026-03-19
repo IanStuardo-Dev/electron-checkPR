@@ -1,7 +1,7 @@
 import type { RepositoryAnalysisRequest } from '../../../../types/analysis';
 import type { RepositoryProviderDefinition } from '../../../../types/repository';
 import { mergeExcludedPathPatterns } from '../../../../shared/snapshot-policy';
-import type { SavedConnectionConfig } from '../../repository-source';
+import type { SavedConnectionConfig } from '../../repository-source/contracts';
 import type { CodexIntegrationConfig } from '../../settings';
 
 export function buildRepositoryAnalysisPayload({

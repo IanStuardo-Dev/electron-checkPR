@@ -4,7 +4,7 @@ import type {
   PullRequestAnalysisPreview,
 } from '../../../../types/analysis';
 import type { RepositoryProviderKind, PrioritizedPullRequest } from '../../../../types/repository';
-import type { SavedConnectionConfig } from '../../repository-source';
+import type { SavedConnectionConfig } from '../../repository-source/contracts';
 import type { CodexIntegrationConfig } from '../../settings';
 
 export function buildPullRequestAnalysisPayload(
