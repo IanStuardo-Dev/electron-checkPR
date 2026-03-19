@@ -1,21 +1,20 @@
-import type React from 'react';
-import type { RepositorySourceFetcherPort } from './repositorySourceFetcher';
+import type { RepositorySourceFetcherPort } from '../data/repositorySourceFetcher';
 import type {
   RepositorySourceDiagnosticsPort,
   RepositorySourceSnapshotPort,
   RepositorySourceStatePort,
-} from '../application/repositorySourceApiPorts';
+} from './repositorySourceApiPorts';
 import {
   createDiscoverProjectsUseCase,
   createFetchProjectsUseCase,
   createFetchRepositoriesUseCase,
   createOpenExternalLinkUseCase,
   createSyncPullRequestsUseCase,
-} from '../application/repositorySourceUseCases';
+} from './repositorySourceUseCases';
 import type { SavedConnectionConfig } from '../types';
 
 interface CreateRepositorySourceApiOptions {
-  configRef: React.MutableRefObject<SavedConnectionConfig>;
+  configRef: { current: SavedConnectionConfig };
   activeProviderName: string;
   scopeLabel: string;
   state: RepositorySourceStatePort;
