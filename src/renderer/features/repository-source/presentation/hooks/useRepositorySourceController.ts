@@ -1,5 +1,6 @@
 import type React from 'react';
 import type { ReviewItem } from '../../../../../types/repository';
+import { repositorySourceFetcher } from '../../data/repositorySourceFetcher';
 import type { SavedConnectionConfig } from '../../types';
 import { useRepositorySourceActions } from './useRepositorySourceActions';
 import { useRepositoryDiagnostics } from './useRepositoryDiagnostics';
@@ -35,6 +36,7 @@ export function useRepositorySourceController({
     state,
     diagnostics,
     onPersistSnapshot,
+    fetcher: repositorySourceFetcher,
   });
 
   return {
