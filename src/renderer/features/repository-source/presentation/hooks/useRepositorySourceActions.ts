@@ -1,11 +1,13 @@
 import React from 'react';
 import type { SavedConnectionConfig } from '../../types';
-import type { useRepositoryDiagnostics } from './useRepositoryDiagnostics';
-import type { useRepositorySourceState } from './useRepositorySourceState';
+import type {
+  RepositorySourceActionStatePort,
+  RepositorySourceDiagnosticsController,
+} from './repositorySourceHookContracts';
 
 interface UseRepositorySourceActionsOptions {
-  state: ReturnType<typeof useRepositorySourceState>;
-  diagnostics: ReturnType<typeof useRepositoryDiagnostics>;
+  state: RepositorySourceActionStatePort;
+  diagnostics: RepositorySourceDiagnosticsController;
 }
 
 export function useRepositorySourceActions({

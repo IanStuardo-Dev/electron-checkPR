@@ -4,17 +4,19 @@ import { createRepositorySourceApi } from '../../application/repositorySourceApi
 import { repositorySourceFetcher } from '../../data/repositorySourceFetcher';
 import type { RepositorySourceFetcherPort } from '../../data/repositorySourceFetcher';
 import type { SavedConnectionConfig } from '../../types';
-import type { useRepositoryDiagnostics } from './useRepositoryDiagnostics';
+import type {
+  RepositorySourceDiagnosticsController,
+  RepositorySourceEffectsStatePort,
+} from './repositorySourceHookContracts';
 import { useRepositorySourceEffects } from './useRepositorySourceEffects';
-import type { useRepositorySourceState } from './useRepositorySourceState';
 
 interface UseRepositorySourceApiOptions {
   config: SavedConnectionConfig;
   configRef: React.MutableRefObject<SavedConnectionConfig>;
   activeProviderName: string;
   scopeLabel: string;
-  state: ReturnType<typeof useRepositorySourceState>;
-  diagnostics: ReturnType<typeof useRepositoryDiagnostics>;
+  state: RepositorySourceEffectsStatePort;
+  diagnostics: RepositorySourceDiagnosticsController;
   onPersistSnapshot: (pullRequests: ReviewItem[], capturedAt: Date, scopeLabel: string, targetReviewer?: string) => void;
   fetcher?: RepositorySourceFetcherPort;
 }

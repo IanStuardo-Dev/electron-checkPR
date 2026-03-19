@@ -1,12 +1,12 @@
 import React from 'react';
 import { hasMinimumRepositoryConfig } from '../../application/repositorySourceRules';
 import type { SavedConnectionConfig } from '../../types';
-import type { useRepositorySourceState } from './useRepositorySourceState';
+import type { RepositorySourceEffectsStatePort } from './repositorySourceHookContracts';
 
 interface UseRepositorySourceEffectsOptions {
   config: SavedConnectionConfig;
   configRef: React.MutableRefObject<SavedConnectionConfig>;
-  state: ReturnType<typeof useRepositorySourceState>;
+  state: RepositorySourceEffectsStatePort;
   refreshRepositories: (nextConfig?: SavedConnectionConfig) => Promise<unknown[]>;
 }
 
