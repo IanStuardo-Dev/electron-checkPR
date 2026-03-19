@@ -5,6 +5,7 @@ jest.mock('../../../src/renderer/features/repository-source/data/repositorySourc
   loadConnectionConfig: jest.fn(),
   persistConnectionConfig: jest.fn().mockResolvedValue(undefined),
   hydrateConnectionSecret: jest.fn(),
+  migrateLegacyRepositorySourceStorage: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceController', () => ({

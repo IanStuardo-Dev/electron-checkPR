@@ -26,29 +26,33 @@ function clearLegacyRepositorySourceStorage(): void {
 }
 
 export function loadConnectionConfig(): SavedConnectionConfig {
-  clearLegacyRepositorySourceStorage();
-
   return {
     ...loadStoredObject<SavedConnectionConfig>(window.sessionStorage, REPOSITORY_SOURCE_SESSION_CONFIG_KEY, defaultConnectionConfig),
     personalAccessToken: '',
   };
 }
 
-export async function hydrateConnectionSecret(): Promise<string> {
-  const storedSecret = await getSessionSecret(REPOSITORY_SOURCE_SESSION_SECRET_KEY);
+export async function migrateLegacyRepositorySourceStorage(): Promise<void> {
+  clearLegacyRepositorySourceStorage();
 
+  const storedSecret = await getSessionSecret(REPOSITORY_SOURCE_SESSION_SECRET_KEY);
   if (storedSecret) {
-    return storedSecret;
+    await setSessionSecret(LEGACY_REPOSITORY_SOURCE_SESSION_SECRET_KEY, '');
+    return;
   }
 
   const legacySecret = await getSessionSecret(LEGACY_REPOSITORY_SOURCE_SESSION_SECRET_KEY);
   if (!legacySecret) {
-    return '';
+    return;
   }
 
   await setSessionSecret(REPOSITORY_SOURCE_SESSION_SECRET_KEY, legacySecret);
   await setSessionSecret(LEGACY_REPOSITORY_SOURCE_SESSION_SECRET_KEY, '');
-  return legacySecret;
+}
+
+export async function hydrateConnectionSecret(): Promise<string> {
+  const storedSecret = await getSessionSecret(REPOSITORY_SOURCE_SESSION_SECRET_KEY);
+  return storedSecret || '';
 }
 
 export async function persistConnectionConfig(config: SavedConnectionConfig): Promise<void> {
@@ -58,6 +62,4 @@ export async function persistConnectionConfig(config: SavedConnectionConfig): Pr
   };
   saveStoredObject(window.sessionStorage, REPOSITORY_SOURCE_SESSION_CONFIG_KEY, safeConfig);
   await setSessionSecret(REPOSITORY_SOURCE_SESSION_SECRET_KEY, config.personalAccessToken);
-  await setSessionSecret(LEGACY_REPOSITORY_SOURCE_SESSION_SECRET_KEY, '');
-  clearLegacyRepositorySourceStorage();
 }

@@ -3,12 +3,14 @@ import { hasMinimumPullRequestSyncConfig } from '../../application/repositorySou
 import type { SavedConnectionConfig } from '../../types';
 
 interface UseRepositorySourceBootstrapOptions {
+  migrateLegacyStorage: () => Promise<void>;
   hydrateSecret: () => Promise<string>;
   applyHydratedSecret: (value: string) => SavedConnectionConfig;
   refreshPullRequests: () => Promise<void>;
 }
 
 export function useRepositorySourceBootstrap({
+  migrateLegacyStorage,
   hydrateSecret,
   applyHydratedSecret,
   refreshPullRequests,
@@ -16,7 +18,8 @@ export function useRepositorySourceBootstrap({
   React.useEffect(() => {
     let isMounted = true;
 
-    void hydrateSecret()
+    void migrateLegacyStorage()
+      .then(() => hydrateSecret())
       .then((personalAccessToken) => {
         if (!personalAccessToken || !isMounted) {
           return;
@@ -32,5 +35,5 @@ export function useRepositorySourceBootstrap({
     return () => {
       isMounted = false;
     };
-  }, [applyHydratedSecret, hydrateSecret, refreshPullRequests]);
+  }, [applyHydratedSecret, hydrateSecret, migrateLegacyStorage, refreshPullRequests]);
 }

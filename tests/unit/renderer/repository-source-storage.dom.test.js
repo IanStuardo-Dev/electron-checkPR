@@ -11,7 +11,7 @@ describe('repository source storage', () => {
     expect(storage.loadConnectionConfig()).toEqual(storage.defaultConnectionConfig);
   });
 
-  test('loadConnectionConfig limpia legacy localStorage y conserva config segura', () => {
+  test('loadConnectionConfig conserva config segura sin tocar la migracion legacy', () => {
     window.sessionStorage.setItem(storage.REPOSITORY_SOURCE_SESSION_CONFIG_KEY, JSON.stringify({
       provider: 'github',
       organization: 'acme',
@@ -30,8 +30,8 @@ describe('repository source storage', () => {
       repositoryId: 'repo-a',
       personalAccessToken: '',
     });
-    expect(window.localStorage.getItem('checkpr.azure.config')).toBeNull();
-    expect(window.localStorage.getItem('checkpr.azure.saved-contexts')).toBeNull();
+    expect(window.localStorage.getItem('checkpr.azure.config')).toBe('legacy');
+    expect(window.localStorage.getItem('checkpr.azure.saved-contexts')).toBe('legacy-contexts');
   });
 
   test('persistConnectionConfig guarda config segura y secreto en sesion', async () => {
@@ -72,7 +72,7 @@ describe('repository source storage', () => {
     await expect(storage.hydrateConnectionSecret()).resolves.toBe('stored-secret');
   });
 
-  test('hydrateConnectionSecret migra el secreto legacy si existe', async () => {
+  test('migrateLegacyRepositorySourceStorage migra el secreto legacy si existe', async () => {
     window.electronApi.invoke.mockImplementation(async (channel, payload) => {
       if (channel === 'session-secrets:get' && payload === storage.REPOSITORY_SOURCE_SESSION_SECRET_KEY) {
         return { ok: true, data: '' };
@@ -85,7 +85,7 @@ describe('repository source storage', () => {
       return { ok: true, data: null };
     });
 
-    await expect(storage.hydrateConnectionSecret()).resolves.toBe('legacy-secret');
+    await expect(storage.migrateLegacyRepositorySourceStorage()).resolves.toBeUndefined();
     expect(window.electronApi.invoke).toHaveBeenCalledWith('session-secrets:set', {
       key: storage.REPOSITORY_SOURCE_SESSION_SECRET_KEY,
       value: 'legacy-secret',
@@ -94,6 +94,19 @@ describe('repository source storage', () => {
       key: 'checkpr.azure.session.pat',
       value: '',
     });
+  });
+
+  test('hydrateConnectionSecret solo lee el secreto actual', async () => {
+    window.electronApi.invoke.mockImplementation(async (channel, key) => {
+      if (channel === 'session-secrets:get' && key === storage.REPOSITORY_SOURCE_SESSION_SECRET_KEY) {
+        return { ok: true, data: '' };
+      }
+
+      return { ok: true, data: 'legacy-secret' };
+    });
+
+    await expect(storage.hydrateConnectionSecret()).resolves.toBe('');
+    expect(window.electronApi.invoke).not.toHaveBeenCalledWith('session-secrets:get', 'checkpr.azure.session.pat');
   });
 
   test('loadConnectionConfig tolera JSON invalido en sesion', () => {
@@ -139,17 +152,18 @@ describe('repository source storage', () => {
     }
   });
 
-  test('persistConnectionConfig limpia storage legacy y el secreto azure anterior', async () => {
+  test('migrateLegacyRepositorySourceStorage limpia storage legacy y el secreto azure anterior', async () => {
     window.localStorage.setItem('checkpr.azure.config', 'legacy');
     window.localStorage.setItem('checkpr.azure.saved-contexts', 'legacy-contexts');
-    window.electronApi.invoke.mockResolvedValue({ ok: true, data: null });
+    window.electronApi.invoke.mockImplementation(async (channel, key) => {
+      if (channel === 'session-secrets:get' && key === storage.REPOSITORY_SOURCE_SESSION_SECRET_KEY) {
+        return { ok: true, data: 'secret' };
+      }
 
-    await storage.persistConnectionConfig({
-      ...storage.defaultConnectionConfig,
-      provider: 'github',
-      organization: 'acme',
-      personalAccessToken: 'secret',
+      return { ok: true, data: null };
     });
+
+    await storage.migrateLegacyRepositorySourceStorage();
 
     expect(window.localStorage.getItem('checkpr.azure.config')).toBeNull();
     expect(window.localStorage.getItem('checkpr.azure.saved-contexts')).toBeNull();
