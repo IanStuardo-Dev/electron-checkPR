@@ -1,5 +1,10 @@
 import type { RepositoryProviderKind } from '../../types/repository';
 import type { RepositoryAnalysisSnapshotPolicy } from '../../types/analysis/snapshot';
+import {
+  isRepositoryProviderKind,
+  supportsRepositoryProviderCapability,
+  type RepositoryProviderCapability,
+} from '../../services/providers/repository-provider.capabilities';
 
 export function readRequiredString(value: unknown, fieldName: string): string {
   if (typeof value !== 'string' || !value.trim()) {
@@ -9,8 +14,12 @@ export function readRequiredString(value: unknown, fieldName: string): string {
   return value.trim();
 }
 
-export function normalizeProvider(value: unknown, fieldName: string): RepositoryProviderKind {
-  if (value !== 'azure-devops' && value !== 'github' && value !== 'gitlab') {
+export function normalizeProvider(
+  value: unknown,
+  fieldName: string,
+  capability: RepositoryProviderCapability = 'supportsRepositoryAnalysis',
+): RepositoryProviderKind {
+  if (!isRepositoryProviderKind(value) || !supportsRepositoryProviderCapability(value, capability)) {
     throw new Error(`${fieldName} no es valido.`);
   }
 

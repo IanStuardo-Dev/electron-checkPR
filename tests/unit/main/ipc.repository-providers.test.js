@@ -59,6 +59,15 @@ describe('repository providers ipc', () => {
     await expect(pullRequestsHandler({ provider: '' })).rejects.toThrow('Selecciona un provider');
   });
 
+  test('rechaza providers sin capability de repository source', async () => {
+    registerRepositoryProviderIpc({ get: jest.fn() });
+    const pullRequestsHandler = registerHandle.mock.calls[0][1];
+
+    await expect(pullRequestsHandler({ provider: 'bitbucket' })).rejects.toThrow(
+      'El provider bitbucket aun no soporta operaciones de repository source.',
+    );
+  });
+
   test('openExternal rechaza URLs no validas', async () => {
     registerRepositoryProviderIpc({ get: jest.fn() });
     const openExternalHandler = registerHandle.mock.calls[4][1];
