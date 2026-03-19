@@ -272,6 +272,52 @@ describe('repository source config hooks', () => {
     expect(migrateLegacyStorage.mock.invocationCallOrder[0]).toBeLessThan(hydrateSecret.mock.invocationCallOrder[0]);
   });
 
+  test('useRepositorySourceBootstrap no repite la hidratacion al re-renderizar con un refresh nuevo', async () => {
+    const migrateLegacyStorage = jest.fn().mockResolvedValue(undefined);
+    const hydrateSecret = jest.fn().mockResolvedValue('pat-restored');
+    const applyHydratedSecret = jest.fn((value) => ({
+      provider: 'github',
+      organization: 'acme',
+      project: '',
+      repositoryId: '',
+      personalAccessToken: value,
+      targetReviewer: '',
+    }));
+    const firstRefreshPullRequests = jest.fn().mockResolvedValue(undefined);
+    const secondRefreshPullRequests = jest.fn().mockResolvedValue(undefined);
+
+    const { rerender } = renderHook((props) => useRepositorySourceBootstrap(props), {
+      initialProps: {
+        migrateLegacyStorage,
+        hydrateSecret,
+        applyHydratedSecret,
+        refreshPullRequests: firstRefreshPullRequests,
+      },
+    });
+
+    await waitFor(() => {
+      expect(hydrateSecret).toHaveBeenCalledTimes(1);
+      expect(firstRefreshPullRequests).toHaveBeenCalledTimes(1);
+    });
+
+    rerender({
+      migrateLegacyStorage,
+      hydrateSecret,
+      applyHydratedSecret,
+      refreshPullRequests: secondRefreshPullRequests,
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(migrateLegacyStorage).toHaveBeenCalledTimes(1);
+    expect(hydrateSecret).toHaveBeenCalledTimes(1);
+    expect(applyHydratedSecret).toHaveBeenCalledTimes(1);
+    expect(firstRefreshPullRequests).toHaveBeenCalledTimes(1);
+    expect(secondRefreshPullRequests).not.toHaveBeenCalled();
+  });
+
   test('useRepositorySourceDerived calcula nombres seleccionados y readiness', () => {
     const { result } = renderHook(() => useRepositorySourceDerived({
       config: {
