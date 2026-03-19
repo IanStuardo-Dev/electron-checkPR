@@ -1,4 +1,5 @@
 import { registerIpcHandlers } from './ipc/register';
+import { SessionSecretsStore } from './ipc/session-secrets';
 import { createWindow } from './main-window';
 import { buildDefaultRepositoryProviderModules } from '../services/providers/repository-provider.bootstrap';
 import { createRepositoryProviderRegistryFromModules } from '../services/providers/repository-provider.composition';
@@ -25,6 +26,11 @@ export function createApplicationServices() {
 
 export function bootstrapMainProcess() {
   const { providerRegistry, repositoryAnalysisService, pullRequestAnalysisService } = createApplicationServices();
-  registerIpcHandlers(providerRegistry, repositoryAnalysisService, pullRequestAnalysisService);
+  registerIpcHandlers(
+    providerRegistry,
+    repositoryAnalysisService,
+    pullRequestAnalysisService,
+    new SessionSecretsStore(),
+  );
   return createWindow();
 }
