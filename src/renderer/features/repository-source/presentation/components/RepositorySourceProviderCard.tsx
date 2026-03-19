@@ -3,7 +3,7 @@ import { ArrowRightIcon, CheckCircleIcon, ChevronDownIcon, ChevronUpIcon, Circle
 import type { RepositoryProviderDefinition } from '../../../../../types/repository';
 import { SettingsSectionCard, SettingsStatusBadge, SettingsSurfaceCard, settingsButtonClassName } from '../../../../ui/configuration/ConfigurationPrimitives';
 
-interface RepositoryProviderCardProps {
+interface RepositorySourceProviderCardProps {
   provider: RepositoryProviderDefinition;
   isActive?: boolean;
   isConfigured?: boolean;
@@ -19,7 +19,7 @@ const statusLabel: Record<RepositoryProviderDefinition['status'], string> = {
   todo: 'Backlog',
 };
 
-const RepositoryProviderCard = ({
+export default function RepositorySourceProviderCard({
   provider,
   isActive = false,
   isConfigured = false,
@@ -27,7 +27,7 @@ const RepositoryProviderCard = ({
   onToggleExpand,
   onActivate,
   children,
-}: RepositoryProviderCardProps) => {
+}: RepositorySourceProviderCardProps) {
   const badgeTone = provider.status === 'available'
     ? 'emerald'
     : provider.status === 'planned'
@@ -93,6 +93,4 @@ const RepositoryProviderCard = ({
       ) : null}
     </SettingsSectionCard>
   );
-};
-
-export default RepositoryProviderCard;
+}
