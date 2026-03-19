@@ -158,6 +158,27 @@ describe('repository source hooks', () => {
     expect(result.current.diagnostics.requestPath).toBe('');
   });
 
+  test('useRepositoryDiagnostics usa el builder tambien para el estado inicial', () => {
+    const { result } = renderHook(() => actualDiagnosticsModule.useRepositoryDiagnostics({
+      provider: 'azure-devops',
+      organization: ' org ',
+      project: ' platform ',
+      repositoryId: ' repo-a ',
+      personalAccessToken: '',
+      targetReviewer: '',
+    }));
+
+    expect(result.current.diagnostics).toEqual(expect.objectContaining({
+      operation: null,
+      provider: 'azure-devops',
+      organization: 'org',
+      project: 'platform',
+      repositoryId: 'repo-a',
+      requestPath: '',
+      lastError: null,
+    }));
+  });
+
   test('useRepositorySourceActions delega en state y diagnostics', () => {
     const state = createStateMock();
     const diagnostics = createDiagnosticsMock();
