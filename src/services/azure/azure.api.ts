@@ -1,5 +1,5 @@
 import type { AzureConnectionConfig } from '../../types/azure';
-import { readJsonResponse } from '../shared/http-response';
+import { readJsonResponse } from '../../shared/http-response';
 
 const AZURE_API_VERSION = '7.1';
 

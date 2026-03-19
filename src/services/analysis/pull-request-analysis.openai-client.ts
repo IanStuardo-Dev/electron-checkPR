@@ -1,5 +1,5 @@
 import type { PullRequestAnalysisBatchRequest } from '../../types/analysis';
-import { retryWithBackoff } from '../shared/request-control';
+import { retryWithBackoff } from '../../shared/request-control';
 import type { PullRequestAnalysisClientPort, PullRequestAnalysisPromptPayload } from './pull-request-analysis.ports';
 
 const PULL_REQUEST_ANALYSIS_SCHEMA = {

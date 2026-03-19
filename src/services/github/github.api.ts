@@ -1,5 +1,5 @@
 import type { RepositoryConnectionConfig } from '../../types/repository';
-import { readJsonResponse } from '../shared/http-response';
+import { readJsonResponse } from '../../shared/http-response';
 
 const GITHUB_API_VERSION = '2022-11-28';
 

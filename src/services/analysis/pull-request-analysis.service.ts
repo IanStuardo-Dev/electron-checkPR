@@ -1,5 +1,5 @@
 import type { PullRequestAiReview, PullRequestAnalysisBatchRequest, PullRequestAnalysisPreview } from '../../types/analysis';
-import { mapWithConcurrency } from '../shared/request-control';
+import { mapWithConcurrency } from '../../shared/request-control';
 import type {
   PullRequestAnalysisClientPort,
   PullRequestAnalysisPromptBuilderPort,
