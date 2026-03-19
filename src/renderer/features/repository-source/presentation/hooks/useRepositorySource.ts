@@ -1,17 +1,20 @@
 import React from 'react';
+import { getRepositoryProvider } from '../../providers';
+import { buildScopeLabel, getProviderDisplayName } from '../../application/repositorySourceDiagnostics';
 import { useRepositorySourceBootstrap } from './useRepositorySourceBootstrap';
 import { useRepositorySourceConfig } from './useRepositorySourceConfig';
 import { useRepositorySourceDerived } from './useRepositorySourceDerived';
 import { useRepositorySourceController } from './useRepositorySourceController';
-import { useRepositorySourceMetadata } from './useRepositorySourceMetadata';
 import { useRepositorySourceSnapshotPersistence } from './useRepositorySourceSnapshotPersistence';
 
 export function useRepositorySource() {
   const configHook = useRepositorySourceConfig();
   const { config, configRef, updateConfig, selectProjectConfig, hydrateSecret } = configHook;
   const { applyHydratedSecret } = configHook;
-  const { activeProviderName, baseScopeLabel } = useRepositorySourceMetadata(config);
   const persistSnapshot = useRepositorySourceSnapshotPersistence(configRef);
+  const activeProvider = React.useMemo(() => getRepositoryProvider(config.provider), [config.provider]);
+  const activeProviderName = React.useMemo(() => getProviderDisplayName(activeProvider), [activeProvider]);
+  const baseScopeLabel = React.useMemo(() => buildScopeLabel(config, null, null), [config]);
 
   const {
     pullRequests,
@@ -66,8 +69,8 @@ export function useRepositorySource() {
   }, [selectProject, selectProjectConfig]);
 
   return {
-    activeProvider: derived.activeProvider,
-    activeProviderName: derived.activeProviderName,
+    activeProvider,
+    activeProviderName,
     config,
     error,
     isLoading,
