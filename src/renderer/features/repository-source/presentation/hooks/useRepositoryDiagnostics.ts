@@ -3,15 +3,9 @@ import { buildDiagnostics } from '../../application/repositorySourceDiagnostics'
 import type { RepositorySourceDiagnostics, SavedConnectionConfig } from '../../types';
 
 export function useRepositoryDiagnostics(initialConfig: SavedConnectionConfig) {
-  const [diagnostics, setDiagnostics] = React.useState<RepositorySourceDiagnostics>({
-    operation: null,
-    provider: initialConfig.provider,
-    organization: '',
-    project: '',
-    repositoryId: '',
-    requestPath: '',
-    lastError: null,
-  });
+  const [diagnostics, setDiagnostics] = React.useState<RepositorySourceDiagnostics>(
+    () => buildDiagnostics(null, initialConfig),
+  );
 
   const updateDiagnostics = React.useCallback((
     operation: RepositorySourceDiagnostics['operation'],
