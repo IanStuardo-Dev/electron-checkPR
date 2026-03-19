@@ -1,4 +1,5 @@
 import type { PullRequestAnalysisPromptDirectives } from '../../../types/analysis';
+import type { RepositoryAnalysisSnapshotPolicy } from '../../../types/analysis/snapshot';
 
 export interface CodexIntegrationConfig {
   enabled: boolean;
@@ -8,10 +9,7 @@ export interface CodexIntegrationConfig {
   includeTests: boolean;
   repositoryScope: 'selected' | 'all';
   apiKey: string;
-  snapshotPolicy: {
-    excludedPathPatterns: string;
-    strictMode: boolean;
-  };
+  snapshotPolicy: RepositoryAnalysisSnapshotPolicy;
   prReview: {
     enabled: boolean;
     maxPullRequests: number;
