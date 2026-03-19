@@ -21,19 +21,41 @@ export function useRepositorySourceEffects({
     resetDisconnectedState,
     setShouldLoadRepositories,
   } = state;
+  const repositoryReadinessConfig = React.useMemo(
+    () => ({
+      provider: config.provider,
+      organization: config.organization,
+      project: config.project,
+      repositoryId: config.repositoryId,
+      personalAccessToken: config.personalAccessToken,
+      targetReviewer: config.targetReviewer,
+    }),
+    [
+      config.organization,
+      config.personalAccessToken,
+      config.project,
+      config.provider,
+      config.repositoryId,
+      config.targetReviewer,
+    ],
+  );
+  const hasMinimumConfig = React.useMemo(
+    () => hasMinimumRepositoryConfig(repositoryReadinessConfig),
+    [repositoryReadinessConfig],
+  );
 
   React.useEffect(() => {
-    if (!hasMinimumRepositoryConfig(config)) {
+    if (!hasMinimumConfig) {
       resetDisconnectedState();
     }
-  }, [config.organization, config.personalAccessToken, config.project, config.provider, resetDisconnectedState]);
+  }, [hasMinimumConfig, resetDisconnectedState]);
 
   React.useEffect(() => {
     if (!shouldLoadRepositories) {
       return;
     }
 
-    if (hasMinimumRepositoryConfig(config)) {
+    if (hasMinimumConfig) {
       void refreshRepositories(configRef.current).finally(() => {
         setShouldLoadRepositories(false);
       });
@@ -42,11 +64,8 @@ export function useRepositorySourceEffects({
 
     setShouldLoadRepositories(false);
   }, [
-    config.organization,
-    config.personalAccessToken,
-    config.project,
-    config.provider,
     configRef,
+    hasMinimumConfig,
     refreshRepositories,
     setShouldLoadRepositories,
     shouldLoadRepositories,
