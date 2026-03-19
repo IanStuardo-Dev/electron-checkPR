@@ -1,5 +1,6 @@
 import type { PullRequestAnalysisBatchRequest } from '../../types/analysis';
 import { retryWithBackoff } from '../../shared/request-control';
+import { OpenAIResponsesAdapter } from './openai-responses.adapter';
 import type { PullRequestAnalysisClientPort, PullRequestAnalysisPromptPayload } from './pull-request-analysis.ports';
 
 const PULL_REQUEST_ANALYSIS_SCHEMA = {
@@ -21,44 +22,25 @@ const PULL_REQUEST_ANALYSIS_SCHEMA = {
 } as const;
 
 export class OpenAIPullRequestAnalysisClient implements PullRequestAnalysisClientPort {
+  constructor(
+    private readonly responsesAdapter: OpenAIResponsesAdapter = new OpenAIResponsesAdapter(),
+  ) {}
+
   async analyze(input: {
     request: PullRequestAnalysisBatchRequest;
     prompt: PullRequestAnalysisPromptPayload;
     signal: AbortSignal;
   }): Promise<string> {
     return retryWithBackoff(async () => {
-      const response = await fetch('https://api.openai.com/v1/responses', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${input.request.apiKey}`,
-        },
+      const { response, rawText } = await this.responsesAdapter.createJsonSchemaResponse({
+        apiKey: input.request.apiKey,
+        model: input.request.model,
+        systemPrompt: input.prompt.systemPrompt,
+        userPrompt: input.prompt.userPrompt,
+        schemaName: 'pull_request_analysis',
+        schema: PULL_REQUEST_ANALYSIS_SCHEMA,
         signal: input.signal,
-        body: JSON.stringify({
-          model: input.request.model,
-          store: false,
-          input: [
-            {
-              role: 'system',
-              content: [{ type: 'input_text', text: input.prompt.systemPrompt }],
-            },
-            {
-              role: 'user',
-              content: [{ type: 'input_text', text: input.prompt.userPrompt }],
-            },
-          ],
-          text: {
-            format: {
-              type: 'json_schema',
-              name: 'pull_request_analysis',
-              schema: PULL_REQUEST_ANALYSIS_SCHEMA,
-              strict: true,
-            },
-          },
-        }),
       });
-
-      const rawText = await response.text();
       if (!response.ok) {
         throw new Error(`Codex PR analysis failed (${response.status}): ${rawText.slice(0, 500) || response.statusText}`);
       }

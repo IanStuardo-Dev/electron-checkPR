@@ -1,4 +1,5 @@
 import type { RepositoryAnalysisRequest } from '../../types/analysis';
+import { OpenAIResponsesAdapter } from './openai-responses.adapter';
 import type { AnalysisClientPort, AnalysisPromptPayload } from './repository-analysis.ports';
 
 const ANALYSIS_SCHEMA = {
@@ -51,45 +52,25 @@ function compactText(value: string, maxLength = 2400): string {
 }
 
 export class OpenAIRepositoryAnalysisClient implements AnalysisClientPort {
+  constructor(
+    private readonly responsesAdapter: OpenAIResponsesAdapter = new OpenAIResponsesAdapter(),
+  ) {}
+
   async analyze(input: {
     request: RepositoryAnalysisRequest;
     prompt: AnalysisPromptPayload;
     signal: AbortSignal;
   }): Promise<string> {
     const { request, prompt, signal } = input;
-
-    const response = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${request.apiKey}`,
-      },
+    const { response, rawText } = await this.responsesAdapter.createJsonSchemaResponse({
+      apiKey: request.apiKey,
+      model: request.model,
+      systemPrompt: prompt.systemPrompt,
+      userPrompt: prompt.userPrompt,
+      schemaName: 'repository_analysis',
+      schema: ANALYSIS_SCHEMA,
       signal,
-      body: JSON.stringify({
-        model: request.model,
-        store: false,
-        input: [
-          {
-            role: 'system',
-            content: [{ type: 'input_text', text: prompt.systemPrompt }],
-          },
-          {
-            role: 'user',
-            content: [{ type: 'input_text', text: prompt.userPrompt }],
-          },
-        ],
-        text: {
-          format: {
-            type: 'json_schema',
-            name: 'repository_analysis',
-            schema: ANALYSIS_SCHEMA,
-            strict: true,
-          },
-        },
-      }),
     });
-
-    const rawText = await response.text();
     if (!response.ok) {
       const detail = compactText(rawText, 600) || response.statusText;
 
