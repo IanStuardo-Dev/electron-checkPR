@@ -1,6 +1,7 @@
 import React from 'react';
 import { getRepositoryProvider } from '../../providers';
 import { buildScopeLabel, getProviderDisplayName } from '../../application/repositorySourceDiagnostics';
+import { repositorySourceConfigStorageAdapter } from '../../data/repositorySourceConfigStorageAdapter';
 import { useRepositorySourceBootstrap } from './useRepositorySourceBootstrap';
 import { useRepositorySourceConfig } from './useRepositorySourceConfig';
 import { useRepositorySourceDerived } from './useRepositorySourceDerived';
@@ -8,7 +9,9 @@ import { useRepositorySourceController } from './useRepositorySourceController';
 import { useRepositorySourceSnapshotPersistence } from './useRepositorySourceSnapshotPersistence';
 
 export function useRepositorySource() {
-  const configHook = useRepositorySourceConfig();
+  const configHook = useRepositorySourceConfig({
+    storage: repositorySourceConfigStorageAdapter,
+  });
   const { config, configRef, updateConfig, selectProjectConfig, hydrateSecret, migrateLegacyStorage } = configHook;
   const { applyHydratedSecret } = configHook;
   const persistSnapshot = useRepositorySourceSnapshotPersistence(configRef);

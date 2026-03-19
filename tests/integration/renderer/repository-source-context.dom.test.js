@@ -1,18 +1,20 @@
 const React = require('react');
 const { render, screen, waitFor } = require('@testing-library/react');
 
-jest.mock('../../../src/renderer/features/repository-source/data/repositorySourceStorage', () => ({
-  loadConnectionConfig: jest.fn(),
-  persistConnectionConfig: jest.fn().mockResolvedValue(undefined),
-  hydrateConnectionSecret: jest.fn(),
-  migrateLegacyRepositorySourceStorage: jest.fn().mockResolvedValue(undefined),
+jest.mock('../../../src/renderer/features/repository-source/data/repositorySourceConfigStorageAdapter', () => ({
+  repositorySourceConfigStorageAdapter: {
+    loadConfig: jest.fn(),
+    persistConfig: jest.fn().mockResolvedValue(undefined),
+    hydrateSecret: jest.fn(),
+    migrateLegacyStorage: jest.fn().mockResolvedValue(undefined),
+  },
 }));
 
 jest.mock('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceController', () => ({
   useRepositorySourceController: jest.fn(),
 }));
 
-const storage = require('../../../src/renderer/features/repository-source/data/repositorySourceStorage');
+const { repositorySourceConfigStorageAdapter } = require('../../../src/renderer/features/repository-source/data/repositorySourceConfigStorageAdapter');
 const { useRepositorySourceController } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceController');
 const {
   RepositorySourceProvider,
@@ -21,7 +23,7 @@ const {
 
 describe('RepositorySourceProvider integration', () => {
   beforeEach(() => {
-    storage.loadConnectionConfig.mockReturnValue({
+    repositorySourceConfigStorageAdapter.loadConfig.mockReturnValue({
       provider: 'github',
       organization: 'acme',
       project: '',
@@ -29,7 +31,7 @@ describe('RepositorySourceProvider integration', () => {
       personalAccessToken: '',
       targetReviewer: '',
     });
-    storage.hydrateConnectionSecret.mockResolvedValue('gh-token');
+    repositorySourceConfigStorageAdapter.hydrateSecret.mockResolvedValue('gh-token');
     useRepositorySourceController.mockReturnValue({
       pullRequests: [
         {
