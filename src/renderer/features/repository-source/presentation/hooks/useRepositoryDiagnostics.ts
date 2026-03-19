@@ -1,8 +1,9 @@
 import React from 'react';
 import { buildDiagnostics } from '../../application/repositorySourceDiagnostics';
 import type { RepositorySourceDiagnostics, SavedConnectionConfig } from '../../types';
+import type { RepositorySourceDiagnosticsController } from './repositorySourceHookContracts';
 
-export function useRepositoryDiagnostics(initialConfig: SavedConnectionConfig) {
+export function useRepositoryDiagnostics(initialConfig: SavedConnectionConfig): RepositorySourceDiagnosticsController {
   const [diagnostics, setDiagnostics] = React.useState<RepositorySourceDiagnostics>(
     () => buildDiagnostics(null, initialConfig),
   );
