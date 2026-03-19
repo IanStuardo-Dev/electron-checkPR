@@ -1,6 +1,7 @@
 import { shell } from 'electron';
 import type { RepositoryProviderRegistry } from '../../services/providers/repository-provider.registry';
 import type { RepositoryConnectionConfig, RepositoryProviderKind } from '../../types/repository';
+import { supportsRepositoryProviderCapability } from '../../services/providers/repository-provider.capabilities';
 import { validateExternalUrl } from './external-links';
 import { registerHandle } from './shared';
 
@@ -12,18 +13,31 @@ function readProvider(config: Pick<RepositoryConnectionConfig, 'provider'>): Rep
   return config.provider;
 }
 
+function resolveRepositorySourceProvider(
+  providerRegistry: RepositoryProviderRegistry,
+  config: Pick<RepositoryConnectionConfig, 'provider'>,
+) {
+  const providerKind = readProvider(config);
+
+  if (!supportsRepositoryProviderCapability(providerKind, 'supportsRepositorySource')) {
+    throw new Error(`El provider ${providerKind} aun no soporta operaciones de repository source.`);
+  }
+
+  return providerRegistry.get(providerKind);
+}
+
 export function registerRepositoryProviderIpc(providerRegistry: RepositoryProviderRegistry): void {
   registerHandle<RepositoryConnectionConfig, unknown[]>('repository-source:fetchPullRequests', async (config) => (
-    providerRegistry.get(readProvider(config)).getPullRequests(config)
+    resolveRepositorySourceProvider(providerRegistry, config).getPullRequests(config)
   ));
   registerHandle<RepositoryConnectionConfig, unknown[]>('repository-source:fetchProjects', async (config) => (
-    providerRegistry.get(readProvider(config)).getProjects(config)
+    resolveRepositorySourceProvider(providerRegistry, config).getProjects(config)
   ));
   registerHandle<RepositoryConnectionConfig, unknown[]>('repository-source:fetchRepositories', async (config) => (
-    providerRegistry.get(readProvider(config)).getRepositories(config)
+    resolveRepositorySourceProvider(providerRegistry, config).getRepositories(config)
   ));
   registerHandle<RepositoryConnectionConfig, unknown[]>('repository-source:fetchBranches', async (config) => (
-    providerRegistry.get(readProvider(config)).getBranches(config)
+    resolveRepositorySourceProvider(providerRegistry, config).getBranches(config)
   ));
   registerHandle<string, void>('repository-source:openExternal', async (url) => {
     await shell.openExternal(validateExternalUrl(url));

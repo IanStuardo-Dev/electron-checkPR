@@ -18,6 +18,7 @@ describe('analysis shared helpers', () => {
     expect(normalizeProvider('github', 'provider')).toBe('github');
     expect(normalizeProvider('gitlab', 'provider')).toBe('gitlab');
     expect(() => normalizeProvider('bitbucket', 'provider')).toThrow('provider no es valido.');
+    expect(normalizeProvider('github', 'provider', 'supportsPullRequestAnalysis')).toBe('github');
   });
 
   test('normalizeOptionalString y clampNumber aplican normalizacion defensiva', () => {
