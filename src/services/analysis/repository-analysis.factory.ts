@@ -1,4 +1,5 @@
 import type { SnapshotProviderPort, AnalysisPromptBuilderPort, AnalysisClientPort, AnalysisResponseParserPort } from './repository-analysis.ports';
+import { resolveAnalysisServiceComposition } from './analysis-service.composition';
 import { OpenAIRepositoryAnalysisClient } from './repository-analysis.openai-client';
 import { RepositoryAnalysisPromptBuilder } from './repository-analysis.prompt-builder';
 import { RepositoryAnalysisResponseParser } from './repository-analysis.response-parser';
@@ -13,14 +14,18 @@ export interface RepositoryAnalysisServiceDependencies {
 
 export function createRepositoryAnalysisService({
   snapshotProvider,
-  promptBuilder = new RepositoryAnalysisPromptBuilder(),
-  analysisClient = new OpenAIRepositoryAnalysisClient(),
-  responseParser = new RepositoryAnalysisResponseParser(),
+  promptBuilder,
+  analysisClient,
+  responseParser,
 }: RepositoryAnalysisServiceDependencies): RepositoryAnalysisService {
-  return new RepositoryAnalysisService({
+  return new RepositoryAnalysisService(resolveAnalysisServiceComposition({
     snapshotProvider,
     promptBuilder,
     analysisClient,
     responseParser,
-  });
+  }, {
+    createPromptBuilder: () => new RepositoryAnalysisPromptBuilder(),
+    createAnalysisClient: () => new OpenAIRepositoryAnalysisClient(),
+    createResponseParser: () => new RepositoryAnalysisResponseParser(),
+  }));
 }
