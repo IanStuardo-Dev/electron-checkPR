@@ -1,8 +1,4 @@
-export {
-  repositoryProviders,
-  getRepositoryProvider,
-  countAvailableRepositoryProviders,
-} from './providers';
+export { countAvailableRepositoryProviders } from './providers';
 export type {
   RepositorySourceDiagnostics,
   RepositorySourceScope,
