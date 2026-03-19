@@ -35,6 +35,11 @@ jest.mock('../../../src/main/ipc/register', () => ({
   registerIpcHandlers: jest.fn(),
 }));
 
+jest.mock('../../../src/main/ipc/session-secrets', () => ({
+  SessionSecretsStore: jest.fn().mockImplementation(() => ({ kind: 'session-secrets-store' })),
+  registerSessionSecretsIpc: jest.fn(),
+}));
+
 jest.mock('../../../src/main/ipc/window-controls', () => ({
   attachWindowStateSync: jest.fn(),
 }));
@@ -46,9 +51,9 @@ jest.mock('../../../src/services/providers/repository-provider.bootstrap', () =>
 }));
 
 const { registerIpcHandlers } = require('../../../src/main/ipc/register');
+const { SessionSecretsStore } = require('../../../src/main/ipc/session-secrets');
 const { attachWindowStateSync } = require('../../../src/main/ipc/window-controls');
 const {
-  buildDefaultRepositoryProviderPorts,
   buildDefaultRepositoryProviderModules,
   registerDefaultRepositoryProviders,
 } = require('../../../src/services/providers/repository-provider.bootstrap');
@@ -159,7 +164,13 @@ describe('main process bootstrap', () => {
     expect(buildDefaultRepositoryProviderModules).toHaveBeenCalled();
     expect(createRepositoryProviderRegistryFromModules).toHaveBeenCalled();
     expect(registerDefaultRepositoryProviders).not.toHaveBeenCalled();
-    expect(registerIpcHandlers).toHaveBeenCalled();
+    expect(SessionSecretsStore).toHaveBeenCalled();
+    expect(registerIpcHandlers).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      { kind: 'session-secrets-store' },
+    );
     expect(browserWindowMock).toHaveBeenCalled();
   });
 
@@ -167,7 +178,12 @@ describe('main process bootstrap', () => {
     readyCallback();
 
     expect(buildDefaultRepositoryProviderModules).toHaveBeenCalled();
-    expect(registerIpcHandlers).toHaveBeenCalled();
+    expect(registerIpcHandlers).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      { kind: 'session-secrets-store' },
+    );
   });
 
   test('window-all-closed cierra la app fuera de macOS', () => {
