@@ -4,6 +4,7 @@ import type {
   PullRequestAnalysisResponseParserPort,
   PullRequestAnalysisSnapshotProviderPort,
 } from './pull-request-analysis.ports';
+import { resolveAnalysisServiceComposition } from './analysis-service.composition';
 import { OpenAIPullRequestAnalysisClient } from './pull-request-analysis.openai-client';
 import { PullRequestAnalysisPromptBuilder } from './pull-request-analysis.prompt-builder';
 import { PullRequestAnalysisResponseParser } from './pull-request-analysis.response-parser';
@@ -18,14 +19,18 @@ export interface PullRequestAnalysisServiceDependencies {
 
 export function createPullRequestAnalysisService({
   snapshotProvider,
-  promptBuilder = new PullRequestAnalysisPromptBuilder(),
-  analysisClient = new OpenAIPullRequestAnalysisClient(),
-  responseParser = new PullRequestAnalysisResponseParser(),
+  promptBuilder,
+  analysisClient,
+  responseParser,
 }: PullRequestAnalysisServiceDependencies): PullRequestAnalysisService {
-  return new PullRequestAnalysisService({
+  return new PullRequestAnalysisService(resolveAnalysisServiceComposition({
     snapshotProvider,
     promptBuilder,
     analysisClient,
     responseParser,
-  });
+  }, {
+    createPromptBuilder: () => new PullRequestAnalysisPromptBuilder(),
+    createAnalysisClient: () => new OpenAIPullRequestAnalysisClient(),
+    createResponseParser: () => new PullRequestAnalysisResponseParser(),
+  }));
 }
