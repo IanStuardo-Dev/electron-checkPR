@@ -41,6 +41,7 @@ jest.mock('../../../src/main/ipc/window-controls', () => ({
 
 jest.mock('../../../src/services/providers/repository-provider.bootstrap', () => ({
   buildDefaultRepositoryProviderPorts: jest.fn(() => []),
+  buildDefaultRepositoryProviderModules: jest.fn(() => []),
   registerDefaultRepositoryProviders: jest.fn(),
 }));
 
@@ -48,8 +49,16 @@ const { registerIpcHandlers } = require('../../../src/main/ipc/register');
 const { attachWindowStateSync } = require('../../../src/main/ipc/window-controls');
 const {
   buildDefaultRepositoryProviderPorts,
+  buildDefaultRepositoryProviderModules,
   registerDefaultRepositoryProviders,
 } = require('../../../src/services/providers/repository-provider.bootstrap');
+jest.mock('../../../src/services/providers/repository-provider.composition', () => ({
+  createRepositoryProviderRegistry: jest.fn(() => ({ get: jest.fn(), list: jest.fn(() => []) })),
+  createRepositoryProviderRegistryFromModules: jest.fn(() => ({ get: jest.fn(), list: jest.fn(() => []) })),
+}));
+const {
+  createRepositoryProviderRegistryFromModules,
+} = require('../../../src/services/providers/repository-provider.composition');
 const main = require('../../../src/main');
 const { app, BrowserWindow } = require('electron');
 
@@ -147,7 +156,8 @@ describe('main process bootstrap', () => {
   test('bootstrapMainProcess registra providers, ipc y crea ventana', () => {
     main.bootstrapMainProcess();
 
-    expect(buildDefaultRepositoryProviderPorts).toHaveBeenCalled();
+    expect(buildDefaultRepositoryProviderModules).toHaveBeenCalled();
+    expect(createRepositoryProviderRegistryFromModules).toHaveBeenCalled();
     expect(registerDefaultRepositoryProviders).not.toHaveBeenCalled();
     expect(registerIpcHandlers).toHaveBeenCalled();
     expect(browserWindowMock).toHaveBeenCalled();
@@ -156,7 +166,7 @@ describe('main process bootstrap', () => {
   test('cuando app esta lista ejecuta bootstrapMainProcess', () => {
     readyCallback();
 
-    expect(buildDefaultRepositoryProviderPorts).toHaveBeenCalled();
+    expect(buildDefaultRepositoryProviderModules).toHaveBeenCalled();
     expect(registerIpcHandlers).toHaveBeenCalled();
   });
 
