@@ -4,6 +4,7 @@ jest.mock('../../../src/main/ipc/shared', () => ({
 
 const { registerHandle } = require('../../../src/main/ipc/shared');
 const analysisShared = require('../../../src/main/ipc/analysis.shared');
+const { createAnalysisIpcHandlers } = require('../../../src/main/ipc/analysis-handlers');
 const {
   sanitizeAnalysisPayload,
   sanitizePullRequestAnalysisPayload,
@@ -131,7 +132,11 @@ describe('analysis ipc', () => {
       get: jest.fn().mockReturnValue('sk-session'),
     };
 
-    registerAnalysisIpc(repositoryAnalysisService, pullRequestAnalysisService, sessionSecretsStore);
+    registerAnalysisIpc(createAnalysisIpcHandlers(
+      repositoryAnalysisService,
+      pullRequestAnalysisService,
+      { readCodexApiKey: () => sessionSecretsStore.get() },
+    ));
 
     expect(registerHandle).toHaveBeenCalledTimes(6);
     const previewHandler = registerHandle.mock.calls[0][1];
@@ -254,6 +259,51 @@ describe('analysis ipc', () => {
     expect(pullRequestAnalysisService.previewBatch).toHaveBeenCalled();
     expect(pullRequestAnalysisService.analyzeBatch).toHaveBeenCalled();
     expect(pullRequestAnalysisService.cancelAnalysis).toHaveBeenCalledWith('pr-ai-1');
+  });
+
+  test('createAnalysisIpcHandlers encapsula sanitizacion y resolucion de api key', async () => {
+    const repositoryAnalysisService = {
+      previewSnapshot: jest.fn().mockResolvedValue({ repository: 'repo-a' }),
+      runAnalysis: jest.fn().mockResolvedValue({ summary: 'ok' }),
+      cancelAnalysis: jest.fn(),
+    };
+    const pullRequestAnalysisService = {
+      previewBatch: jest.fn().mockResolvedValue([]),
+      analyzeBatch: jest.fn().mockResolvedValue([]),
+      cancelAnalysis: jest.fn(),
+    };
+
+    const handlers = createAnalysisIpcHandlers(
+      repositoryAnalysisService,
+      pullRequestAnalysisService,
+      { readCodexApiKey: () => 'sk-session' },
+    );
+
+    await handlers.runRepositoryAnalysis({
+      requestId: 'req-1',
+      source: {
+        provider: 'github',
+        organization: 'acme',
+        project: 'repo-a',
+        repositoryId: 'repo-a',
+        personalAccessToken: 'pat',
+      },
+      repositoryId: 'repo-a',
+      branchName: 'main',
+      model: 'gpt-5.2-codex',
+      apiKey: '',
+      analysisDepth: 'standard',
+      maxFilesPerRun: 50,
+      includeTests: false,
+      timeoutMs: 90000,
+    });
+
+    expect(repositoryAnalysisService.runAnalysis).toHaveBeenCalledWith(expect.objectContaining({
+      apiKey: 'sk-session',
+      source: expect.objectContaining({
+        provider: 'github',
+      }),
+    }));
   });
 
   test('sanitizePullRequestAnalysisPayload normaliza source y items', () => {

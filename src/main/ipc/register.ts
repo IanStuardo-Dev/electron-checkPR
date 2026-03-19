@@ -1,4 +1,6 @@
 import { registerAnalysisIpc } from './analysis';
+import { createAnalysisIpcHandlers } from './analysis-handlers';
+import { createAnalysisApiKeyResolver } from './analysis-api-key-resolver';
 import { registerRepositoryProviderIpc } from './repository-providers';
 import { registerSessionSecretsIpc, SessionSecretsStore } from './session-secrets';
 import { registerWindowControlsIpc } from './window-controls';
@@ -13,7 +15,11 @@ export function registerIpcHandlers(
 ): void {
   const sessionSecretsStore = new SessionSecretsStore();
   registerRepositoryProviderIpc(providerRegistry);
-  registerAnalysisIpc(repositoryAnalysisService, pullRequestAnalysisService, sessionSecretsStore);
+  registerAnalysisIpc(createAnalysisIpcHandlers(
+    repositoryAnalysisService,
+    pullRequestAnalysisService,
+    createAnalysisApiKeyResolver(sessionSecretsStore),
+  ));
   registerSessionSecretsIpc(sessionSecretsStore);
   registerWindowControlsIpc();
 }
