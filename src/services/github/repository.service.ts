@@ -1,10 +1,9 @@
 import type { PullRequestSnapshotOptions, RepositoryBranch, RepositoryConnectionConfig, RepositoryProject, RepositorySnapshotOptions, RepositorySummary, ReviewItem } from '../../types/repository';
 import type { PullRequestSnapshot, RepositorySnapshot } from '../../types/analysis';
-import { getGitHubConfig, readGitHubResponse } from './github.api';
 import { getGitHubBranches, getGitHubProjects, getGitHubRepositories } from './github.repositories';
 import { getGitHubPullRequests } from './github.pull-requests';
 import { getGitHubPullRequestSnapshot } from './github.pr-snapshot';
-import { enumerateGitHubContents, getGitHubRepositorySnapshot } from './github.snapshot';
+import { getGitHubRepositorySnapshot } from './github.snapshot';
 
 export class GitHubRepositoryService {
   async getProjects(config: RepositoryConnectionConfig): Promise<RepositoryProject[]> {
@@ -38,11 +37,3 @@ export class GitHubRepositoryService {
     return getGitHubRepositorySnapshot(config, options);
   }
 }
-
-export const gitHubRepositoryServiceInternals = {
-  getGitHubConfig,
-  readGitHubResponse,
-  enumerateGitHubContents,
-};
-
-export const gitHubRepositoryService = new GitHubRepositoryService();

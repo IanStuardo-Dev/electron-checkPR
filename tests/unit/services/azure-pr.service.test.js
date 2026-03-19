@@ -1,4 +1,5 @@
-const { PullRequestService, pullRequestServiceInternals } = require('../../../src/services/azure/pr.service');
+const { normalizeOrganization, normalizeProject, readAzureResponse } = require('../../../src/services/azure/azure.api');
+const { PullRequestService } = require('../../../src/services/azure/pr.service');
 
 describe('PullRequestService', () => {
   afterEach(() => {
@@ -6,8 +7,8 @@ describe('PullRequestService', () => {
   });
 
   test('normaliza organization y project desde URLs completas', () => {
-    expect(pullRequestServiceInternals.normalizeOrganization('https://dev.azure.com/EsmaxDevelop/')).toBe('EsmaxDevelop');
-    expect(pullRequestServiceInternals.normalizeProject('https://dev.azure.com/EsmaxDevelop/ProyectoUno/_git/repo')).toBe('ProyectoUno');
+    expect(normalizeOrganization('https://dev.azure.com/EsmaxDevelop/')).toBe('EsmaxDevelop');
+    expect(normalizeProject('https://dev.azure.com/EsmaxDevelop/ProyectoUno/_git/repo')).toBe('ProyectoUno');
   });
 
   test('getProjects mapea la respuesta de Azure', async () => {
@@ -52,7 +53,7 @@ describe('PullRequestService', () => {
     });
 
     await expect(
-      pullRequestServiceInternals.readAzureResponse(response, 'projects request'),
+      readAzureResponse(response, 'projects request'),
     ).rejects.toThrow('Azure DevOps projects request failed (401): unauthorized. Response: Unauthorized');
   });
 });

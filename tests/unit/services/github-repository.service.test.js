@@ -1,4 +1,5 @@
-const { GitHubRepositoryService, gitHubRepositoryServiceInternals } = require('../../../src/services/github/repository.service');
+const { readGitHubResponse } = require('../../../src/services/github/github.api');
+const { GitHubRepositoryService } = require('../../../src/services/github/repository.service');
 
 describe('GitHubRepositoryService', () => {
   afterEach(() => {
@@ -123,7 +124,7 @@ describe('GitHubRepositoryService', () => {
     });
 
     await expect(
-      gitHubRepositoryServiceInternals.readGitHubResponse(response, 'repositories request'),
+      readGitHubResponse(response, 'repositories request'),
     ).rejects.toThrow('GitHub repositories request failed (403): forbidden. Revisa scopes del token. Response: Forbidden');
   });
 

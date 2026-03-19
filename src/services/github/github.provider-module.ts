@@ -1,10 +1,10 @@
 import type { RepositoryProviderModule } from '../providers/repository-provider.module';
-import { gitHubRepositoryService } from './repository.service';
+import { GitHubRepositoryService } from './repository.service';
 
 export const githubProviderModule: RepositoryProviderModule = {
   kind: 'github',
   createPort() {
-    return Object.assign(gitHubRepositoryService, {
+    return Object.assign(new GitHubRepositoryService(), {
       kind: 'github' as const,
     });
   },

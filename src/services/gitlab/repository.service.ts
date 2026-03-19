@@ -37,5 +37,3 @@ export class GitLabRepositoryService {
     return getGitLabRepositorySnapshot(config, options);
   }
 }
-
-export const gitLabRepositoryService = new GitLabRepositoryService();

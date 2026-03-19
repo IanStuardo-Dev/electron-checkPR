@@ -1,5 +1,5 @@
 const bootstrap = require('../../../src/services/providers/repository-provider.bootstrap');
-const { pullRequestService } = require('../../../src/services/azure/pr.service');
+const { PullRequestService } = require('../../../src/services/azure/pr.service');
 
 describe('repository provider bootstrap', () => {
   test('construye los modules por defecto sin depender de estado global', () => {
@@ -29,12 +29,12 @@ describe('repository provider bootstrap', () => {
 
   test('el provider delega las llamadas al servicio concreto', async () => {
     const [azureProvider] = bootstrap.buildDefaultRepositoryProviderModules().map((module) => module.createPort());
-    jest.spyOn(pullRequestService, 'getProjects').mockResolvedValueOnce([{ id: '1', name: 'Core' }]);
-    jest.spyOn(pullRequestService, 'getRepositories').mockResolvedValueOnce([{ id: 'repo', name: 'repo' }]);
-    jest.spyOn(pullRequestService, 'getBranches').mockResolvedValueOnce([{ name: 'main', objectId: '1', isDefault: true }]);
-    jest.spyOn(pullRequestService, 'getPullRequests').mockResolvedValueOnce([{ id: 1 }]);
-    jest.spyOn(pullRequestService, 'getPullRequestSnapshot').mockResolvedValueOnce({ repository: 'repo' });
-    jest.spyOn(pullRequestService, 'getRepositorySnapshot').mockResolvedValueOnce({ repository: 'repo', branch: 'main' });
+    jest.spyOn(PullRequestService.prototype, 'getProjects').mockResolvedValueOnce([{ id: '1', name: 'Core' }]);
+    jest.spyOn(PullRequestService.prototype, 'getRepositories').mockResolvedValueOnce([{ id: 'repo', name: 'repo' }]);
+    jest.spyOn(PullRequestService.prototype, 'getBranches').mockResolvedValueOnce([{ name: 'main', objectId: '1', isDefault: true }]);
+    jest.spyOn(PullRequestService.prototype, 'getPullRequests').mockResolvedValueOnce([{ id: 1 }]);
+    jest.spyOn(PullRequestService.prototype, 'getPullRequestSnapshot').mockResolvedValueOnce({ repository: 'repo' });
+    jest.spyOn(PullRequestService.prototype, 'getRepositorySnapshot').mockResolvedValueOnce({ repository: 'repo', branch: 'main' });
 
     const config = { provider: 'azure-devops', organization: 'org', project: 'proj', repositoryId: 'repo', personalAccessToken: 'pat' };
     const pr = { id: 1 };
