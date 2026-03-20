@@ -108,51 +108,62 @@ const azureBehavior: RepositorySourceProviderBehavior = {
   },
 };
 
-const namespaceBehavior: RepositorySourceProviderBehavior = {
-  mirrorsProjectsAsRepositories: true,
-  buildScopeLabel: buildNamespaceScopeLabel,
-  buildRequestPath(operation, config) {
-    const organization = config.organization.trim();
-    const repository = config.repositoryId?.trim() || config.project.trim();
+function createNamespaceBehavior(
+  buildRequestPath: RepositorySourceProviderBehavior['buildRequestPath'],
+): RepositorySourceProviderBehavior {
+  return {
+    mirrorsProjectsAsRepositories: true,
+    buildScopeLabel: buildNamespaceScopeLabel,
+    buildRequestPath,
+    applyConfigChange: applyGenericConfigChange,
+    applyProjectSelection(current, project) {
+      return {
+        ...current,
+        project,
+        repositoryId: project,
+      };
+    },
+    hasMinimumRepositoryConfig(config) {
+      return Boolean(config.organization && config.personalAccessToken);
+    },
+  };
+}
 
-    if (config.provider === 'github') {
-      if (operation === 'projects' || operation === 'repositories') {
-        return 'https://api.github.com/user/repos';
-      }
+function buildGitHubRequestPath(operation: RepositorySourceOperation, config: SavedConnectionConfig): string {
+  const organization = config.organization.trim();
+  const repository = config.repositoryId?.trim() || config.project.trim();
 
-      if (operation === 'pullRequests') {
-        return repository
-          ? `https://api.github.com/repos/${organization}/${repository}/pulls`
-          : 'https://api.github.com/user/repos -> /repos/{owner}/{repo}/pulls';
-      }
+  if (operation === 'projects' || operation === 'repositories') {
+    return 'https://api.github.com/user/repos';
+  }
 
-      return '';
-    }
+  if (operation === 'pullRequests') {
+    return repository
+      ? `https://api.github.com/repos/${organization}/${repository}/pulls`
+      : 'https://api.github.com/user/repos -> /repos/{owner}/{repo}/pulls';
+  }
 
-    if (operation === 'projects' || operation === 'repositories') {
-      return 'https://gitlab.com/api/v4/projects';
-    }
+  return '';
+}
 
-    if (operation === 'pullRequests') {
-      return repository
-        ? `https://gitlab.com/api/v4/projects/${encodeURIComponent(repository)}/merge_requests`
-        : 'https://gitlab.com/api/v4/projects -> /projects/{id}/merge_requests';
-    }
+function buildGitLabRequestPath(operation: RepositorySourceOperation, config: SavedConnectionConfig): string {
+  const repository = config.repositoryId?.trim() || config.project.trim();
 
-    return '';
-  },
-  applyConfigChange: applyGenericConfigChange,
-  applyProjectSelection(current, project) {
-    return {
-      ...current,
-      project,
-      repositoryId: project,
-    };
-  },
-  hasMinimumRepositoryConfig(config) {
-    return Boolean(config.organization && config.personalAccessToken);
-  },
-};
+  if (operation === 'projects' || operation === 'repositories') {
+    return 'https://gitlab.com/api/v4/projects';
+  }
+
+  if (operation === 'pullRequests') {
+    return repository
+      ? `https://gitlab.com/api/v4/projects/${encodeURIComponent(repository)}/merge_requests`
+      : 'https://gitlab.com/api/v4/projects -> /projects/{id}/merge_requests';
+  }
+
+  return '';
+}
+
+const githubBehavior = createNamespaceBehavior(buildGitHubRequestPath);
+const gitlabBehavior = createNamespaceBehavior(buildGitLabRequestPath);
 
 const repositorySourceProviderRegistry: RepositorySourceProviderEntry[] = [
   {
@@ -169,7 +180,7 @@ const repositorySourceProviderRegistry: RepositorySourceProviderEntry[] = [
     status: 'available',
     description: 'Segundo provider operativo. Soporta owner, repositorios, ramas y Pull Requests abiertos.',
     helperText: 'Usa owner u organizacion y un personal access token clasico o fine-grained con permisos sobre Pull requests y Contents.',
-    behavior: namespaceBehavior,
+    behavior: githubBehavior,
   },
   {
     kind: 'gitlab',
@@ -177,7 +188,7 @@ const repositorySourceProviderRegistry: RepositorySourceProviderEntry[] = [
     status: 'available',
     description: 'Tercer provider operativo. Soporta namespace, proyectos, ramas y Merge Requests abiertos.',
     helperText: 'Usa group/namespace y un personal access token con scopes de lectura sobre API y repositorios.',
-    behavior: namespaceBehavior,
+    behavior: gitlabBehavior,
   },
   {
     kind: 'bitbucket',

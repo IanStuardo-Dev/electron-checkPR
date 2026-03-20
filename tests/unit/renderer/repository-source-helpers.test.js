@@ -138,6 +138,47 @@ describe('repository source helpers', () => {
     expect(providerBehavior.getRepositorySourceProviderBehavior('bitbucket')).toBeNull();
   });
 
+  test('cada provider namespace resuelve su requestPath sin condicionales compartidos', () => {
+    const githubBehavior = providerBehavior.getRepositorySourceProviderBehavior('github');
+    const gitlabBehavior = providerBehavior.getRepositorySourceProviderBehavior('gitlab');
+
+    const githubPullRequestsPath = githubBehavior.buildRequestPath('pullRequests', {
+      provider: 'github',
+      organization: 'acme',
+      project: '',
+      repositoryId: 'repo-a',
+      personalAccessToken: '',
+      targetReviewer: '',
+    });
+    const gitlabPullRequestsPath = gitlabBehavior.buildRequestPath('pullRequests', {
+      provider: 'gitlab',
+      organization: 'acme/platform',
+      project: '',
+      repositoryId: 'acme/platform/repo-a',
+      personalAccessToken: '',
+      targetReviewer: '',
+    });
+
+    expect(githubPullRequestsPath).toBe('https://api.github.com/repos/acme/repo-a/pulls');
+    expect(gitlabPullRequestsPath).toBe(`https://gitlab.com/api/v4/projects/${encodeURIComponent('acme/platform/repo-a')}/merge_requests`);
+    expect(githubBehavior.buildRequestPath(null, {
+      provider: 'github',
+      organization: 'acme',
+      project: '',
+      repositoryId: '',
+      personalAccessToken: '',
+      targetReviewer: '',
+    })).toBe('');
+    expect(gitlabBehavior.buildRequestPath(null, {
+      provider: 'gitlab',
+      organization: 'acme',
+      project: '',
+      repositoryId: '',
+      personalAccessToken: '',
+      targetReviewer: '',
+    })).toBe('');
+  });
+
   test('hasMinimumProjectDiscoveryConfig y hasMinimumRepositoryConfig validan por provider', () => {
     expect(rules.hasMinimumProjectDiscoveryConfig({
       provider: 'github',
