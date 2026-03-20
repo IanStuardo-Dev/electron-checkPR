@@ -2,6 +2,10 @@ import type { RepositoryAnalysisRequest } from '../../types/analysis';
 import type { SnapshotProviderPort } from './repository-analysis.ports';
 import type { RepositorySnapshotProviderPort } from '../providers/repository-provider.port';
 import type { RepositoryProviderKind } from '../../types/repository';
+import {
+  resolveRepositoryAnalysisSourceConfig,
+  type RepositoryAnalysisSourceResolver,
+} from './repository-analysis.source-resolver';
 
 interface RepositorySnapshotProviderRegistryPort {
   get(kind: RepositoryProviderKind): RepositorySnapshotProviderPort;
@@ -10,17 +14,12 @@ interface RepositorySnapshotProviderRegistryPort {
 export class RepositoryAnalysisSnapshotProvider implements SnapshotProviderPort {
   constructor(
     private readonly providerRegistry: RepositorySnapshotProviderRegistryPort,
+    private readonly sourceResolver: RepositoryAnalysisSourceResolver = resolveRepositoryAnalysisSourceConfig,
   ) {}
 
   async getSnapshot(request: RepositoryAnalysisRequest) {
     const provider = this.providerRegistry.get(request.source.provider);
-    const sourceConfig = {
-      ...request.source,
-      repositoryId: request.repositoryId,
-      project: request.source.provider === 'azure-devops'
-        ? request.source.project
-        : request.repositoryId || request.source.project,
-    };
+    const sourceConfig = this.sourceResolver(request);
 
     const options = {
       branchName: request.branchName,
