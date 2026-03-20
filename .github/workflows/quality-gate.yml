@@ -11,6 +11,9 @@ on:
       - 'chore/**'
       - 'perf/**'
 
+permissions:
+  contents: read
+
 jobs:
   quality-gate:
     runs-on: ubuntu-latest
