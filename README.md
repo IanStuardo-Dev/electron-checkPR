@@ -235,6 +235,7 @@ Puntos importantes del proyecto:
 - `contextIsolation` esta activado
 - la comunicacion nativa pasa por canales IPC permitidos explicitamente en `preload`
 - los secretos de sesion se manejan via bridge nativo
+- reporte responsable de vulnerabilidades en [.github/SECURITY.md](.github/SECURITY.md)
 
 Si abres solo el renderer en navegador, no tendras acceso a integraciones nativas, sincronizacion por IPC ni analisis completos.
 
