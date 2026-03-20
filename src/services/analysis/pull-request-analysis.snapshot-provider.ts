@@ -1,10 +1,15 @@
 import type { PullRequestAnalysisBatchRequest, PullRequestSnapshot } from '../../types/analysis';
-import type { RepositoryProviderRegistry } from '../providers/repository-provider.registry';
 import type { PullRequestAnalysisSnapshotProviderPort } from './pull-request-analysis.ports';
+import type { PullRequestSnapshotProviderPort } from '../providers/repository-provider.port';
+import type { RepositoryProviderKind } from '../../types/repository';
+
+interface PullRequestSnapshotProviderRegistryPort {
+  get(kind: RepositoryProviderKind): PullRequestSnapshotProviderPort;
+}
 
 export class PullRequestAnalysisSnapshotProvider implements PullRequestAnalysisSnapshotProviderPort {
   constructor(
-    private readonly providerRegistry: RepositoryProviderRegistry,
+    private readonly providerRegistry: PullRequestSnapshotProviderRegistryPort,
   ) {}
 
   async getSnapshot(

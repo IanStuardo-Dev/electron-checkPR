@@ -1,10 +1,15 @@
 import type { RepositoryAnalysisRequest } from '../../types/analysis';
 import type { SnapshotProviderPort } from './repository-analysis.ports';
-import type { RepositoryProviderRegistry } from '../providers/repository-provider.registry';
+import type { RepositorySnapshotProviderPort } from '../providers/repository-provider.port';
+import type { RepositoryProviderKind } from '../../types/repository';
+
+interface RepositorySnapshotProviderRegistryPort {
+  get(kind: RepositoryProviderKind): RepositorySnapshotProviderPort;
+}
 
 export class RepositoryAnalysisSnapshotProvider implements SnapshotProviderPort {
   constructor(
-    private readonly providerRegistry: RepositoryProviderRegistry,
+    private readonly providerRegistry: RepositorySnapshotProviderRegistryPort,
   ) {}
 
   async getSnapshot(request: RepositoryAnalysisRequest) {

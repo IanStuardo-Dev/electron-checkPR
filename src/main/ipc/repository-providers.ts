@@ -1,9 +1,13 @@
 import { shell } from 'electron';
-import type { RepositoryProviderRegistry } from '../../services/providers/repository-provider.registry';
+import type { RepositorySourceProviderPort } from '../../services/providers/repository-provider.port';
 import type { RepositoryConnectionConfig, RepositoryProviderKind } from '../../types/repository';
 import { supportsRepositoryProviderCapability } from '../../services/providers/repository-provider.capabilities';
 import { validateExternalUrl } from './external-links';
 import { registerHandle } from './shared';
+
+interface RepositorySourceProviderRegistryPort {
+  get(kind: RepositoryProviderKind): RepositorySourceProviderPort;
+}
 
 function readProvider(config: Pick<RepositoryConnectionConfig, 'provider'>): RepositoryProviderKind {
   if (!config?.provider) {
@@ -14,7 +18,7 @@ function readProvider(config: Pick<RepositoryConnectionConfig, 'provider'>): Rep
 }
 
 function resolveRepositorySourceProvider(
-  providerRegistry: RepositoryProviderRegistry,
+  providerRegistry: RepositorySourceProviderRegistryPort,
   config: Pick<RepositoryConnectionConfig, 'provider'>,
 ) {
   const providerKind = readProvider(config);
@@ -26,7 +30,7 @@ function resolveRepositorySourceProvider(
   return providerRegistry.get(providerKind);
 }
 
-export function registerRepositoryProviderIpc(providerRegistry: RepositoryProviderRegistry): void {
+export function registerRepositoryProviderIpc(providerRegistry: RepositorySourceProviderRegistryPort): void {
   registerHandle<RepositoryConnectionConfig, unknown[]>('repository-source:fetchPullRequests', async (config) => (
     resolveRepositorySourceProvider(providerRegistry, config).getPullRequests(config)
   ));

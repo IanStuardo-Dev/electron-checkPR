@@ -17,4 +17,18 @@ describe('repository provider composition', () => {
     const registry = createRepositoryProviderRegistryFromModules(buildDefaultRepositoryProviderModules());
     expect(registry.list().map((provider) => provider.kind)).toEqual(['azure-devops', 'github', 'gitlab']);
   });
+
+  test('los providers por defecto exponen capacidades segregadas requeridas', () => {
+    const registry = createRepositoryProviderRegistry(buildDefaultRepositoryProviderPorts());
+    const providers = registry.list();
+
+    providers.forEach((provider) => {
+      expect(typeof provider.getProjects).toBe('function');
+      expect(typeof provider.getRepositories).toBe('function');
+      expect(typeof provider.getBranches).toBe('function');
+      expect(typeof provider.getPullRequests).toBe('function');
+      expect(typeof provider.getPullRequestSnapshot).toBe('function');
+      expect(typeof provider.getRepositorySnapshot).toBe('function');
+    });
+  });
 });
