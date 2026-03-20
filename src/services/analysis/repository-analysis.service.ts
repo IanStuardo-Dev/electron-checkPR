@@ -6,6 +6,7 @@ import type {
   SnapshotProviderPort,
 } from './repository-analysis.ports';
 import { buildRepositoryAnalysisPreview } from './repository-analysis.preview';
+import { RepositoryAnalysisRunStateManager } from './repository-analysis.run-state';
 
 interface RepositoryAnalysisServiceDependencies {
   snapshotProvider: SnapshotProviderPort;
@@ -14,21 +15,15 @@ interface RepositoryAnalysisServiceDependencies {
   responseParser: AnalysisResponseParserPort;
 }
 
-interface ActiveAnalysisRun {
-  cancelled: boolean;
-  controller: AbortController | null;
-  timeoutId: NodeJS.Timeout | null;
-}
-
 const DEFAULT_ANALYSIS_TIMEOUT_MS = 90_000;
 
 export class RepositoryAnalysisService {
-  private activeRuns = new Map<string, ActiveAnalysisRun>();
-
   private readonly snapshotProvider: SnapshotProviderPort;
   private readonly promptBuilder: AnalysisPromptBuilderPort;
   private readonly analysisClient: AnalysisClientPort;
   private readonly responseParser: AnalysisResponseParserPort;
+  private readonly runStateManager = new RepositoryAnalysisRunStateManager();
+  readonly activeRuns = this.runStateManager.activeRuns;
 
   constructor({
     snapshotProvider,
@@ -57,28 +52,18 @@ export class RepositoryAnalysisService {
       throw new Error('La API key de Codex es obligatoria para ejecutar el analisis.');
     }
 
-    this.activeRuns.set(request.requestId, {
-      cancelled: false,
-      controller: null,
-      timeoutId: null,
-    });
+    this.runStateManager.registerRun(request.requestId);
 
     try {
       const snapshot = await this.snapshotProvider.getSnapshot(request);
-      this.assertRunNotCancelled(request.requestId);
+      this.runStateManager.assertNotCancelled(request.requestId);
       if (snapshot.files.length === 0) {
         throw new Error('No se encontraron archivos de codigo legibles para analizar en el scope seleccionado.');
       }
 
       const prompt = this.promptBuilder.build(request, snapshot);
       const timeoutMs = request.timeoutMs ?? DEFAULT_ANALYSIS_TIMEOUT_MS;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort('timeout'), timeoutMs);
-      const activeRun = this.activeRuns.get(request.requestId);
-      if (activeRun) {
-        activeRun.controller = controller;
-        activeRun.timeoutId = timeoutId;
-      }
+      const controller = this.runStateManager.createRemoteController(request.requestId, timeoutMs);
 
       try {
         const rawText = await this.analysisClient.analyze({
@@ -124,40 +109,11 @@ export class RepositoryAnalysisService {
         throw error;
       }
     } finally {
-      this.cleanupRun(request.requestId);
+      this.runStateManager.cleanupRun(request.requestId);
     }
   }
 
   cancelAnalysis(requestId: string): void {
-    const activeRun = this.activeRuns.get(requestId);
-    if (!activeRun) {
-      return;
-    }
-
-    activeRun.cancelled = true;
-    if (activeRun.controller) {
-      activeRun.controller.abort('cancelled');
-      this.cleanupRun(requestId);
-    }
-  }
-
-  private assertRunNotCancelled(requestId: string): void {
-    if (this.activeRuns.get(requestId)?.cancelled) {
-      this.cleanupRun(requestId);
-      throw new Error('El analisis fue cancelado antes de iniciar la consulta remota.');
-    }
-  }
-
-  private cleanupRun(requestId: string): void {
-    const activeRun = this.activeRuns.get(requestId);
-    if (!activeRun) {
-      return;
-    }
-
-    if (activeRun.timeoutId) {
-      clearTimeout(activeRun.timeoutId);
-    }
-
-    this.activeRuns.delete(requestId);
+    this.runStateManager.cancelRun(requestId);
   }
 }
