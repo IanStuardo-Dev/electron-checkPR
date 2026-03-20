@@ -35,6 +35,10 @@
   },
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=24.0.0 <25",
+    "npm": ">=10"
+  },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "@testing-library/jest-dom": "^6.9.1",
@@ -45,8 +49,8 @@
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
-    "@typescript-eslint/eslint-plugin": "^6.19.0",
-    "@typescript-eslint/parser": "^6.19.0",
+    "@typescript-eslint/eslint-plugin": "^8.57.1",
+    "@typescript-eslint/parser": "^8.57.1",
     "autoprefixer": "^10.4.17",
     "complexity-report": "^2.0.0-alpha",
     "concurrently": "^8.2.2",
@@ -56,7 +60,7 @@
     "electron": "^41.0.3",
     "electron-builder": "^26.8.1",
     "electron-reload": "^2.0.0-alpha.1",
-    "eslint": "^8.56.0",
+    "eslint": "^8.57.1",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-security": "^2.1.0",
@@ -75,7 +79,7 @@
     "wait-on": "^7.2.0",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^4.15.1"
+    "webpack-dev-server": "^5.2.3"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",

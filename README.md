@@ -104,7 +104,7 @@ Dentro del renderer se trabaja por features, por ejemplo:
 
 ## Requisitos
 
-- `Node.js 20+` recomendado
+- `Node.js 24.x` recomendado
 - `npm`
 - Windows, macOS o Linux con soporte para Electron
 
