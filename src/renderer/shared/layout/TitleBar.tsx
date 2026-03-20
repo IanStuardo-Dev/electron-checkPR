@@ -5,20 +5,10 @@ import {
   Squares2X2Icon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
-import {
-  getElectronApi,
-  subscribeToWindowStateChange,
-  invokeElectronApi,
-} from '../../shared/electron/electronBridge';
+import { useWindowControlsState } from './useWindowControlsState';
 
 const dragRegionStyle = { WebkitAppRegion: 'drag' } as React.CSSProperties & { WebkitAppRegion: 'drag' };
 const noDragRegionStyle = { WebkitAppRegion: 'no-drag' } as React.CSSProperties & { WebkitAppRegion: 'no-drag' };
-
-type WindowControlChannel =
-  | 'window-controls:get-state'
-  | 'window-controls:minimize'
-  | 'window-controls:toggle-maximize'
-  | 'window-controls:close';
 
 const pageMetadata: Record<string, { title: string }> = {
   '/': {
@@ -38,57 +28,6 @@ const pageMetadata: Record<string, { title: string }> = {
 const defaultMetadata = {
   title: 'CheckPR',
 };
-
-function detectRendererPlatform(): NodeJS.Platform {
-  if (typeof navigator === 'undefined') {
-    return 'win32';
-  }
-
-  const platformHint = (
-    (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform
-    ?? navigator.platform
-    ?? ''
-  ).toLowerCase();
-
-  if (platformHint.includes('mac')) {
-    return 'darwin';
-  }
-
-  if (platformHint.includes('win')) {
-    return 'win32';
-  }
-
-  if (platformHint.includes('linux')) {
-    return 'linux';
-  }
-
-  return 'win32';
-}
-
-function isWindowControlsState(value: unknown): value is WindowControlsState {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const candidate = value as Partial<WindowControlsState>;
-  return typeof candidate.isMaximized === 'boolean'
-    && typeof candidate.isFullScreen === 'boolean'
-    && typeof candidate.platform === 'string';
-}
-
-async function invokeWindowControl(channel: WindowControlChannel): Promise<WindowControlsState | null> {
-  if (!getElectronApi()) {
-    return null;
-  }
-
-  const response = await invokeElectronApi<unknown>(channel);
-
-  if (response === null) {
-    return null;
-  }
-
-  return isWindowControlsState(response) ? response : null;
-}
 
 interface TitleBarProps {
   pathname: string;
@@ -216,55 +155,13 @@ const DesktopWindowControls = ({
 
 const TitleBar = ({ pathname }: TitleBarProps) => {
   const metadata = pageMetadata[pathname] ?? defaultMetadata;
-  const supportsWindowControls = Boolean(getElectronApi()?.onWindowStateChange);
-  const [windowState, setWindowState] = React.useState<WindowControlsState>({
-    isMaximized: false,
-    isFullScreen: false,
-    platform: detectRendererPlatform(),
-  });
-
-  React.useEffect(() => {
-    let isSubscribed = true;
-
-    invokeWindowControl('window-controls:get-state')
-      .then((state) => {
-        if (state && isSubscribed) {
-          setWindowState(state);
-        }
-      })
-      .catch(() => undefined);
-
-    const unsubscribe = subscribeToWindowStateChange((state) => {
-      if (isSubscribed) {
-        setWindowState(state);
-      }
-    });
-
-    return () => {
-      isSubscribed = false;
-      unsubscribe();
-    };
-  }, []);
-
-  const handleMinimize = React.useCallback(async () => {
-    const nextState = await invokeWindowControl('window-controls:minimize');
-
-    if (nextState) {
-      setWindowState(nextState);
-    }
-  }, []);
-
-  const handleToggleMaximize = React.useCallback(async () => {
-    const nextState = await invokeWindowControl('window-controls:toggle-maximize');
-
-    if (nextState) {
-      setWindowState(nextState);
-    }
-  }, []);
-
-  const handleClose = React.useCallback(async () => {
-    await invokeWindowControl('window-controls:close');
-  }, []);
+  const {
+    supportsWindowControls,
+    windowState,
+    handleMinimize,
+    handleToggleMaximize,
+    handleClose,
+  } = useWindowControlsState();
 
   const isMacOS = supportsWindowControls && windowState.platform === 'darwin';
 
