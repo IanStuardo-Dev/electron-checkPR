@@ -11,11 +11,13 @@ export function buildDashboardSummary(
   targetReviewer?: string,
 ): DashboardSummary {
   const prioritizedPullRequests = prioritizePullRequests(pullRequests);
+  const metrics = buildMetrics(prioritizedPullRequests, targetReviewer);
+  const reviewerInsights = buildReviewerInsights(prioritizedPullRequests);
 
   return {
-    metrics: buildMetrics(prioritizedPullRequests, targetReviewer),
-    executiveMetrics: buildMetrics(prioritizedPullRequests, targetReviewer).slice(0, 4),
-    queueMetrics: buildMetrics(prioritizedPullRequests, targetReviewer),
+    metrics,
+    executiveMetrics: metrics.slice(0, 4),
+    queueMetrics: metrics,
     prioritizedPullRequests,
     operationalPullRequests: prioritizedPullRequests.map((pr) => ({
       ...pr,
@@ -29,8 +31,8 @@ export function buildDashboardSummary(
     })),
     repositoryInsights: buildRepositoryInsights(prioritizedPullRequests),
     branchInsights: buildBranchInsights(prioritizedPullRequests),
-    reviewerInsights: buildReviewerInsights(prioritizedPullRequests),
-    reviewerWorkload: buildReviewerInsights(prioritizedPullRequests),
+    reviewerInsights,
+    reviewerWorkload: reviewerInsights,
     deliveryIndicators: buildDeliveryIndicators(prioritizedPullRequests),
     reviewIndicators: buildReviewIndicators(prioritizedPullRequests),
     governanceAlerts: buildGovernanceAlerts(prioritizedPullRequests),

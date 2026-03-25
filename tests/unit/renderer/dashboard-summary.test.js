@@ -13,11 +13,14 @@ const {
   classifyBranch,
   formatLastUpdate,
 } = require('../../../src/renderer/shared/dashboard/summary-core');
+const summaryInsights = require('../../../src/renderer/shared/dashboard/summary-insights');
+const summaryIndicators = require('../../../src/renderer/shared/dashboard/summary-indicators');
+const { buildDashboardSummary } = require('../../../src/renderer/shared/dashboard/summary');
 const {
   buildRepositoryInsights,
   buildBranchInsights,
   buildReviewerInsights,
-} = require('../../../src/renderer/shared/dashboard/summary-insights');
+} = summaryInsights;
 
 function createPullRequest(overrides = {}) {
   return {
@@ -27,6 +30,7 @@ function createPullRequest(overrides = {}) {
     isDraft: false,
     mergeStatus: 'succeeded',
     sourceBranch: 'feature/auth',
+    targetBranch: 'main',
     reviewers: [
       { displayName: 'Alice', uniqueName: 'alice@example.com', vote: 0 },
       { displayName: 'Bob', uniqueName: 'bob@example.com', vote: 10 },
@@ -197,5 +201,34 @@ describe('dashboard summary helpers', () => {
       { reviewer: 'backend@example.com', pending: 1 },
       { reviewer: 'Unknown reviewer', pending: 1 },
     ]);
+  });
+
+  test('buildDashboardSummary evita recomputar metrics y reviewer insights', () => {
+    const metricsSpy = jest.spyOn(summaryIndicators, 'buildMetrics');
+    const reviewerInsightsSpy = jest.spyOn(summaryInsights, 'buildReviewerInsights');
+
+    const summary = buildDashboardSummary(
+      [
+        createPullRequest({
+          createdAt: '2026-03-12T00:00:00.000Z',
+          mergeStatus: 'merge conflict',
+        }),
+        createPullRequest({
+          repository: 'repo-b',
+          createdAt: '2026-03-15T00:00:00.000Z',
+          sourceBranch: 'hotfix/session',
+          reviewers: [],
+        }),
+      ],
+      new Date('2026-03-16T12:00:00.000Z'),
+      'All repositories',
+      'Alice',
+    );
+
+    expect(metricsSpy).toHaveBeenCalledTimes(1);
+    expect(reviewerInsightsSpy).toHaveBeenCalledTimes(1);
+    expect(summary.executiveMetrics).toEqual(summary.metrics.slice(0, 4));
+    expect(summary.queueMetrics).toBe(summary.metrics);
+    expect(summary.reviewerWorkload).toBe(summary.reviewerInsights);
   });
 });
