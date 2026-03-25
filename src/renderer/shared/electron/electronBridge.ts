@@ -23,14 +23,14 @@ export function hasElectronApi(): boolean {
   return getElectronApi() !== null;
 }
 
-export async function invokeElectronApi<T>(channel: string, payload?: unknown): Promise<T> {
+export async function invokeElectronApi<T>(command: string, payload?: unknown): Promise<T> {
   const electronApi = getElectronApi();
 
   if (!electronApi) {
     throw new Error(ELECTRON_BRIDGE_HELP_MESSAGE);
   }
 
-  return electronApi.invoke(channel, payload) as Promise<T>;
+  return electronApi.invoke(command, payload) as Promise<T>;
 }
 
 export function subscribeToWindowStateChange(listener: (state: WindowControlsState) => void): () => void {

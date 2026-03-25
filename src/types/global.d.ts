@@ -7,7 +7,7 @@ declare global {
 
   interface Window {
     electronApi?: {
-      invoke: (channel: string, payload?: unknown) => Promise<unknown>;
+      invoke: (command: string, payload?: unknown) => Promise<unknown>;
       onWindowStateChange: (listener: (payload: WindowControlsState) => void) => () => void;
     };
   }

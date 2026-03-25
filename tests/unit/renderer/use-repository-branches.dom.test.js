@@ -1,10 +1,10 @@
 const { renderHook, waitFor, act } = require('@testing-library/react');
 
-jest.mock('../../../src/renderer/features/repository-source/data/repositorySourceIpc', () => ({
+jest.mock('../../../src/renderer/features/repository-source/data/repositorySourceBridge', () => ({
   fetchBranches: jest.fn(),
 }));
 
-const { fetchBranches } = require('../../../src/renderer/features/repository-source/data/repositorySourceIpc');
+const { fetchBranches } = require('../../../src/renderer/features/repository-source/data/repositorySourceBridge');
 const { useRepositoryBranches } = require('../../../src/renderer/features/repository-analysis/presentation/hooks/useRepositoryBranches');
 
 function createConfig(overrides = {}) {
@@ -171,3 +171,4 @@ describe('useRepositoryBranches', () => {
     expect(fetchBranches).toHaveBeenCalled();
   });
 });
+

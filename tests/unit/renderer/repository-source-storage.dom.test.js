@@ -60,7 +60,7 @@ describe('repository source storage', () => {
     });
   });
 
-  test('hydrateConnectionSecret lee el secreto desde ipc', async () => {
+  test('hydrateConnectionSecret lee el secreto desde bridge', async () => {
     window.electronApi.invoke.mockImplementation(async (channel, key) => {
       if (channel === 'session-secrets:get' && key === storage.REPOSITORY_SOURCE_SESSION_SECRET_KEY) {
         return { ok: true, data: 'stored-secret' };
@@ -127,7 +127,7 @@ describe('repository source storage', () => {
     })).rejects.toThrow('secret failed');
   });
 
-  test('hydrateConnectionSecret propaga error de ipc', async () => {
+  test('hydrateConnectionSecret propaga error de bridge', async () => {
     window.electronApi.invoke.mockResolvedValue({ ok: false, error: 'missing secret' });
     await expect(storage.hydrateConnectionSecret()).rejects.toThrow('missing secret');
   });
@@ -173,3 +173,4 @@ describe('repository source storage', () => {
     });
   });
 });
+

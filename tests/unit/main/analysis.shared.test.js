@@ -4,7 +4,7 @@ const {
   normalizeOptionalString,
   clampNumber,
   readSnapshotPolicy,
-} = require('../../../src/main/ipc/analysis.shared');
+} = require('../../../src/modules/runtime-host/application/analysis/services/analysis-input-normalizers.service');
 
 describe('analysis shared helpers', () => {
   test('readRequiredString exige strings con contenido', () => {
@@ -44,3 +44,7 @@ describe('analysis shared helpers', () => {
     });
   });
 });
+
+
+
+

@@ -1,16 +1,16 @@
 const React = require('react');
 const { renderHook, act, waitFor } = require('@testing-library/react');
 
-jest.mock('../../../src/renderer/features/pull-request-ai/data/pullRequestAiIpc', () => ({
+jest.mock('../../../src/renderer/features/pull-request-ai/data/pullRequestAiBridge', () => ({
   previewPullRequestAiReviews: jest.fn(),
   runPullRequestAiReviews: jest.fn(),
   cancelPullRequestAiReviews: jest.fn(),
 }));
 
 const { usePullRequestAiReviews } = require('../../../src/renderer/features/pull-request-ai/presentation/hooks/usePullRequestAiReviews');
-const { previewPullRequestAiReviews } = require('../../../src/renderer/features/pull-request-ai/data/pullRequestAiIpc');
-const { runPullRequestAiReviews } = require('../../../src/renderer/features/pull-request-ai/data/pullRequestAiIpc');
-const { cancelPullRequestAiReviews } = require('../../../src/renderer/features/pull-request-ai/data/pullRequestAiIpc');
+const { previewPullRequestAiReviews } = require('../../../src/renderer/features/pull-request-ai/data/pullRequestAiBridge');
+const { runPullRequestAiReviews } = require('../../../src/renderer/features/pull-request-ai/data/pullRequestAiBridge');
+const { cancelPullRequestAiReviews } = require('../../../src/renderer/features/pull-request-ai/data/pullRequestAiBridge');
 
 function createPullRequest(id = 1) {
   return {
@@ -297,7 +297,7 @@ describe('usePullRequestAiReviews', () => {
     });
   });
 
-  test('cancelar sin corrida activa no dispara IPC ni cambia estado', async () => {
+  test('cancelar sin corrida activa no dispara bridge ni cambia estado', async () => {
     const { result } = renderHook((props) => usePullRequestAiReviews(props), {
       initialProps: createOptions(),
     });
@@ -525,3 +525,4 @@ describe('usePullRequestAiReviews', () => {
     await waitFor(() => expect(result.current.reviews).toEqual([]));
   });
 });
+

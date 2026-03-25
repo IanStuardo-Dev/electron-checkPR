@@ -6,7 +6,7 @@ import {
   cancelPullRequestAiReviews,
   previewPullRequestAiReviews,
   runPullRequestAiReviews,
-} from '../../data/pullRequestAiIpc';
+} from '../../data/pullRequestAiBridge';
 import { selectPullRequestsForAiReview } from '../../../../../shared/pull-request-selection';
 import {
   buildQueuedReviews,
@@ -200,3 +200,4 @@ export function usePullRequestAiReviews({
     closeModal,
   };
 }
+

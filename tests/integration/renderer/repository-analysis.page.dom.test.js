@@ -15,14 +15,14 @@ jest.mock('../../../src/renderer/features/repository-analysis/presentation/hooks
   useRepositoryAnalysis: jest.fn(),
 }));
 
-jest.mock('../../../src/renderer/features/repository-source/data/repositorySourceIpc', () => ({
+jest.mock('../../../src/renderer/features/repository-source/data/repositorySourceBridge', () => ({
   fetchBranches: jest.fn(),
 }));
 
 const { useRepositorySourceContext } = require('../../../src/renderer/features/repository-source/presentation/context/RepositorySourceContext');
 const { useCodexSettings } = require('../../../src/renderer/features/settings/presentation/hooks/useCodexSettings');
 const { useRepositoryAnalysis } = require('../../../src/renderer/features/repository-analysis/presentation/hooks/useRepositoryAnalysis');
-const { fetchBranches } = require('../../../src/renderer/features/repository-source/data/repositorySourceIpc');
+const { fetchBranches } = require('../../../src/renderer/features/repository-source/data/repositorySourceBridge');
 const RepositoryAnalysis = require('../../../src/renderer/app/pages/RepositoryAnalysis').default;
 
 function renderWithRouter(element) {
@@ -203,3 +203,4 @@ describe('RepositoryAnalysis page', () => {
     expect(screen.getByText('Desactivar nodeIntegration')).toBeInTheDocument();
   });
 });
+

@@ -31,16 +31,15 @@ jest.mock('electron', () => ({
   }),
 }));
 
-jest.mock('../../../src/main/ipc/register', () => ({
-  registerIpcHandlers: jest.fn(),
+jest.mock('../../../src/main/runtime-host-bridge-registration', () => ({
+  wireRuntimeHostBridge: jest.fn(),
 }));
 
-jest.mock('../../../src/main/ipc/session-secrets', () => ({
+jest.mock('../../../src/modules/runtime-host/application/session-secrets/services/session-secrets-store.service', () => ({
   SessionSecretsStore: jest.fn().mockImplementation(() => ({ kind: 'session-secrets-store' })),
-  registerSessionSecretsIpc: jest.fn(),
 }));
 
-jest.mock('../../../src/main/ipc/window-controls', () => ({
+jest.mock('../../../src/modules/runtime-host/presentation/adapters/window-controls-adapter', () => ({
   attachWindowStateSync: jest.fn(),
 }));
 
@@ -50,9 +49,9 @@ jest.mock('../../../src/services/providers/repository-provider.bootstrap', () =>
   registerDefaultRepositoryProviders: jest.fn(),
 }));
 
-const { registerIpcHandlers } = require('../../../src/main/ipc/register');
-const { SessionSecretsStore } = require('../../../src/main/ipc/session-secrets');
-const { attachWindowStateSync } = require('../../../src/main/ipc/window-controls');
+const { wireRuntimeHostBridge } = require('../../../src/main/runtime-host-bridge-registration');
+const { SessionSecretsStore } = require('../../../src/modules/runtime-host/application/session-secrets/services/session-secrets-store.service');
+const { attachWindowStateSync } = require('../../../src/modules/runtime-host/presentation/adapters/window-controls-adapter');
 const {
   buildDefaultRepositoryProviderModules,
   registerDefaultRepositoryProviders,
@@ -158,14 +157,14 @@ describe('main process bootstrap', () => {
     expect(setWindowButtonVisibility).toHaveBeenCalledWith(false);
   });
 
-  test('bootstrapMainProcess registra providers, ipc y crea ventana', () => {
+  test('bootstrapMainProcess registra providers, bridge y crea ventana', () => {
     main.bootstrapMainProcess();
 
     expect(buildDefaultRepositoryProviderModules).toHaveBeenCalled();
     expect(createRepositoryProviderRegistryFromModules).toHaveBeenCalled();
     expect(registerDefaultRepositoryProviders).not.toHaveBeenCalled();
     expect(SessionSecretsStore).toHaveBeenCalled();
-    expect(registerIpcHandlers).toHaveBeenCalledWith(
+    expect(wireRuntimeHostBridge).toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),
       expect.anything(),
@@ -178,7 +177,7 @@ describe('main process bootstrap', () => {
     readyCallback();
 
     expect(buildDefaultRepositoryProviderModules).toHaveBeenCalled();
-    expect(registerIpcHandlers).toHaveBeenCalledWith(
+    expect(wireRuntimeHostBridge).toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),
       expect.anything(),
@@ -220,3 +219,10 @@ describe('main process bootstrap', () => {
     expect(browserWindowMock).not.toHaveBeenCalled();
   });
 });
+
+
+
+
+
+
+

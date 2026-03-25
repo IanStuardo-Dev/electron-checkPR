@@ -5,11 +5,17 @@ import {
   subscribeToWindowStateChange,
 } from '../../shared/electron/electronBridge';
 
-type WindowControlChannel =
+type WindowControlCommand =
   | 'window-controls:get-state'
   | 'window-controls:minimize'
   | 'window-controls:toggle-maximize'
   | 'window-controls:close';
+
+interface WindowControlBridgeResponse {
+  ok: boolean;
+  data?: unknown;
+  error?: string;
+}
 
 function detectRendererPlatform(): NodeJS.Platform {
   if (typeof navigator === 'undefined') {
@@ -37,29 +43,44 @@ function detectRendererPlatform(): NodeJS.Platform {
   return 'win32';
 }
 
-function isWindowControlsState(value: unknown): value is WindowControlsState {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const candidate = value as Partial<WindowControlsState>;
-  return typeof candidate.isMaximized === 'boolean'
-    && typeof candidate.isFullScreen === 'boolean'
-    && typeof candidate.platform === 'string';
-}
-
-async function invokeWindowControl(channel: WindowControlChannel): Promise<WindowControlsState | null> {
+async function invokeWindowControl(command: WindowControlCommand): Promise<WindowControlsState | null> {
   if (!getElectronApi()) {
     return null;
   }
 
-  const response = await invokeElectronApi<unknown>(channel);
+  const response = await invokeElectronApi<unknown>(command);
 
   if (response === null) {
     return null;
   }
 
-  return isWindowControlsState(response) ? response : null;
+  if (
+    typeof response === 'object'
+    && response !== null
+    && typeof (response as Partial<WindowControlBridgeResponse>).ok === 'boolean'
+  ) {
+    const bridgeResponse = response as WindowControlBridgeResponse;
+
+    if (!bridgeResponse.ok) {
+      throw new Error(bridgeResponse.error || 'No fue posible ejecutar el control de ventana.');
+    }
+
+    return (
+      typeof bridgeResponse.data === 'object'
+      && bridgeResponse.data !== null
+      && typeof (bridgeResponse.data as Partial<WindowControlsState>).isMaximized === 'boolean'
+      && typeof (bridgeResponse.data as Partial<WindowControlsState>).isFullScreen === 'boolean'
+      && typeof (bridgeResponse.data as Partial<WindowControlsState>).platform === 'string'
+    ) ? bridgeResponse.data as WindowControlsState : null;
+  }
+
+  return (
+    typeof response === 'object'
+    && response !== null
+    && typeof (response as Partial<WindowControlsState>).isMaximized === 'boolean'
+    && typeof (response as Partial<WindowControlsState>).isFullScreen === 'boolean'
+    && typeof (response as Partial<WindowControlsState>).platform === 'string'
+  ) ? response as WindowControlsState : null;
 }
 
 export function useWindowControlsState() {

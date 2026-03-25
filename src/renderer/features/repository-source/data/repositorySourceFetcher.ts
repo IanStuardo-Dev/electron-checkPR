@@ -1,5 +1,5 @@
 import type { RepositoryProject, RepositorySummary, ReviewItem } from '../../../../types/repository';
-import { fetchProjects, fetchPullRequests, fetchRepositories, openReviewItem } from './repositorySourceIpc';
+import { fetchProjects, fetchPullRequests, fetchRepositories, openReviewItem } from './repositorySourceBridge';
 import type { SavedConnectionConfig } from '../types';
 
 export interface RepositorySourceFetcherPort {
@@ -15,3 +15,4 @@ export const repositorySourceFetcher: RepositorySourceFetcherPort = {
   fetchPullRequests,
   openReviewItem,
 };
+
