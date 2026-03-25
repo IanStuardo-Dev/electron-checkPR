@@ -1,22 +1,26 @@
-import type { PullRequestAnalysisPreview, RepositorySnapshotPreview } from '../../../../../types/analysis';
-import type { RepositoryAnalysisService } from '../../../../../services/analysis/repository-analysis.service';
-import type { PullRequestAnalysisService } from '../../../../../services/analysis/pull-request-analysis.service';
+import type {
+  PullRequestAiReview,
+  PullRequestAnalysisPreview,
+  RepositoryAnalysisResult,
+  RepositorySnapshotPreview,
+} from '../../../../../types/analysis';
 import type { AnalysisApiKeyReaderPort } from '../ports/analysis-api-key-reader.port';
+import type { PullRequestAnalysisPort, RepositoryAnalysisPort } from '../ports/analysis-services.port';
 import { sanitizePullRequestAnalysisPayload } from '../services/pull-request-analysis-request-sanitizer.service';
 import { sanitizeRepositoryAnalysisPayload } from '../services/repository-analysis-request-sanitizer.service';
 
 export interface AnalysisOperations {
   previewRepositorySnapshot(payload: unknown): Promise<RepositorySnapshotPreview>;
-  runRepositoryAnalysis(payload: unknown): Promise<unknown>;
+  runRepositoryAnalysis(payload: unknown): Promise<RepositoryAnalysisResult>;
   cancelRepositoryAnalysis(requestId: string): Promise<void>;
   previewPullRequestAiReviews(payload: unknown): Promise<PullRequestAnalysisPreview[]>;
-  runPullRequestAiReviews(payload: unknown): Promise<unknown>;
+  runPullRequestAiReviews(payload: unknown): Promise<PullRequestAiReview[]>;
   cancelPullRequestAiReviews(requestId: string): Promise<void>;
 }
 
 export function createAnalysisOperations(
-  repositoryAnalysisService: RepositoryAnalysisService,
-  pullRequestAnalysisService: PullRequestAnalysisService,
+  repositoryAnalysisService: RepositoryAnalysisPort,
+  pullRequestAnalysisService: PullRequestAnalysisPort,
   apiKeyReader: AnalysisApiKeyReaderPort,
 ): AnalysisOperations {
   const readCodexApiKey = () => apiKeyReader.readCodexApiKey();
@@ -50,5 +54,4 @@ export function createAnalysisOperations(
     },
   };
 }
-
 

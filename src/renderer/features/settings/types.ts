@@ -13,6 +13,8 @@ export interface CodexIntegrationConfig {
   prReview: {
     enabled: boolean;
     maxPullRequests: number;
+    previewConcurrency?: number;
+    analysisConcurrency?: number;
     selectionMode: 'top-risk' | 'oldest' | 'mixed';
     analysisDepth: 'standard' | 'deep';
     promptDirectives: PullRequestAnalysisPromptDirectives;

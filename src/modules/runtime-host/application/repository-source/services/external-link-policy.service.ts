@@ -24,10 +24,21 @@ export function validateExternalUrl(rawUrl: string): string {
     throw new Error('Solo se permiten URLs externas con https.');
   }
 
+  if (url.username || url.password) {
+    throw new Error('No se permiten credenciales embebidas en URLs externas.');
+  }
+
+  if (url.port && url.port !== '443') {
+    throw new Error('Solo se permiten URLs externas sin puerto personalizado.');
+  }
+
   if (!isAllowedExternalHost(url.hostname)) {
     throw new Error(`El host ${url.hostname} no esta permitido para abrir enlaces externos.`);
   }
 
+  if (url.port === '443') {
+    url.port = '';
+  }
+
   return url.toString();
 }
-

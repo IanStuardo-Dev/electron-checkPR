@@ -87,6 +87,54 @@ describe('PullRequestAnalysisService', () => {
     }));
   });
 
+  test('previewBatch limita concurrencia con previewConcurrency', async () => {
+    let active = 0;
+    let maxActive = 0;
+    const snapshotProvider = {
+      getSnapshot: jest.fn(async (_source, pullRequest) => {
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        active -= 1;
+        return {
+          provider: 'github',
+          repository: 'repo-a',
+          pullRequestId: pullRequest.id,
+          title: `PR ${pullRequest.id}`,
+          description: 'Ajustes',
+          author: 'Ian',
+          sourceBranch: 'feature',
+          targetBranch: 'main',
+          reviewers: [],
+          files: [
+            { path: 'src/auth.ts', status: 'modified', patch: '+ const enabled = true;' },
+          ],
+          totalFilesChanged: 1,
+          truncated: false,
+        };
+      }),
+    };
+    const service = new PullRequestAnalysisService({
+      snapshotProvider,
+      promptBuilder: { build: jest.fn() },
+      analysisClient: { analyze: jest.fn() },
+      responseParser: { parse: jest.fn() },
+    });
+
+    await service.previewBatch(createRequest({
+      previewConcurrency: 2,
+      items: [
+        { pullRequest: { ...createRequest().items[0].pullRequest, id: 1 } },
+        { pullRequest: { ...createRequest().items[0].pullRequest, id: 2 } },
+        { pullRequest: { ...createRequest().items[0].pullRequest, id: 3 } },
+        { pullRequest: { ...createRequest().items[0].pullRequest, id: 4 } },
+      ],
+    }));
+
+    expect(maxActive).toBeLessThanOrEqual(2);
+    expect(snapshotProvider.getSnapshot).toHaveBeenCalledTimes(4);
+  });
+
   test('cuando falta apiKey devuelve reviews not-configured sin consultar snapshots', async () => {
     const snapshotProvider = {
       getSnapshot: jest.fn(),

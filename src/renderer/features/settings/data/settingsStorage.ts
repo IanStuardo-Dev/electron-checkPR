@@ -31,6 +31,8 @@ export const defaultCodexConfig: CodexIntegrationConfig = {
   prReview: {
     enabled: false,
     maxPullRequests: 4,
+    previewConcurrency: 3,
+    analysisConcurrency: 2,
     selectionMode: 'top-risk',
     analysisDepth: 'standard',
     promptDirectives: {

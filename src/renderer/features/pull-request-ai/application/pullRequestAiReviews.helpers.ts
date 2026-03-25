@@ -7,12 +7,21 @@ import type { RepositoryProviderKind, PrioritizedPullRequest } from '../../../..
 import type { SavedConnectionConfig } from '../../repository-source';
 import type { CodexIntegrationConfig } from '../../settings';
 
+function clampInteger(rawValue: number, min: number, max: number, fallback: number): number {
+  const parsedValue = Number.isFinite(rawValue) ? Math.floor(rawValue) : fallback;
+  return Math.max(min, Math.min(max, parsedValue));
+}
+
 export function buildPullRequestAnalysisPayload(
   config: SavedConnectionConfig,
   codexConfig: Pick<CodexIntegrationConfig, 'model' | 'snapshotPolicy' | 'prReview'>,
   selectedPullRequests: PrioritizedPullRequest[],
   requestId = '',
 ): PullRequestAnalysisBatchRequest {
+  const maxItems = clampInteger(codexConfig.prReview.maxPullRequests, 1, 20, 4);
+  const previewConcurrency = clampInteger(codexConfig.prReview.previewConcurrency ?? 3, 1, 8, 3);
+  const analysisConcurrency = clampInteger(codexConfig.prReview.analysisConcurrency ?? 2, 1, 8, 2);
+
   return {
     requestId,
     source: {
@@ -23,9 +32,14 @@ export function buildPullRequestAnalysisPayload(
     model: codexConfig.model,
     analysisDepth: codexConfig.prReview.analysisDepth,
     timeoutMs: 60_000,
+    maxItems,
+    previewConcurrency,
+    analysisConcurrency,
     snapshotPolicy: codexConfig.snapshotPolicy,
     promptDirectives: codexConfig.prReview.promptDirectives,
-    items: selectedPullRequests.map((pullRequest) => ({ pullRequest })),
+    items: selectedPullRequests
+      .slice(0, maxItems)
+      .map((pullRequest) => ({ pullRequest })),
   };
 }
 
@@ -41,6 +55,9 @@ export function buildPullRequestReviewCacheKey(
     repositoryId: config.repositoryId,
     mode: codexConfig.prReview.selectionMode,
     depth: codexConfig.prReview.analysisDepth,
+    maxItems: codexConfig.prReview.maxPullRequests,
+    previewConcurrency: codexConfig.prReview.previewConcurrency ?? 3,
+    analysisConcurrency: codexConfig.prReview.analysisConcurrency ?? 2,
     strictMode: codexConfig.snapshotPolicy.strictMode,
     excludedPathPatterns: codexConfig.snapshotPolicy.excludedPathPatterns,
     promptDirectives: codexConfig.prReview.promptDirectives,
