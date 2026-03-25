@@ -44,6 +44,35 @@ describe('repository analysis payload sanitizer', () => {
     }), 'sk-session')).toThrow('Azure DevOps requiere un project valido para ejecutar el analisis.');
   });
 
+  test('rechaza providers no soportados', () => {
+    expect(() => sanitizeRepositoryAnalysisPayload(createPayload({
+      source: {
+        ...createPayload().source,
+        provider: 'bitbucket',
+      },
+    }), 'sk-session')).toThrow('El provider del analisis no es valido.');
+  });
+
+  test('normaliza limites de promptDirectives', () => {
+    const payload = sanitizeRepositoryAnalysisPayload(createPayload({
+      promptDirectives: {
+        architectureReviewEnabled: 1,
+        architecturePattern: 'a'.repeat(700),
+        requiredPractices: 'r'.repeat(2500),
+        forbiddenPractices: 'f'.repeat(2500),
+        domainContext: 'd'.repeat(1800),
+        customInstructions: 'c'.repeat(3000),
+      },
+    }), 'sk-session');
+
+    expect(payload.promptDirectives.architectureReviewEnabled).toBe(true);
+    expect(payload.promptDirectives.architecturePattern).toHaveLength(500);
+    expect(payload.promptDirectives.requiredPractices).toHaveLength(2000);
+    expect(payload.promptDirectives.forbiddenPractices).toHaveLength(2000);
+    expect(payload.promptDirectives.domainContext).toHaveLength(1500);
+    expect(payload.promptDirectives.customInstructions).toHaveLength(2500);
+  });
+
   test('rechaza payloads sin fuente', () => {
     expect(() => sanitizeRepositoryAnalysisPayload({
       requestId: 'req-1',
