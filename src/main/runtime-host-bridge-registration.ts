@@ -7,10 +7,10 @@ import { bindRepositorySourceProviderBridge } from '../modules/runtime-host/pres
 import { bindSessionSecretsStoreBridge } from '../modules/runtime-host/presentation/adapters/session-secrets-adapter';
 import { bindWindowControlsBridge } from '../modules/runtime-host/presentation/adapters/window-controls-adapter';
 import type { PullRequestAnalysisPort, RepositoryAnalysisPort } from '../modules/runtime-host/application/analysis/ports/analysis-services.port';
-import type { RepositoryProviderRegistry } from '../services/providers/repository-provider.registry';
+import type { RepositorySourceProviderRegistry } from '../services/providers/repository-provider.composition';
 
 export function wireRuntimeHostBridge(
-  providerRegistry: RepositoryProviderRegistry,
+  providerRegistry: RepositorySourceProviderRegistry,
   repositoryAnalysisService: RepositoryAnalysisPort,
   pullRequestAnalysisService: PullRequestAnalysisPort,
   sessionSecretsStore: SessionSecretsStore,
@@ -24,4 +24,3 @@ export function wireRuntimeHostBridge(
   bindSessionSecretsStoreBridge(sessionSecretsStore);
   bindWindowControlsBridge();
 }
-

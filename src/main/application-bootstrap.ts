@@ -2,23 +2,23 @@ import { SessionSecretsStore } from '../modules/runtime-host/application/session
 import { wireRuntimeHostBridge } from './runtime-host-bridge-registration';
 import { createWindow } from './main-window';
 import { buildDefaultRepositoryProviderModules } from '../services/providers/repository-provider.bootstrap';
-import { createRepositoryProviderRegistryFromModules } from '../services/providers/repository-provider.composition';
+import { createRepositoryProviderCapabilityRegistriesFromModules } from '../services/providers/repository-provider.composition';
 import { RepositoryAnalysisSnapshotProvider } from '../services/analysis/repository-analysis.snapshot-provider';
 import { PullRequestAnalysisSnapshotProvider } from '../services/analysis/pull-request-analysis.snapshot-provider';
 import { createRepositoryAnalysisService } from '../services/analysis/repository-analysis.factory';
 import { createPullRequestAnalysisService } from '../services/analysis/pull-request-analysis.factory';
 
 export function createApplicationServices() {
-  const providerRegistry = createRepositoryProviderRegistryFromModules(buildDefaultRepositoryProviderModules());
+  const providerRegistries = createRepositoryProviderCapabilityRegistriesFromModules(buildDefaultRepositoryProviderModules());
   const repositoryAnalysisService = createRepositoryAnalysisService({
-    snapshotProvider: new RepositoryAnalysisSnapshotProvider(providerRegistry),
+    snapshotProvider: new RepositoryAnalysisSnapshotProvider(providerRegistries.repositorySnapshots),
   });
   const pullRequestAnalysisService = createPullRequestAnalysisService({
-    snapshotProvider: new PullRequestAnalysisSnapshotProvider(providerRegistry),
+    snapshotProvider: new PullRequestAnalysisSnapshotProvider(providerRegistries.pullRequestSnapshots),
   });
 
   return {
-    providerRegistry,
+    providerRegistry: providerRegistries.source,
     repositoryAnalysisService,
     pullRequestAnalysisService,
   };
@@ -34,6 +34,5 @@ export function bootstrapMainProcess() {
   );
   return createWindow();
 }
-
 
 
