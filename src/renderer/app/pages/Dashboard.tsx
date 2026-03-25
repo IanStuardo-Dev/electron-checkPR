@@ -28,7 +28,7 @@ const Dashboard = () => {
     openPullRequest,
     selectedRepositoryName,
   } = useRepositorySourceContext();
-  const { config: codexConfig } = useCodexSettings();
+  const { config: codexConfig, isReady: isCodexReady } = useCodexSettings();
   const {
     reviews,
     isConfigured: isAiConfigured,
@@ -50,6 +50,7 @@ const Dashboard = () => {
     config,
     pullRequests: summary.prioritizedPullRequests,
     isConnectionReady,
+    isCodexReady,
     codexConfig,
   });
   const dashboardSummary = React.useMemo(

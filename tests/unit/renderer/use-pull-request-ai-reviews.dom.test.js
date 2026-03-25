@@ -47,8 +47,8 @@ function createOptions() {
     },
     pullRequests: [createPullRequest(1)],
     isConnectionReady: true,
+    isCodexReady: true,
     codexConfig: {
-      apiKey: 'sk-live',
       model: 'gpt-5.2-codex',
       snapshotPolicy: {
         excludedPathPatterns: '',
@@ -151,10 +151,7 @@ describe('usePullRequestAiReviews', () => {
     const { result } = renderHook((props) => usePullRequestAiReviews(props), {
       initialProps: {
         ...createOptions(),
-        codexConfig: {
-          ...createOptions().codexConfig,
-          apiKey: '   ',
-        },
+        isCodexReady: false,
       },
     });
 
@@ -525,4 +522,3 @@ describe('usePullRequestAiReviews', () => {
     await waitFor(() => expect(result.current.reviews).toEqual([]));
   });
 });
-

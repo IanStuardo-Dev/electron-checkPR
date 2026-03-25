@@ -27,6 +27,7 @@ describe('preload security bridge', () => {
       'window-controls:close',
       'session-secrets:get',
       'session-secrets:has',
+      'session-secrets:codex-has',
     ]));
   });
 
@@ -55,7 +56,6 @@ describe('preload security bridge', () => {
     expect(ipcRenderer.removeListener).toHaveBeenCalledWith('window-controls:state-changed', wrappedHandler);
   });
 });
-
 
 
 

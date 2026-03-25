@@ -6,6 +6,7 @@ import { registerBridgeCommand } from './bridge-response';
 export function bindSessionSecretsBridge(operations: SessionSecretsOperations): void {
   registerBridgeCommand<string, string>('session-secrets:get', async (key) => operations.get(key));
   registerBridgeCommand<string, boolean>('session-secrets:has', async (key) => operations.has(key));
+  registerBridgeCommand<void, boolean>('session-secrets:codex-has', async () => operations.hasCodexApiKey());
   registerBridgeCommand<{ key: string; value: string }, void>('session-secrets:set', async (payload) => {
     await operations.set(payload);
   });
@@ -14,6 +15,5 @@ export function bindSessionSecretsBridge(operations: SessionSecretsOperations): 
 export function bindSessionSecretsStoreBridge(store: SessionSecretsStore): void {
   bindSessionSecretsBridge(createSessionSecretsOperations(store));
 }
-
 
 

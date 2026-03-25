@@ -1,7 +1,7 @@
 import type { CodexIntegrationConfig } from '../types';
 import { CODEX_SESSION_API_KEY } from '../../../../constants/session-secrets';
 import { loadStoredObject, saveStoredObject } from '../../../shared/storage/jsonStorage';
-import { getSessionSecret, setSessionSecret } from '../../../shared/storage/sessionSecrets';
+import { hasCodexSessionApiKey, setSessionSecret } from '../../../shared/storage/sessionSecrets';
 
 const CODEX_SETTINGS_STORAGE_KEY = 'checkpr.settings.codex';
 
@@ -57,12 +57,17 @@ export function loadCodexConfig(): CodexIntegrationConfig {
   };
 }
 
-export async function hydrateCodexApiKey(): Promise<string> {
-  return getSessionSecret(CODEX_SESSION_API_KEY);
+export async function hasCodexApiKeyInSession(): Promise<boolean> {
+  return hasCodexSessionApiKey();
 }
 
-export async function persistCodexConfig(config: CodexIntegrationConfig): Promise<void> {
-  await setSessionSecret(CODEX_SESSION_API_KEY, config.apiKey);
+export async function persistCodexConfig(
+  config: CodexIntegrationConfig,
+  options: { syncApiKey?: boolean } = {},
+): Promise<void> {
+  if (options.syncApiKey) {
+    await setSessionSecret(CODEX_SESSION_API_KEY, config.apiKey);
+  }
   const safeConfig: CodexIntegrationConfig = {
     ...config,
     apiKey: '',
