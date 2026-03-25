@@ -1,6 +1,6 @@
 import React from 'react';
 import type { RepositoryAnalysisRequest, RepositoryAnalysisResult, RepositorySnapshotPreview } from '../../../../../types/analysis';
-import { cancelRepositoryAnalysis, previewRepositorySnapshot, runRepositoryAnalysis } from '../../data/repositoryAnalysisIpc';
+import { cancelRepositoryAnalysis, previewRepositorySnapshot, runRepositoryAnalysis } from '../../data/repositoryAnalysisBridge';
 
 type AnalysisPhase = 'idle' | 'previewing' | 'preparing' | 'analyzing' | 'completed' | 'error' | 'cancelling';
 
@@ -106,3 +106,4 @@ export function useRepositoryAnalysis() {
     reset,
   };
 }
+

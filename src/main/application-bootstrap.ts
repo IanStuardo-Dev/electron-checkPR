@@ -1,5 +1,5 @@
-import { registerIpcHandlers } from './ipc/register';
-import { SessionSecretsStore } from './ipc/session-secrets';
+import { SessionSecretsStore } from '../modules/runtime-host/application/session-secrets/services/session-secrets-store.service';
+import { wireRuntimeHostBridge } from './runtime-host-bridge-registration';
 import { createWindow } from './main-window';
 import { buildDefaultRepositoryProviderModules } from '../services/providers/repository-provider.bootstrap';
 import { createRepositoryProviderRegistryFromModules } from '../services/providers/repository-provider.composition';
@@ -26,7 +26,7 @@ export function createApplicationServices() {
 
 export function bootstrapMainProcess() {
   const { providerRegistry, repositoryAnalysisService, pullRequestAnalysisService } = createApplicationServices();
-  registerIpcHandlers(
+  wireRuntimeHostBridge(
     providerRegistry,
     repositoryAnalysisService,
     pullRequestAnalysisService,
@@ -34,3 +34,6 @@ export function bootstrapMainProcess() {
   );
   return createWindow();
 }
+
+
+

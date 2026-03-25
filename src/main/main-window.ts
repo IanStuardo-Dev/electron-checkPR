@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron';
 import * as path from 'path';
-import { attachWindowStateSync } from './ipc/window-controls';
+import { attachWindowStateSync } from '../modules/runtime-host/presentation/adapters/window-controls-adapter';
 
 function resolveDistAsset(...segments: string[]): string {
   return path.resolve(__dirname, '..', ...segments);
@@ -65,3 +65,5 @@ export function createWindow() {
 
   return mainWindow;
 }
+
+

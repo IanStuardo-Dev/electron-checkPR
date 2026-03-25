@@ -2,37 +2,37 @@ const { renderHook, act } = require('@testing-library/react');
 
 jest.useFakeTimers();
 
-jest.mock('../../../src/renderer/features/repository-analysis/data/repositoryAnalysisIpc', () => ({
+jest.mock('../../../src/renderer/features/repository-analysis/data/repositoryAnalysisBridge', () => ({
   previewRepositorySnapshot: jest.fn(),
   runRepositoryAnalysis: jest.fn(),
   cancelRepositoryAnalysis: jest.fn(),
 }));
 
-const ipc = require('../../../src/renderer/features/repository-analysis/data/repositoryAnalysisIpc');
+const bridge = require('../../../src/renderer/features/repository-analysis/data/repositoryAnalysisBridge');
 const { useRepositoryAnalysis } = require('../../../src/renderer/features/repository-analysis/presentation/hooks/useRepositoryAnalysis');
 
 describe('useRepositoryAnalysis', () => {
   beforeEach(() => {
-    ipc.previewRepositorySnapshot.mockReset();
-    ipc.runRepositoryAnalysis.mockReset();
-    ipc.cancelRepositoryAnalysis.mockReset();
+    bridge.previewRepositorySnapshot.mockReset();
+    bridge.runRepositoryAnalysis.mockReset();
+    bridge.cancelRepositoryAnalysis.mockReset();
   });
 
   test('prepara preview del snapshot antes de ejecutar', async () => {
-    ipc.previewRepositorySnapshot.mockResolvedValue({ repository: 'repo-a', branch: 'main' });
+    bridge.previewRepositorySnapshot.mockResolvedValue({ repository: 'repo-a', branch: 'main' });
     const { result } = renderHook(() => useRepositoryAnalysis());
 
     await act(async () => {
       await result.current.preparePreview({ requestId: 'req-preview' });
     });
 
-    expect(ipc.previewRepositorySnapshot).toHaveBeenCalledWith({ requestId: 'req-preview' });
+    expect(bridge.previewRepositorySnapshot).toHaveBeenCalledWith({ requestId: 'req-preview' });
     expect(result.current.preview).toEqual({ repository: 'repo-a', branch: 'main' });
     expect(result.current.phase).toBe('idle');
   });
 
   test('captura error de preview y lo refleja en el estado', async () => {
-    ipc.previewRepositorySnapshot.mockRejectedValue(new Error('bridge unavailable'));
+    bridge.previewRepositorySnapshot.mockRejectedValue(new Error('bridge unavailable'));
     const { result } = renderHook(() => useRepositoryAnalysis());
 
     await act(async () => {
@@ -45,7 +45,7 @@ describe('useRepositoryAnalysis', () => {
   });
 
   test('ejecuta analisis y completa resultado', async () => {
-    ipc.runRepositoryAnalysis.mockResolvedValue({ summary: 'ok' });
+    bridge.runRepositoryAnalysis.mockResolvedValue({ summary: 'ok' });
     const { result } = renderHook(() => useRepositoryAnalysis());
 
     await act(async () => {
@@ -59,7 +59,7 @@ describe('useRepositoryAnalysis', () => {
   });
 
   test('propaga un error controlado cuando falla el analisis', async () => {
-    ipc.runRepositoryAnalysis.mockRejectedValue(new Error('analysis failed'));
+    bridge.runRepositoryAnalysis.mockRejectedValue(new Error('analysis failed'));
     const { result } = renderHook(() => useRepositoryAnalysis());
 
     await act(async () => {
@@ -72,8 +72,8 @@ describe('useRepositoryAnalysis', () => {
   });
 
   test('cancela request activa y resetea el estado', async () => {
-    ipc.runRepositoryAnalysis.mockImplementation(() => new Promise(() => {}));
-    ipc.cancelRepositoryAnalysis.mockResolvedValue(undefined);
+    bridge.runRepositoryAnalysis.mockImplementation(() => new Promise(() => {}));
+    bridge.cancelRepositoryAnalysis.mockResolvedValue(undefined);
     const { result } = renderHook(() => useRepositoryAnalysis());
 
     act(() => {
@@ -84,14 +84,14 @@ describe('useRepositoryAnalysis', () => {
       await result.current.cancel();
     });
 
-    expect(ipc.cancelRepositoryAnalysis).toHaveBeenCalledWith('req-2');
+    expect(bridge.cancelRepositoryAnalysis).toHaveBeenCalledWith('req-2');
     expect(result.current.phase).toBe('idle');
     expect(result.current.result).toBeNull();
   });
 
   test('cancel limpia la transicion diferida a analyzing', async () => {
-    ipc.runRepositoryAnalysis.mockImplementation(() => new Promise(() => {}));
-    ipc.cancelRepositoryAnalysis.mockResolvedValue(undefined);
+    bridge.runRepositoryAnalysis.mockImplementation(() => new Promise(() => {}));
+    bridge.cancelRepositoryAnalysis.mockResolvedValue(undefined);
     const { result } = renderHook(() => useRepositoryAnalysis());
 
     act(() => {
@@ -111,7 +111,7 @@ describe('useRepositoryAnalysis', () => {
   });
 
   test('reset limpia preview, resultado y error sin requerir una request activa', async () => {
-    ipc.previewRepositorySnapshot.mockResolvedValue({ repository: 'repo-a', branch: 'main' });
+    bridge.previewRepositorySnapshot.mockResolvedValue({ repository: 'repo-a', branch: 'main' });
     const { result } = renderHook(() => useRepositoryAnalysis());
 
     await act(async () => {
@@ -130,3 +130,5 @@ describe('useRepositoryAnalysis', () => {
     expect(result.current.error).toBeNull();
   });
 });
+
+

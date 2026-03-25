@@ -18,7 +18,7 @@ describe('preload security bridge', () => {
   });
 
   test('expone el catalogo de canales permitidos', () => {
-    expect(preload.allowedElectronInvokeChannels).toEqual(expect.arrayContaining([
+    expect(preload.allowedElectronBridgeCommands).toEqual(expect.arrayContaining([
       'repository-source:fetchPullRequests',
       'analysis:previewRepositorySnapshot',
       'analysis:runRepositoryAnalysis',
@@ -30,8 +30,8 @@ describe('preload security bridge', () => {
     ]));
   });
 
-  test('bloquea canales IPC no permitidos', () => {
-    expect(() => preload.ensureAllowedChannel('evil:channel')).toThrow('IPC channel evil:channel is not allowed.');
+  test('bloquea comandos de bridge no permitidos', () => {
+    expect(() => preload.ensureAllowedBridgeCommand('evil:channel')).toThrow('Bridge command evil:channel is not allowed.');
   });
 
   test('electronApiBridge.invoke valida canal antes de delegar en ipcRenderer', async () => {
@@ -55,3 +55,7 @@ describe('preload security bridge', () => {
     expect(ipcRenderer.removeListener).toHaveBeenCalledWith('window-controls:state-changed', wrappedHandler);
   });
 });
+
+
+
+

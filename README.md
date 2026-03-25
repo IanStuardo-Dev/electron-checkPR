@@ -55,8 +55,15 @@ Capacidades relevantes ya implementadas:
 
 El proyecto sigue una separacion pragmatica por runtime y responsabilidad:
 
+- `src/modules/runtime-host`
+  Modulo principal de escritorio siguiendo Clean Architecture:
+  - `domain`: modelos/reglas de dominio (actualmente minimo y listo para crecer).
+  - `application`: `use-cases`, `ports` y `services` de aplicacion.
+  - `infrastructure/electron/adapters`: adaptadores nativos (por ejemplo, `shell`).
+  - `presentation/adapters`: adapters de presentacion para exponer operaciones de aplicacion al bridge.
+
 - `src/main`
-  Proceso principal de Electron, bootstrap, ventana, identidad de app e IPC.
+  Bootstrap/composition root del proceso principal, creacion de ventana y wiring del bridge del modulo `runtime-host`.
 
 - `src/preload.ts`
   Bridge seguro entre renderer y capacidades nativas permitidas.
@@ -233,11 +240,11 @@ Puntos importantes del proyecto:
 - la app corre en `Electron`, no como SPA web soportada
 - `nodeIntegration` esta desactivado
 - `contextIsolation` esta activado
-- la comunicacion nativa pasa por canales IPC permitidos explicitamente en `preload`
+- la comunicacion nativa pasa por comandos del bridge permitidos explicitamente en `preload`
 - los secretos de sesion se manejan via bridge nativo
 - reporte responsable de vulnerabilidades en [.github/SECURITY.md](.github/SECURITY.md)
 
-Si abres solo el renderer en navegador, no tendras acceso a integraciones nativas, sincronizacion por IPC ni analisis completos.
+Si abres solo el renderer en navegador, no tendras acceso a integraciones nativas, sincronizacion por bridge ni analisis completos.
 
 ## Tokens y permisos
 

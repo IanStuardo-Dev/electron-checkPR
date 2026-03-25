@@ -1,6 +1,6 @@
 const { renderHook, act } = require('@testing-library/react');
 
-jest.mock('../../../src/renderer/features/repository-source/data/repositorySourceIpc', () => ({
+jest.mock('../../../src/renderer/features/repository-source/data/repositorySourceBridge', () => ({
   fetchProjects: jest.fn(),
   fetchRepositories: jest.fn(),
   fetchPullRequests: jest.fn(),
@@ -19,7 +19,7 @@ jest.mock('../../../src/renderer/features/repository-source/presentation/hooks/u
   useRepositoryDiagnostics: jest.fn(),
 }));
 
-const ipc = require('../../../src/renderer/features/repository-source/data/repositorySourceIpc');
+const bridge = require('../../../src/renderer/features/repository-source/data/repositorySourceBridge');
 const { repositorySourceFetcher } = require('../../../src/renderer/features/repository-source/data/repositorySourceFetcher');
 const { useRepositorySourceEffects } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceEffects');
 const { useRepositorySourceState } = require('../../../src/renderer/features/repository-source/presentation/hooks/useRepositorySourceState');
@@ -200,10 +200,10 @@ describe('repository source hooks', () => {
   test('useRepositorySourceApi sincroniza proyectos, repos y pull requests', async () => {
     const state = createStateMock();
     const diagnostics = createDiagnosticsMock();
-    ipc.fetchProjects.mockResolvedValue([{ id: 'repo-a', name: 'repo-a', state: 'active' }]);
-    ipc.fetchRepositories.mockResolvedValue([{ id: 'repo-a', name: 'repo-a' }]);
-    ipc.fetchPullRequests.mockResolvedValue([{ id: 1, title: 'PR' }]);
-    ipc.openReviewItem.mockResolvedValue(undefined);
+    bridge.fetchProjects.mockResolvedValue([{ id: 'repo-a', name: 'repo-a', state: 'active' }]);
+    bridge.fetchRepositories.mockResolvedValue([{ id: 'repo-a', name: 'repo-a' }]);
+    bridge.fetchPullRequests.mockResolvedValue([{ id: 1, title: 'PR' }]);
+    bridge.openReviewItem.mockResolvedValue(undefined);
 
     const config = {
       provider: 'github',
@@ -233,12 +233,12 @@ describe('repository source hooks', () => {
       await result.current.openPullRequest('https://github.com/acme/repo-a/pull/1');
     });
 
-    expect(ipc.fetchProjects).toHaveBeenCalled();
-    expect(ipc.fetchRepositories).toHaveBeenCalled();
-    expect(ipc.fetchPullRequests).toHaveBeenCalled();
+    expect(bridge.fetchProjects).toHaveBeenCalled();
+    expect(bridge.fetchRepositories).toHaveBeenCalled();
+    expect(bridge.fetchPullRequests).toHaveBeenCalled();
     expect(state.setHasSuccessfulConnection).toHaveBeenCalledWith(true);
     expect(onPersistSnapshot).toHaveBeenCalled();
-    expect(ipc.openReviewItem).toHaveBeenCalled();
+    expect(bridge.openReviewItem).toHaveBeenCalled();
   });
 
   test('useRepositorySourceEffects resetea estado o carga repos segun config', async () => {
@@ -324,3 +324,5 @@ describe('repository source hooks', () => {
     expect(useRepositorySourceEffects).toHaveBeenCalled();
   });
 });
+
+

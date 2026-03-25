@@ -17,10 +17,10 @@ jest.mock('electron', () => ({
 
 const {
   attachWindowStateSync,
-  registerWindowControlsIpc,
-} = require('../../../src/main/ipc/window-controls');
+  bindWindowControlsBridge,
+} = require('../../../src/modules/runtime-host/presentation/adapters/window-controls-adapter');
 
-function withPlatform(platform, callback) {
+async function withPlatform(platform, callback) {
   const originalDescriptor = Object.getOwnPropertyDescriptor(process, 'platform');
 
   Object.defineProperty(process, 'platform', {
@@ -29,7 +29,7 @@ function withPlatform(platform, callback) {
   });
 
   try {
-    callback();
+    await callback();
   } finally {
     Object.defineProperty(process, 'platform', originalDescriptor);
   }
@@ -58,7 +58,7 @@ function createTargetWindow(overrides = {}) {
   return { targetWindow, listeners };
 }
 
-describe('window controls ipc', () => {
+describe('window controls bridge', () => {
   beforeEach(() => {
     Object.keys(registeredHandlers).forEach((key) => delete registeredHandlers[key]);
     jest.clearAllMocks();
@@ -97,11 +97,11 @@ describe('window controls ipc', () => {
     expect(targetWindow.webContents.send).not.toHaveBeenCalled();
   });
 
-  test('registerWindowControlsIpc registra handlers para todas las acciones', () => {
+  test('bindWindowControlsBridge registra handlers para todas las acciones', () => {
     const { targetWindow } = createTargetWindow();
     fromWebContents.mockReturnValue(targetWindow);
 
-    registerWindowControlsIpc();
+    bindWindowControlsBridge();
 
     expect(Object.keys(registeredHandlers).sort()).toEqual([
       'window-controls:close',
@@ -111,122 +111,145 @@ describe('window controls ipc', () => {
     ]);
   });
 
-  test('get-state devuelve el estado de la ventana del sender', () => {
+  test('get-state devuelve el estado de la ventana del sender', async () => {
     const { targetWindow } = createTargetWindow({
       isMaximized: jest.fn(() => true),
       isFullScreen: jest.fn(() => true),
     });
     fromWebContents.mockReturnValue(targetWindow);
 
-    registerWindowControlsIpc();
-    const state = registeredHandlers['window-controls:get-state']({ sender: {} });
+    bindWindowControlsBridge();
+    const state = await registeredHandlers['window-controls:get-state']({ sender: {} });
 
     expect(state).toEqual({
-      isMaximized: true,
-      isFullScreen: true,
-      platform: process.platform,
+      ok: true,
+      data: {
+        isMaximized: true,
+        isFullScreen: true,
+        platform: process.platform,
+      },
     });
   });
 
-  test('minimize invoca minimize y devuelve el estado actualizado', () => {
+  test('minimize invoca minimize y devuelve el estado actualizado', async () => {
     const { targetWindow } = createTargetWindow();
     fromWebContents.mockReturnValue(targetWindow);
 
-    registerWindowControlsIpc();
-    const state = registeredHandlers['window-controls:minimize']({ sender: {} });
+    bindWindowControlsBridge();
+    const state = await registeredHandlers['window-controls:minimize']({ sender: {} });
 
     expect(targetWindow.minimize).toHaveBeenCalled();
     expect(state).toEqual({
-      isMaximized: false,
-      isFullScreen: false,
-      platform: process.platform,
+      ok: true,
+      data: {
+        isMaximized: false,
+        isFullScreen: false,
+        platform: process.platform,
+      },
     });
   });
 
-  test('toggle-maximize maximiza cuando la ventana no esta maximizada', () => {
+  test('toggle-maximize maximiza cuando la ventana no esta maximizada', async () => {
     const { targetWindow } = createTargetWindow({
       isMaximized: jest.fn(() => false),
     });
     fromWebContents.mockReturnValue(targetWindow);
 
     let state;
-    withPlatform('win32', () => {
-      registerWindowControlsIpc();
-      state = registeredHandlers['window-controls:toggle-maximize']({ sender: {} });
+    await withPlatform('win32', async () => {
+      bindWindowControlsBridge();
+      state = await registeredHandlers['window-controls:toggle-maximize']({ sender: {} });
     });
 
     expect(targetWindow.maximize).toHaveBeenCalled();
     expect(targetWindow.unmaximize).not.toHaveBeenCalled();
     expect(targetWindow.setFullScreen).not.toHaveBeenCalled();
     expect(state).toEqual({
-      isMaximized: false,
-      isFullScreen: false,
-      platform: 'win32',
+      ok: true,
+      data: {
+        isMaximized: false,
+        isFullScreen: false,
+        platform: 'win32',
+      },
     });
   });
 
-  test('toggle-maximize restaura cuando la ventana ya esta maximizada', () => {
+  test('toggle-maximize restaura cuando la ventana ya esta maximizada', async () => {
     const { targetWindow } = createTargetWindow({
       isMaximized: jest.fn(() => true),
     });
     fromWebContents.mockReturnValue(targetWindow);
 
     let state;
-    withPlatform('win32', () => {
-      registerWindowControlsIpc();
-      state = registeredHandlers['window-controls:toggle-maximize']({ sender: {} });
+    await withPlatform('win32', async () => {
+      bindWindowControlsBridge();
+      state = await registeredHandlers['window-controls:toggle-maximize']({ sender: {} });
     });
 
     expect(targetWindow.unmaximize).toHaveBeenCalled();
     expect(targetWindow.maximize).not.toHaveBeenCalled();
     expect(targetWindow.setFullScreen).not.toHaveBeenCalled();
     expect(state).toEqual({
-      isMaximized: true,
-      isFullScreen: false,
-      platform: 'win32',
+      ok: true,
+      data: {
+        isMaximized: true,
+        isFullScreen: false,
+        platform: 'win32',
+      },
     });
   });
 
-  test('toggle-maximize usa full screen en macOS', () => {
+  test('toggle-maximize usa full screen en macOS', async () => {
     const { targetWindow } = createTargetWindow({
       isFullScreen: jest.fn(() => false),
     });
     fromWebContents.mockReturnValue(targetWindow);
 
     let state;
-    withPlatform('darwin', () => {
-      registerWindowControlsIpc();
-      state = registeredHandlers['window-controls:toggle-maximize']({ sender: {} });
+    await withPlatform('darwin', async () => {
+      bindWindowControlsBridge();
+      state = await registeredHandlers['window-controls:toggle-maximize']({ sender: {} });
     });
 
     expect(targetWindow.setFullScreen).toHaveBeenCalledWith(true);
     expect(targetWindow.maximize).not.toHaveBeenCalled();
     expect(targetWindow.unmaximize).not.toHaveBeenCalled();
     expect(state).toEqual({
-      isMaximized: false,
-      isFullScreen: false,
-      platform: 'darwin',
+      ok: true,
+      data: {
+        isMaximized: false,
+        isFullScreen: false,
+        platform: 'darwin',
+      },
     });
   });
 
-  test('close cierra la ventana y responde null', () => {
+  test('close cierra la ventana y responde null', async () => {
     const { targetWindow } = createTargetWindow();
     fromWebContents.mockReturnValue(targetWindow);
 
-    registerWindowControlsIpc();
-    const result = registeredHandlers['window-controls:close']({ sender: {} });
+    bindWindowControlsBridge();
+    const result = await registeredHandlers['window-controls:close']({ sender: {} });
 
     expect(targetWindow.close).toHaveBeenCalled();
-    expect(result).toBeNull();
+    expect(result).toEqual({ ok: true, data: null });
   });
 
-  test('lanza un error claro cuando no puede resolver la ventana del sender', () => {
+  test('lanza un error claro cuando no puede resolver la ventana del sender', async () => {
     fromWebContents.mockReturnValue(null);
 
-    registerWindowControlsIpc();
+    bindWindowControlsBridge();
 
-    expect(() => registeredHandlers['window-controls:get-state']({ sender: {} })).toThrow(
-      'Unable to resolve the BrowserWindow for the sender.',
-    );
+    await expect(registeredHandlers['window-controls:get-state']({ sender: {} })).resolves.toEqual({
+      ok: false,
+      error: 'Unable to resolve the BrowserWindow for the sender.',
+    });
   });
 });
+
+
+
+
+
+
+

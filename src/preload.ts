@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-const ALLOWED_CHANNELS = new Set([
+const ALLOWED_BRIDGE_COMMANDS = new Set([
   'window-controls:get-state',
   'window-controls:minimize',
   'window-controls:toggle-maximize',
@@ -21,20 +21,20 @@ const ALLOWED_CHANNELS = new Set([
   'session-secrets:set',
 ]);
 
-export type ElectronInvokeChannel = typeof ALLOWED_CHANNELS extends Set<infer T> ? T : never;
-export const allowedElectronInvokeChannels = Array.from(ALLOWED_CHANNELS);
+export type ElectronBridgeCommand = typeof ALLOWED_BRIDGE_COMMANDS extends Set<infer T> ? T : never;
+export const allowedElectronBridgeCommands = Array.from(ALLOWED_BRIDGE_COMMANDS);
 const WINDOW_STATE_EVENT = 'window-controls:state-changed';
 
-export function ensureAllowedChannel(channel: string): void {
-  if (!ALLOWED_CHANNELS.has(channel)) {
-    throw new Error(`IPC channel ${channel} is not allowed.`);
+export function ensureAllowedBridgeCommand(command: string): void {
+  if (!ALLOWED_BRIDGE_COMMANDS.has(command)) {
+    throw new Error(`Bridge command ${command} is not allowed.`);
   }
 }
 
 export const electronApiBridge = {
-  invoke(channel: string, payload?: unknown) {
-    ensureAllowedChannel(channel);
-    return ipcRenderer.invoke(channel, payload);
+  invoke(command: string, payload?: unknown) {
+    ensureAllowedBridgeCommand(command);
+    return ipcRenderer.invoke(command, payload);
   },
   onWindowStateChange(listener: (payload: unknown) => void) {
     const wrappedListener = (_event: unknown, payload: unknown) => {
