@@ -13,6 +13,9 @@ export interface PullRequestAnalysisBatchRequest {
   model: string;
   analysisDepth: 'standard' | 'deep';
   timeoutMs?: number;
+  maxItems?: number;
+  previewConcurrency?: number;
+  analysisConcurrency?: number;
   promptDirectives?: PullRequestAnalysisPromptDirectives;
   snapshotPolicy?: RepositoryAnalysisSnapshotPolicy;
   items: PullRequestAnalysisItemRequest[];

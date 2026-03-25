@@ -6,14 +6,13 @@ import { bindAnalysisBridge } from '../modules/runtime-host/presentation/adapter
 import { bindRepositorySourceProviderBridge } from '../modules/runtime-host/presentation/adapters/repository-source-adapter';
 import { bindSessionSecretsStoreBridge } from '../modules/runtime-host/presentation/adapters/session-secrets-adapter';
 import { bindWindowControlsBridge } from '../modules/runtime-host/presentation/adapters/window-controls-adapter';
-import type { RepositoryAnalysisService } from '../services/analysis/repository-analysis.service';
-import type { PullRequestAnalysisService } from '../services/analysis/pull-request-analysis.service';
+import type { PullRequestAnalysisPort, RepositoryAnalysisPort } from '../modules/runtime-host/application/analysis/ports/analysis-services.port';
 import type { RepositoryProviderRegistry } from '../services/providers/repository-provider.registry';
 
 export function wireRuntimeHostBridge(
   providerRegistry: RepositoryProviderRegistry,
-  repositoryAnalysisService: RepositoryAnalysisService,
-  pullRequestAnalysisService: PullRequestAnalysisService,
+  repositoryAnalysisService: RepositoryAnalysisPort,
+  pullRequestAnalysisService: PullRequestAnalysisPort,
   sessionSecretsStore: SessionSecretsStore,
 ): void {
   bindRepositorySourceProviderBridge(providerRegistry, createShellExternalLinkOpener());
@@ -25,5 +24,4 @@ export function wireRuntimeHostBridge(
   bindSessionSecretsStoreBridge(sessionSecretsStore);
   bindWindowControlsBridge();
 }
-
 

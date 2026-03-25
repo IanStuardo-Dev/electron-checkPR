@@ -16,6 +16,21 @@ interface PullRequestAnalysisServiceDependencies {
   responseParser: PullRequestAnalysisResponseParserPort;
 }
 
+const DEFAULT_PREVIEW_CONCURRENCY = 3;
+const DEFAULT_ANALYSIS_CONCURRENCY = 2;
+
+function resolveConcurrencyLimit(rawLimit: unknown, fallback: number, itemCount: number): number {
+  const parsedLimit = typeof rawLimit === 'number'
+    ? rawLimit
+    : Number.parseInt(String(rawLimit ?? ''), 10);
+
+  if (!Number.isFinite(parsedLimit) || parsedLimit <= 0) {
+    return Math.max(1, Math.min(fallback, itemCount));
+  }
+
+  return Math.max(1, Math.min(Math.floor(parsedLimit), itemCount));
+}
+
 export class PullRequestAnalysisService {
   private activeRuns = new Map<string, Set<AbortController>>();
   private readonly snapshotProvider: PullRequestAnalysisSnapshotProviderPort;
@@ -37,14 +52,20 @@ export class PullRequestAnalysisService {
   }
 
   async previewBatch(request: PullRequestAnalysisBatchRequest): Promise<PullRequestAnalysisPreview[]> {
-    const previews: PullRequestAnalysisPreview[] = [];
+    const previewConcurrency = resolveConcurrencyLimit(
+      request.previewConcurrency,
+      DEFAULT_PREVIEW_CONCURRENCY,
+      request.items.length,
+    );
 
-    for (const item of request.items) {
-      const snapshot = await this.snapshotProvider.getSnapshot(request.source, item.pullRequest, request.snapshotPolicy);
-      previews.push(buildPullRequestAnalysisPreview(snapshot, Boolean(request.snapshotPolicy?.strictMode)));
-    }
-
-    return previews;
+    return mapWithConcurrency(request.items, previewConcurrency, async (item) => {
+      const snapshot = await this.snapshotProvider.getSnapshot(
+        request.source,
+        item.pullRequest,
+        request.snapshotPolicy,
+      );
+      return buildPullRequestAnalysisPreview(snapshot, Boolean(request.snapshotPolicy?.strictMode));
+    });
   }
 
   async analyzeBatch(request: PullRequestAnalysisBatchRequest): Promise<PullRequestAiReview[]> {
@@ -65,7 +86,12 @@ export class PullRequestAnalysisService {
     }
 
     try {
-      const results = await mapWithConcurrency(request.items, 2, async (item) => this.itemAnalyzer.analyzeItem(
+      const analysisConcurrency = resolveConcurrencyLimit(
+        request.analysisConcurrency,
+        DEFAULT_ANALYSIS_CONCURRENCY,
+        request.items.length,
+      );
+      const results = await mapWithConcurrency(request.items, analysisConcurrency, async (item) => this.itemAnalyzer.analyzeItem(
         request,
         item,
         {

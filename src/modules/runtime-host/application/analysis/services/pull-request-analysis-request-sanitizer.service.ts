@@ -16,6 +16,12 @@ export function sanitizePullRequestAnalysisPayload(payload: unknown, codexApiKey
   }
 
   const source = request.source as unknown as Record<string, unknown>;
+  const sanitizedItems = Array.isArray(request.items)
+    ? request.items
+      .filter((item) => item && typeof item === 'object' && typeof item.pullRequest === 'object')
+      .map((item) => ({ pullRequest: item.pullRequest! }))
+    : [];
+  const maxItems = clampNumber(request.maxItems, 1, 20, Math.max(1, sanitizedItems.length || 1));
 
   return {
     requestId: typeof request.requestId === 'string' ? request.requestId.trim().slice(0, 200) : '',
@@ -33,16 +39,14 @@ export function sanitizePullRequestAnalysisPayload(payload: unknown, codexApiKey
     model: readRequiredString(request.model, 'model'),
     analysisDepth: request.analysisDepth === 'deep' ? 'deep' : 'standard',
     timeoutMs: clampNumber(request.timeoutMs, 15_000, 120_000, 60_000),
+    maxItems,
+    previewConcurrency: clampNumber(request.previewConcurrency, 1, 8, 3),
+    analysisConcurrency: clampNumber(request.analysisConcurrency, 1, 8, 2),
     snapshotPolicy: readSnapshotPolicy(request.snapshotPolicy),
     promptDirectives: {
       focusAreas: typeof rawPromptDirectives.focusAreas === 'string' ? rawPromptDirectives.focusAreas.trim().slice(0, 2000) : '',
       customInstructions: typeof rawPromptDirectives.customInstructions === 'string' ? rawPromptDirectives.customInstructions.trim().slice(0, 2500) : '',
     },
-    items: Array.isArray(request.items)
-      ? request.items
-        .filter((item) => item && typeof item === 'object' && typeof item.pullRequest === 'object')
-        .map((item) => ({ pullRequest: item.pullRequest! }))
-      : [],
+    items: sanitizedItems.slice(0, maxItems),
   };
 }
-
