@@ -216,6 +216,7 @@ Capas activas:
 Referencia detallada:
 
 - [docs/quality-gates.md](docs/quality-gates.md)
+- [HARDENING_FINAL_PASS_2026_03.md](HARDENING_FINAL_PASS_2026_03.md)
 
 ## Testing
 
