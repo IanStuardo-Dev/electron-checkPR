@@ -31,13 +31,19 @@ describe('gitlab modules', () => {
   });
 
   test('getGitLabBranches mapea ramas', async () => {
-    gitlabApi.requestGitLabJson.mockResolvedValue([
+    gitlabApi.requestGitLabPaginated.mockResolvedValue([
       { name: 'main', default: true, commit: { id: '1' } },
     ]);
 
     const branches = await getGitLabBranches({ project: 'acme/repo-a', personalAccessToken: 'pat' });
 
     expect(branches).toEqual([{ name: 'main', objectId: '1', isDefault: true }]);
+    expect(gitlabApi.requestGitLabPaginated).toHaveBeenCalledWith(
+      expect.any(Function),
+      'pat',
+      'branches request',
+      100,
+    );
   });
 
   test('getGitLabPullRequests agrega approvals, reviewers y assignees', async () => {

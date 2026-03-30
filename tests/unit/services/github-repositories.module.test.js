@@ -80,12 +80,11 @@ describe('github.repositories module', () => {
       repository: 'repo-a',
       personalAccessToken: 'pat',
     });
-    githubApi.requestGitHubJson
-      .mockResolvedValueOnce({ default_branch: 'main' })
-      .mockResolvedValueOnce([
-        { name: 'main', commit: { sha: 'sha-main' } },
-        { name: 'develop', commit: { sha: 'sha-dev' } },
-      ]);
+    githubApi.requestGitHubJson.mockResolvedValueOnce({ default_branch: 'main' });
+    githubApi.requestGitHubPaginated.mockResolvedValue([
+      { name: 'main', commit: { sha: 'sha-main' } },
+      { name: 'develop', commit: { sha: 'sha-dev' } },
+    ]);
 
     const branches = await getGitHubBranches({
       provider: 'github',
@@ -99,5 +98,10 @@ describe('github.repositories module', () => {
       { name: 'main', objectId: 'sha-main', isDefault: true },
       { name: 'develop', objectId: 'sha-dev', isDefault: false },
     ]);
+    expect(githubApi.requestGitHubPaginated).toHaveBeenCalledWith(
+      'https://api.github.com/repos/acme/repo-a/branches?per_page=100',
+      'pat',
+      'branches request',
+    );
   });
 });

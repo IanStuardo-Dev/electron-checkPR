@@ -53,16 +53,22 @@ describe('azure modules', () => {
   });
 
   test('getAzureRepositories y branches mapean payloads', async () => {
-    azureApi.requestAzureJsonResponse.mockResolvedValue({
-      data: {
-        value: [{ id: 'repo', name: 'Repo', webUrl: 'https://dev.azure.com/org/proj/_git/repo', defaultBranch: 'refs/heads/main' }],
-      },
-      headers: new Headers(),
-    });
-    azureApi.getAzureContinuationToken.mockReturnValue(null);
-    azureApi.requestAzureJson.mockResolvedValue({
-      value: [{ name: 'refs/heads/main', objectId: '1' }],
-    });
+    azureApi.requestAzureJsonResponse
+      .mockResolvedValueOnce({
+        data: {
+          value: [{ id: 'repo', name: 'Repo', webUrl: 'https://dev.azure.com/org/proj/_git/repo', defaultBranch: 'refs/heads/main' }],
+        },
+        headers: new Headers(),
+      })
+      .mockResolvedValueOnce({
+        data: {
+          value: [{ name: 'refs/heads/main', objectId: '1' }],
+        },
+        headers: new Headers(),
+      });
+    azureApi.getAzureContinuationToken
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce(null);
 
     const repositories = await getAzureRepositories({ organization: 'org', project: 'proj', personalAccessToken: 'pat' });
     const branches = await getAzureBranches({ organization: 'org', project: 'proj', repositoryId: 'repo', personalAccessToken: 'pat' });
@@ -72,9 +78,11 @@ describe('azure modules', () => {
   });
 
   test('getAzureBranches marca ramas no default correctamente', async () => {
-    azureApi.requestAzureJson.mockResolvedValue({
-      value: [{ name: 'refs/heads/feature/x', objectId: '2' }],
+    azureApi.requestAzureJsonResponse.mockResolvedValue({
+      data: { value: [{ name: 'refs/heads/feature/x', objectId: '2' }] },
+      headers: new Headers(),
     });
+    azureApi.getAzureContinuationToken.mockReturnValue(null);
 
     const branches = await getAzureBranches({
       organization: 'org',

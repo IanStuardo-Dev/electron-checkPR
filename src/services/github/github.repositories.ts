@@ -51,7 +51,7 @@ export async function getGitHubBranches(config: RepositoryConnectionConfig): Pro
     personalAccessToken,
     'repository request',
   );
-  const payload = await requestGitHubJson<GitHubBranchResponse[]>(
+  const payload = await requestGitHubPaginated<GitHubBranchResponse>(
     `https://api.github.com/repos/${encodeURIComponent(organization)}/${encodeURIComponent(repository)}/branches?per_page=100`,
     personalAccessToken,
     'branches request',
