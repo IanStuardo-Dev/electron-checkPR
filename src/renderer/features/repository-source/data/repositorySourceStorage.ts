@@ -1,12 +1,15 @@
 import type { SavedConnectionConfig } from '../types';
+import {
+  LEGACY_REPOSITORY_SOURCE_SESSION_SECRET_KEY,
+  REPOSITORY_SOURCE_SESSION_SECRET_KEY,
+} from '../../../../constants/session-secrets';
 import { loadStoredObject, removeStoredKeys, saveStoredObject } from '../../../shared/storage/jsonStorage';
 import { getSessionSecret, setSessionSecret } from '../../../shared/storage/sessionSecrets';
 
 export const REPOSITORY_SOURCE_SESSION_CONFIG_KEY = 'checkpr.repository.session.config';
-export const REPOSITORY_SOURCE_SESSION_SECRET_KEY = 'checkpr.repository.session.pat';
+export { REPOSITORY_SOURCE_SESSION_SECRET_KEY };
 
 const LEGACY_REPOSITORY_SOURCE_LOCAL_CONFIG_KEY = 'checkpr.azure.config';
-const LEGACY_REPOSITORY_SOURCE_SESSION_SECRET_KEY = 'checkpr.azure.session.pat';
 const LEGACY_REPOSITORY_SOURCE_SAVED_CONTEXTS_KEY = 'checkpr.azure.saved-contexts';
 
 export const defaultConnectionConfig: SavedConnectionConfig = {
