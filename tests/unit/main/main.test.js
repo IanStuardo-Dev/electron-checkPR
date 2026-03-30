@@ -59,9 +59,14 @@ const {
 jest.mock('../../../src/services/providers/repository-provider.composition', () => ({
   createRepositoryProviderRegistry: jest.fn(() => ({ get: jest.fn(), list: jest.fn(() => []) })),
   createRepositoryProviderRegistryFromModules: jest.fn(() => ({ get: jest.fn(), list: jest.fn(() => []) })),
+  createRepositoryProviderCapabilityRegistriesFromModules: jest.fn(() => ({
+    source: { get: jest.fn(), list: jest.fn(() => []) },
+    repositorySnapshots: { get: jest.fn(), list: jest.fn(() => []) },
+    pullRequestSnapshots: { get: jest.fn(), list: jest.fn(() => []) },
+  })),
 }));
 const {
-  createRepositoryProviderRegistryFromModules,
+  createRepositoryProviderCapabilityRegistriesFromModules,
 } = require('../../../src/services/providers/repository-provider.composition');
 const main = require('../../../src/main');
 const { app, BrowserWindow } = require('electron');
@@ -161,7 +166,7 @@ describe('main process bootstrap', () => {
     main.bootstrapMainProcess();
 
     expect(buildDefaultRepositoryProviderModules).toHaveBeenCalled();
-    expect(createRepositoryProviderRegistryFromModules).toHaveBeenCalled();
+    expect(createRepositoryProviderCapabilityRegistriesFromModules).toHaveBeenCalled();
     expect(registerDefaultRepositoryProviders).not.toHaveBeenCalled();
     expect(SessionSecretsStore).toHaveBeenCalled();
     expect(wireRuntimeHostBridge).toHaveBeenCalledWith(
@@ -219,7 +224,6 @@ describe('main process bootstrap', () => {
     expect(browserWindowMock).not.toHaveBeenCalled();
   });
 });
-
 
 
 
