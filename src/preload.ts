@@ -18,6 +18,7 @@ const ALLOWED_BRIDGE_COMMANDS = new Set([
   'analysis:cancelPullRequestAiReviews',
   'session-secrets:get',
   'session-secrets:has',
+  'session-secrets:codex-has',
   'session-secrets:set',
 ]);
 

@@ -54,6 +54,31 @@ describe('pull request analysis payload sanitizer', () => {
     expect(payload.items[0].pullRequest.id).toBe(1);
   });
 
+  test('normaliza requestId, timeout y promptDirectives segun limites', () => {
+    const payload = sanitizePullRequestAnalysisPayload(createPayload({
+      requestId: `  ${'x'.repeat(300)}  `,
+      timeoutMs: 1,
+      promptDirectives: {
+        focusAreas: 'f'.repeat(2500),
+        customInstructions: 'c'.repeat(3000),
+      },
+    }), 'sk-session');
+
+    expect(payload.requestId).toHaveLength(200);
+    expect(payload.timeoutMs).toBe(15000);
+    expect(payload.promptDirectives.focusAreas).toHaveLength(2000);
+    expect(payload.promptDirectives.customInstructions).toHaveLength(2500);
+  });
+
+  test('rechaza providers no soportados', () => {
+    expect(() => sanitizePullRequestAnalysisPayload(createPayload({
+      source: {
+        ...createPayload().source,
+        provider: 'bitbucket',
+      },
+    }), 'sk-session')).toThrow('El provider del PR analysis no es valido.');
+  });
+
   test('rechaza payloads sin fuente', () => {
     expect(() => sanitizePullRequestAnalysisPayload({
       model: 'gpt-5.2-codex',

@@ -8,6 +8,7 @@ import {
 export interface SessionSecretsOperations {
   get(key: string): Promise<string>;
   has(key: string): Promise<boolean>;
+  hasCodexApiKey(): Promise<boolean>;
   set(payload: { key: string; value: string }): Promise<void>;
 }
 
@@ -30,13 +31,24 @@ function assertAllowedSecretKey(key: string): string {
   return normalizedKey;
 }
 
+function ensureCodexKeyIsNotReadable(key: string): void {
+  if (key === CODEX_SESSION_API_KEY) {
+    throw new Error('La API key de Codex no puede leerse desde renderer.');
+  }
+}
+
 export function createSessionSecretsOperations(store: SessionSecretsStore): SessionSecretsOperations {
   return {
     async get(key) {
-      return store.get(assertAllowedSecretKey(key));
+      const secretKey = assertAllowedSecretKey(key);
+      ensureCodexKeyIsNotReadable(secretKey);
+      return store.get(secretKey);
     },
     async has(key) {
       return store.has(assertAllowedSecretKey(key));
+    },
+    async hasCodexApiKey() {
+      return store.has(CODEX_SESSION_API_KEY);
     },
     async set(payload) {
       const secretKey = assertAllowedSecretKey(payload?.key ?? '');
