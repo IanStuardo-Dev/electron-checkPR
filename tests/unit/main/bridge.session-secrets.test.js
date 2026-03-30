@@ -4,6 +4,7 @@ jest.mock('../../../src/modules/runtime-host/presentation/adapters/bridge-respon
 
 const { registerBridgeCommand } = require('../../../src/modules/runtime-host/presentation/adapters/bridge-response');
 const { SessionSecretsStore } = require('../../../src/modules/runtime-host/application/session-secrets/services/session-secrets-store.service');
+const { CODEX_SESSION_API_KEY } = require('../../../src/constants/session-secrets');
 const { bindSessionSecretsStoreBridge } = require('../../../src/modules/runtime-host/presentation/adapters/session-secrets-adapter');
 
 describe('session secrets bridge', () => {
@@ -21,24 +22,28 @@ describe('session secrets bridge', () => {
     expect(store.has('key')).toBe(false);
   });
 
-  test('bindSessionSecretsStoreBridge registra canales get/has/set', async () => {
+  test('bindSessionSecretsStoreBridge registra canales get/has/codex-has/set', async () => {
     const store = new SessionSecretsStore();
     bindSessionSecretsStoreBridge(store);
 
-    expect(registerBridgeCommand).toHaveBeenCalledTimes(3);
+    expect(registerBridgeCommand).toHaveBeenCalledTimes(4);
     const getHandler = registerBridgeCommand.mock.calls[0][1];
     const hasHandler = registerBridgeCommand.mock.calls[1][1];
-    const setHandler = registerBridgeCommand.mock.calls[2][1];
+    const codexHasHandler = registerBridgeCommand.mock.calls[2][1];
+    const setHandler = registerBridgeCommand.mock.calls[3][1];
 
     await expect(getHandler('key')).resolves.toBe('');
     await expect(hasHandler('key')).resolves.toBe(false);
+    await expect(codexHasHandler()).resolves.toBe(false);
     await expect(setHandler({ key: 'api-key', value: 'secret' })).resolves.toBeUndefined();
     await expect(getHandler('api-key')).resolves.toBe('secret');
     await expect(hasHandler('api-key')).resolves.toBe(true);
+    await expect(setHandler({ key: CODEX_SESSION_API_KEY, value: 'sk-secret' })).resolves.toBeUndefined();
+    await expect(codexHasHandler()).resolves.toBe(true);
+    await expect(getHandler(CODEX_SESSION_API_KEY)).rejects.toThrow('La API key de Codex no puede leerse desde renderer.');
     await expect(setHandler({ key: '', value: 'x' })).rejects.toThrow('Secret key is required.');
   });
 });
-
 
 
 

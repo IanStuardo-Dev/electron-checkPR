@@ -18,7 +18,7 @@ describe('settings storage', () => {
       enabled: true,
       apiKey: 'sk-secret',
       model: 'gpt-5.2-codex',
-    });
+    }, { syncApiKey: true });
 
     expect(window.electronApi.invoke).toHaveBeenCalledWith('session-secrets:set', {
       key: 'checkpr.settings.codex.api-key',
@@ -31,10 +31,10 @@ describe('settings storage', () => {
     });
   });
 
-  test('hydrateCodexApiKey propaga el valor recuperado', async () => {
-    window.electronApi.invoke.mockResolvedValue({ ok: true, data: 'sk-live' });
+  test('hasCodexApiKeyInSession propaga presencia de secreto', async () => {
+    window.electronApi.invoke.mockResolvedValue({ ok: true, data: true });
 
-    await expect(storage.hydrateCodexApiKey()).resolves.toBe('sk-live');
+    await expect(storage.hasCodexApiKeyInSession()).resolves.toBe(true);
   });
 
   test('persistCodexConfig falla si no existe Electron', async () => {
@@ -46,9 +46,9 @@ describe('settings storage', () => {
         ...storage.defaultCodexConfig,
         enabled: true,
         apiKey: 'sk-browser',
-      })).rejects.toThrow('No se detecto el bridge de Electron');
+      }, { syncApiKey: true })).rejects.toThrow('No se detecto el bridge de Electron');
 
-      await expect(storage.hydrateCodexApiKey()).rejects.toThrow('No se detecto el bridge de Electron');
+      await expect(storage.hasCodexApiKeyInSession()).rejects.toThrow('No se detecto el bridge de Electron');
     } finally {
       window.electronApi = originalElectronApi;
     }

@@ -4,7 +4,7 @@ const { renderHook, act, waitFor } = require('@testing-library/react');
 jest.mock('../../../src/renderer/features/settings/data/settingsStorage', () => ({
   loadCodexConfig: jest.fn(),
   persistCodexConfig: jest.fn().mockResolvedValue(undefined),
-  hydrateCodexApiKey: jest.fn(),
+  hasCodexApiKeyInSession: jest.fn(),
 }));
 
 const storage = require('../../../src/renderer/features/settings/data/settingsStorage');
@@ -43,13 +43,13 @@ describe('useCodexSettings', () => {
         customInstructions: '',
       },
     });
-    storage.hydrateCodexApiKey.mockResolvedValue('sk-ready');
+    storage.hasCodexApiKeyInSession.mockResolvedValue(true);
   });
 
-  test('hidrata api key de sesion y calcula readiness', async () => {
+  test('hidrata presencia de api key de sesion y calcula readiness', async () => {
     const { result } = renderHook(() => useCodexSettings());
 
-    await waitFor(() => expect(result.current.config.apiKey).toBe('sk-ready'));
+    await waitFor(() => expect(result.current.hasPersistedApiKey).toBe(true));
     expect(result.current.isReady).toBe(false);
 
     act(() => {

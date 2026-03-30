@@ -23,8 +23,8 @@ interface UsePullRequestAiReviewsOptions {
   config: SavedConnectionConfig;
   pullRequests: PrioritizedPullRequest[];
   isConnectionReady: boolean;
+  isCodexReady: boolean;
   codexConfig: {
-    apiKey: string;
     model: string;
     snapshotPolicy: RepositoryAnalysisSnapshotPolicy;
     prReview: {
@@ -44,6 +44,7 @@ export function usePullRequestAiReviews({
   config,
   pullRequests,
   isConnectionReady,
+  isCodexReady,
   codexConfig,
 }: UsePullRequestAiReviewsOptions) {
   const [reviews, setReviews] = React.useState<PullRequestAiReview[]>([]);
@@ -61,7 +62,7 @@ export function usePullRequestAiReviews({
     isConnectionReady
     && config.provider
     && codexConfig.prReview.enabled
-    && codexConfig.apiKey.trim(),
+    && isCodexReady,
   );
 
   const buildCacheKey = React.useCallback((items: PrioritizedPullRequest[]) => (
@@ -200,4 +201,3 @@ export function usePullRequestAiReviews({
     closeModal,
   };
 }
-
