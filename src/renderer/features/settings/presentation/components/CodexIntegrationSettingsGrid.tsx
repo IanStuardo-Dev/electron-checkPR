@@ -2,20 +2,33 @@ import React from 'react';
 import type { CodexIntegrationConfig } from '../../types';
 import {
   SettingsField,
+  SettingsNotice,
   SettingsSelectField,
   SettingsStatTile,
   SettingsToggleCard,
+  settingsButtonClassName,
 } from '../../../../ui/configuration/ConfigurationPrimitives';
 import type { CodexIntegrationChangeHandler } from './CodexIntegration.shared';
 
 interface CodexIntegrationSettingsGridProps {
   config: CodexIntegrationConfig;
   onChange: CodexIntegrationChangeHandler;
+  onSaveApiKey: () => void | Promise<void>;
+  apiKeyNeedsSave: boolean;
+  isSavingApiKey: boolean;
+  apiKeySaveFeedback: {
+    tone: 'success' | 'error';
+    message: string;
+  } | null;
 }
 
 export const CodexIntegrationSettingsGrid = ({
   config,
   onChange,
+  onSaveApiKey,
+  apiKeyNeedsSave,
+  isSavingApiKey,
+  apiKeySaveFeedback,
 }: CodexIntegrationSettingsGridProps) => (
   <>
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -59,14 +72,34 @@ export const CodexIntegrationSettingsGrid = ({
         })}
       />
 
-      <SettingsField
-        label="API key"
-        type="password"
-        value={config.apiKey}
-        placeholder="sk-..."
-        onChange={(value) => onChange('apiKey', value)}
-        hint="Se guarda solo en sesion, no en disco."
-      />
+      <div className="min-w-0 space-y-3 xl:col-span-2">
+        <SettingsField
+          label="API key"
+          type="password"
+          value={config.apiKey}
+          placeholder="sk-..."
+          onChange={(value) => onChange('apiKey', value)}
+          hint="Se guarda solo en sesion, no en disco."
+        />
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => void onSaveApiKey()}
+            disabled={!apiKeyNeedsSave || isSavingApiKey}
+            className={`${settingsButtonClassName} disabled:cursor-not-allowed disabled:opacity-60`}
+          >
+            {isSavingApiKey ? 'Guardando...' : 'Guardar'}
+          </button>
+          {apiKeyNeedsSave ? (
+            <span className="text-xs text-amber-700">Hay cambios sin guardar en la API key.</span>
+          ) : null}
+        </div>
+        {apiKeySaveFeedback ? (
+          <SettingsNotice tone={apiKeySaveFeedback.tone}>
+            {apiKeySaveFeedback.message}
+          </SettingsNotice>
+        ) : null}
+      </div>
 
       <SettingsSelectField
         label="Modelo"

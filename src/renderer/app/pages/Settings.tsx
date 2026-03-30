@@ -35,7 +35,11 @@ const Settings = () => {
   const {
     config: codexConfig,
     isReady: isCodexReady,
+    apiKeyNeedsSave: codexApiKeyNeedsSave,
+    isSavingApiKey: isSavingCodexApiKey,
+    apiKeySaveFeedback: codexApiKeySaveFeedback,
     updateConfig: updateCodexConfig,
+    saveApiKey: saveCodexApiKey,
   } = useCodexSettings();
   const handleDiscoverProjects = () => void discoverProjects();
   const handleSelectProject = (project: string) => void selectProject(project);
@@ -82,6 +86,10 @@ const Settings = () => {
           codexConfig={codexConfig}
           isCodexReady={isCodexReady}
           updateCodexConfig={updateCodexConfig}
+          saveCodexApiKey={saveCodexApiKey}
+          codexApiKeyNeedsSave={codexApiKeyNeedsSave}
+          isSavingCodexApiKey={isSavingCodexApiKey}
+          codexApiKeySaveFeedback={codexApiKeySaveFeedback}
         />
 
         <SettingsDiagnosticsSection

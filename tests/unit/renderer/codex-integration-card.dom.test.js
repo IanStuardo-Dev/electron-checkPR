@@ -7,10 +7,15 @@ const CodexIntegrationCard = require('../../../src/renderer/features/settings/pr
 describe('CodexIntegrationCard', () => {
   test('abre el modal de politicas avanzadas sin sobrecargar la card principal', async () => {
     const user = userEvent.setup();
+    const onSaveApiKey = jest.fn();
 
     render(React.createElement(CodexIntegrationCard, {
       isReady: true,
       onChange: jest.fn(),
+      onSaveApiKey,
+      apiKeyNeedsSave: true,
+      isSavingApiKey: false,
+      apiKeySaveFeedback: null,
       config: {
         enabled: true,
         model: 'gpt-5.2-codex',
@@ -51,5 +56,8 @@ describe('CodexIntegrationCard', () => {
     expect(screen.getByRole('dialog', { name: /politicas avanzadas de codex/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/focus areas para pr ai review/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/patron o estilo a validar/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /^guardar$/i }));
+    expect(onSaveApiKey).toHaveBeenCalledTimes(1);
   });
 });

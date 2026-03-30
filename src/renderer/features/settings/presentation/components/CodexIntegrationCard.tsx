@@ -13,9 +13,24 @@ interface CodexIntegrationCardProps {
   config: CodexIntegrationConfig;
   isReady: boolean;
   onChange: <K extends keyof CodexIntegrationConfig>(key: K, value: CodexIntegrationConfig[K]) => void;
+  onSaveApiKey: () => void | Promise<void>;
+  apiKeyNeedsSave: boolean;
+  isSavingApiKey: boolean;
+  apiKeySaveFeedback: {
+    tone: 'success' | 'error';
+    message: string;
+  } | null;
 }
 
-const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCardProps) => {
+const CodexIntegrationCard = ({
+  config,
+  isReady,
+  onChange,
+  onSaveApiKey,
+  apiKeyNeedsSave,
+  isSavingApiKey,
+  apiKeySaveFeedback,
+}: CodexIntegrationCardProps) => {
   const [isAdvancedModalOpen, setIsAdvancedModalOpen] = React.useState(false);
 
   return (
@@ -46,7 +61,14 @@ const CodexIntegrationCard = ({ config, isReady, onChange }: CodexIntegrationCar
         </div>
       )}
     >
-      <CodexIntegrationSettingsGrid config={config} onChange={onChange} />
+      <CodexIntegrationSettingsGrid
+        config={config}
+        onChange={onChange}
+        onSaveApiKey={onSaveApiKey}
+        apiKeyNeedsSave={apiKeyNeedsSave}
+        isSavingApiKey={isSavingApiKey}
+        apiKeySaveFeedback={apiKeySaveFeedback}
+      />
 
       <CodexIntegrationPoliciesModal
         config={config}
