@@ -32,6 +32,10 @@ export function SettingsIntegrationsSection({
   codexConfig,
   isCodexReady,
   updateCodexConfig,
+  saveCodexApiKey,
+  codexApiKeyNeedsSave,
+  isSavingCodexApiKey,
+  codexApiKeySaveFeedback,
 }: SettingsProviderConnectionProps & {
   activeProvider: RepositoryProviderDefinition | null;
   summary: DashboardSummary;
@@ -40,6 +44,13 @@ export function SettingsIntegrationsSection({
   codexConfig: CodexIntegrationConfig;
   isCodexReady: boolean;
   updateCodexConfig: <K extends keyof CodexIntegrationConfig>(name: K, value: CodexIntegrationConfig[K]) => void;
+  saveCodexApiKey: () => void | Promise<void>;
+  codexApiKeyNeedsSave: boolean;
+  isSavingCodexApiKey: boolean;
+  codexApiKeySaveFeedback: {
+    tone: 'success' | 'error';
+    message: string;
+  } | null;
 }) {
   const [isProviderModalOpen, setIsProviderModalOpen] = React.useState(false);
   const [isCodexModalOpen, setIsCodexModalOpen] = React.useState(false);
@@ -102,6 +113,10 @@ export function SettingsIntegrationsSection({
           config={codexConfig}
           isReady={isCodexReady}
           onChange={updateCodexConfig}
+          onSaveApiKey={saveCodexApiKey}
+          apiKeyNeedsSave={codexApiKeyNeedsSave}
+          isSavingApiKey={isSavingCodexApiKey}
+          apiKeySaveFeedback={codexApiKeySaveFeedback}
         />
       </SettingsSectionModal>
 

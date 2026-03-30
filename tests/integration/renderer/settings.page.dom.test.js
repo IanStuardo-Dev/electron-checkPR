@@ -82,6 +82,10 @@ describe('Settings page', () => {
       },
       isReady: true,
       updateConfig: jest.fn(),
+      saveApiKey: jest.fn(),
+      apiKeyNeedsSave: false,
+      isSavingApiKey: false,
+      apiKeySaveFeedback: null,
     });
 
     renderWithRouter(React.createElement(Settings));
