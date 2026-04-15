@@ -1,5 +1,5 @@
 import type { AzureBranch, AzureConnectionConfig, AzureProject, AzureRepository } from '../../types/azure';
-import { AZURE_API_VERSION, getAzureConfig, getAzureContinuationToken, requestAzureJson, requestAzureJsonResponse } from './azure.api';
+import { AZURE_API_VERSION, getAzureConfig, getAzureContinuationToken, requestAzureJsonResponse } from './azure.api';
 import type { AzureProjectsResponse, AzureRefsResponse, AzureRepositoriesResponse } from './azure.types';
 import { getRequiredAzureProjectContext, getRequiredAzureRepositoryContext } from './azure.context';
 
@@ -83,12 +83,25 @@ export async function getAzureRepositories(config: AzureConnectionConfig): Promi
 export async function getAzureBranches(config: AzureConnectionConfig): Promise<AzureBranch[]> {
   const { organization, project, personalAccessToken, repositoryId } = getRequiredAzureRepositoryContext(config);
 
-  const requestUrl = `https://dev.azure.com/${encodeURIComponent(organization)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repositoryId)}/refs?filter=heads/&api-version=${AZURE_API_VERSION}`;
-  const payload = await requestAzureJson<AzureRefsResponse>(requestUrl, personalAccessToken, 'branches request');
+  return requestAzureCollection<AzureRefsResponse['value'][number], AzureRefsResponse, AzureBranch>(
+    personalAccessToken,
+    'branches request',
+    (continuationToken) => {
+      const query = new URLSearchParams({
+        filter: 'heads/',
+        'api-version': AZURE_API_VERSION,
+      });
 
-  return payload.value.map((branch) => ({
-    name: branch.name.replace('refs/heads/', ''),
-    objectId: branch.objectId,
-    isDefault: branch.name === 'refs/heads/main' || branch.name === 'refs/heads/master',
-  }));
+      if (continuationToken) {
+        query.set('continuationToken', continuationToken);
+      }
+
+      return `https://dev.azure.com/${encodeURIComponent(organization)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repositoryId)}/refs?${query.toString()}`;
+    },
+    (branch: AzureRefsResponse['value'][number]) => ({
+      name: branch.name.replace('refs/heads/', ''),
+      objectId: branch.objectId,
+      isDefault: branch.name === 'refs/heads/main' || branch.name === 'refs/heads/master',
+    }),
+  );
 }

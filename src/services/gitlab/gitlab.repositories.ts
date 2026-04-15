@@ -1,5 +1,5 @@
 import type { RepositoryBranch, RepositoryConnectionConfig, RepositoryProject, RepositorySummary } from '../../types/repository';
-import { buildProject, buildRepository, GITLAB_API_BASE_URL, getGitLabConfig, normalizeNamespace, requestGitLabJson, requestGitLabPaginated } from './gitlab.api';
+import { buildProject, buildRepository, GITLAB_API_BASE_URL, getGitLabConfig, normalizeNamespace, requestGitLabPaginated } from './gitlab.api';
 import type { GitLabBranchResponse, GitLabProjectResponse } from './gitlab.types';
 
 export async function getGitLabRepositories(config: RepositoryConnectionConfig): Promise<RepositorySummary[]> {
@@ -37,10 +37,11 @@ export async function getGitLabBranches(config: RepositoryConnectionConfig): Pro
     throw new Error('Proyecto y token son obligatorios para GitLab.');
   }
 
-  const payload = await requestGitLabJson<GitLabBranchResponse[]>(
-    `${GITLAB_API_BASE_URL}/projects/${encodeURIComponent(project)}/repository/branches?per_page=100`,
+  const payload = await requestGitLabPaginated<GitLabBranchResponse>(
+    (page, perPage) => `${GITLAB_API_BASE_URL}/projects/${encodeURIComponent(project)}/repository/branches?per_page=${perPage}&page=${page}`,
     personalAccessToken,
     'branches request',
+    100,
   );
 
   return payload.map((branch) => ({
